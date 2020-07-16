@@ -9,6 +9,55 @@ from random import randint
 import serial
 import serial.tools.list_ports
 
+class Dialog1(QDialog):
+    def __init__(self, *args, **kwargs):
+        super(Dialog1, self).__init__(*args, **kwargs)
+        self.title = "Options"
+        self.setWindowTitle(self.title)        
+        self.setModal(True)
+
+        self.width = 200
+        self.height = 300
+        self.setFixedSize(self.width, self.height)
+
+        self.initUI()
+        
+    def initUI(self):
+        mainLayout = QHBoxLayout() 
+        leftFormLayout = QFormLayout()
+        mainLayout.addLayout(leftFormLayout,100)
+
+        self.port_label = QLabel("Ports:",self)
+        #self.port_label.move(40,55) #(x,-y) relative to the top left corner of window
+        self.port_label.setStyleSheet("font-size:12pt;")
+        
+        self.port = QComboBox(self)
+        self.port.setFixedWidth(100)
+        #self.port.resize(self.port.sizeHint())
+        #self.port.move(100,50) #(x,-y) relative to the top left corner of window
+        self.port.setStyleSheet("font-size:12pt;")
+        
+        self.list_port()
+
+        leftFormLayout.addRow(self.port_label,self.port)
+        self.setLayout(mainLayout)
+
+    def list_port(self): #currently only works with genuine Arduinos due to parsing method
+        arduino_ports = [
+            p.device
+            for p in serial.tools.list_ports.comports()
+            if 'Arduino' in p.description  
+        ]
+        if not arduino_ports:
+            raise IOError("No Arduino found. Replug in USB cable and try again.")
+        self.port.addItems(arduino_ports)
+
+    #def list_port(self):
+        #ports = list(serial.tools.list_ports.comports())
+        #for p in ports:
+            #if "Arduino" in p.description:
+                #self.port.addItems(p)
+        #print(p)
 
 class Window(QWidget):
     def __init__(self, *args, **kwargs):
@@ -206,42 +255,9 @@ class Window(QWidget):
         pen2 = pg.mkPen(color = (0, 0, 255), width=1)
         self.data2 = self.graphWidget.plot(self.x2, self.x2, pen = pen2)
     
-    #def list_port(self):
-        #ports = list(serial.tools.list_ports.comports())
-        #for p in ports:
-            #if "Arduino" in p.description:
-                #self.port.addItems(p)
-        #print(p)
-
-    def list_port(self): #currently only works with genuine Arduinos due to parsing method
-        arduino_ports = [
-            p.device
-            for p in serial.tools.list_ports.comports()
-            if 'Arduino' in p.description  
-        ]
-        if not arduino_ports:
-            raise IOError("No Arduino found. Replug in USB cable and try again.")
-        self.port.addItems(arduino_ports)
-    
     def options_menu(self):
-        
-        #Fixed Dialog Menu (cannot interact with the main widget)
-        self.options_dialog = QDialog()
-        self.options_dialog.setModal(True)
-        
-        #Unfixed Dialog Menu (can interact with the main widget)
-        #options_dialog = QDialog(self)
-        #options_dialog.show()
-
-        self.options_dialog.setWindowTitle("Options")
-        self.options_dialog.resize(600,400)
-        self.port = QLabel("Ports")
-        self.port = QComboBox(self.options_dialog)
-        self.list_port()
-
-        
-        
-        self.options_dialog.exec()
+        self.options_popup = Dialog1(self)
+        self.options_popup.show()
 
 def main():
     app = QApplication(sys.argv)
