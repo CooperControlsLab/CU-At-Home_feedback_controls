@@ -1,11 +1,14 @@
 import sys 
 import os
 import time
-from PyQt5.QtWidgets import QApplication, QPushButton, QWidget, QComboBox, QHBoxLayout, QVBoxLayout, QFormLayout, QCheckBox, QButtonGroup
+from PyQt5.QtWidgets import QApplication, QPushButton, QWidget, QComboBox, QHBoxLayout, QVBoxLayout, QFormLayout, QCheckBox, QButtonGroup, QDialog, QLabel
 from PyQt5.QtCore import Qt, QTimer
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
 from random import randint
+import serial
+import serial.tools.list_ports
+
 
 class Window(QWidget):
     def __init__(self, *args, **kwargs):
@@ -65,6 +68,9 @@ class Window(QWidget):
         #self.plot2.setChecked(True)
         self.plot2.toggled.connect(self.visibility2)
 
+        self.options = QPushButton("Options",self)
+        self.options.clicked.connect(self.options_menu)
+
         #Buttongroup
         self.group1 = QButtonGroup()
         self.group1.addButton(self.plotall)
@@ -86,17 +92,20 @@ class Window(QWidget):
         #self.graphWidget.setXRange(0, 100, padding=0) #Doesn't move with the plot. Can drag around
         #self.graphWidget.setLimits(xMin=0, xMax=100)#, yMin=c, yMax=d) #Doesn't move with the plot. Cannot drag around
 
-        self.graphWidget.setYRange(0, 4, padding=0)
+        #self.graphWidget.setYRange(0, 4, padding=0)
+        self.graphWidget.setYRange(-11, 11, padding=0)
         self.graphWidget.enableAutoRange()
 
         
         #Changes background color of graph
-        self.graphWidget.setBackground('w')
+        #self.graphWidget.setBackground('w')
+        self.graphWidget.setBackground((0,0,0))
 
         #Positioning the buttons and checkboxes
         #leftFormLayout.setContentsMargins(70,100,10,10)
         leftFormLayout.addRow(self.startbutton,self.stopbutton)
         leftFormLayout.addRow(self.clearbutton,self.savebutton)
+        leftFormLayout.addRow(self.options)
         leftFormLayout.addRow(self.plotall)
         leftFormLayout.addRow(self.plot1)
         leftFormLayout.addRow(self.plot2)
@@ -117,6 +126,7 @@ class Window(QWidget):
             self.timer.timeout.connect(self.update_plot_data2)
         except:
             raise Exception("Missing 2")
+
         self.timer.timeout.connect(self.update_plot_data1)
         self.timer.timeout.connect(self.update_plot_data2)
 
@@ -145,14 +155,16 @@ class Window(QWidget):
         self.x1 = self.x1[1:]  
         self.x1.append(self.x1[-1] + 1)  
         self.y1 = self.y1[1:]  
-        self.y1.append(self.y1[-1])  
+        #self.y1.append(self.y1[-1])
+        self.y1.append(randint(-10,10))
         self.data1.setData(self.x1, self.y1)  
     
     def update_plot_data2(self):
         self.x2 = self.x2[1:]  
         self.x2.append(self.x2[-1] + 1)  
         self.y2 = self.y2[1:]  
-        self.y2.append(self.y2[-1])    
+        #self.y2.append(self.y2[-1])    
+        self.y2.append(randint(-10,10))
         self.data2.setData(self.x2, self.y2)      
 
     def visibility_all(self):
@@ -182,15 +194,54 @@ class Window(QWidget):
     
     def plotting1(self):
         self.x1 = list(range(100)) 
-        self.y1 = [2 for i in self.x1] 
-        pen1 = pg.mkPen(color = (255, 0, 0), width=5)
+        #self.y1 = [1 for i in self.x1]
+        self.y1 = [randint(-10,10) for i in self.x1] 
+        pen1 = pg.mkPen(color = (255, 0, 0), width=1)
         self.data1 = self.graphWidget.plot(self.x1, self.y1, pen = pen1)
     
     def plotting2(self):
         self.x2 = list(range(100))
-        self.y2 = [1 for i in self.x2]
-        pen2 = pg.mkPen(color = (0, 0, 255), width=5)
+        #self.y2 = [1 for i in self.x2]
+        self.y2 = [randint(-10,10) for i in self.x2]
+        pen2 = pg.mkPen(color = (0, 0, 255), width=1)
         self.data2 = self.graphWidget.plot(self.x2, self.x2, pen = pen2)
+    
+    #def list_port(self):
+        #ports = list(serial.tools.list_ports.comports())
+        #for p in ports:
+            #if "Arduino" in p.description:
+                #self.port.addItems(p)
+        #print(p)
+
+    def list_port(self): #currently only works with genuine Arduinos due to parsing method
+        arduino_ports = [
+            p.device
+            for p in serial.tools.list_ports.comports()
+            if 'Arduino' in p.description  
+        ]
+        if not arduino_ports:
+            raise IOError("No Arduino found. Replug in USB cable and try again.")
+        self.port.addItems(arduino_ports)
+    
+    def options_menu(self):
+        
+        #Fixed Dialog Menu (cannot interact with the main widget)
+        self.options_dialog = QDialog()
+        self.options_dialog.setModal(True)
+        
+        #Unfixed Dialog Menu (can interact with the main widget)
+        #options_dialog = QDialog(self)
+        #options_dialog.show()
+
+        self.options_dialog.setWindowTitle("Options")
+        self.options_dialog.resize(600,400)
+        self.port = QLabel("Ports")
+        self.port = QComboBox(self.options_dialog)
+        self.list_port()
+
+        
+        
+        self.options_dialog.exec()
 
 def main():
     app = QApplication(sys.argv)
