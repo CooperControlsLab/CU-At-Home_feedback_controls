@@ -1,8 +1,11 @@
 import sys 
 import os
 import time
-from PyQt5.QtWidgets import QApplication, QPushButton, QWidget, QComboBox, QHBoxLayout, QVBoxLayout, QFormLayout, QCheckBox, QButtonGroup, QDialog, QLabel
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QRegExpValidator
+from PyQt5.QtWidgets import (QApplication, QPushButton, QWidget, QComboBox, 
+QHBoxLayout, QVBoxLayout, QFormLayout, QCheckBox, QButtonGroup, QDialog, 
+QLabel, QLineEdit, QDialogButtonBox)
+from PyQt5.QtCore import Qt, QTimer, QRegExp
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
 from random import randint
@@ -12,12 +15,13 @@ import serial.tools.list_ports
 class Dialog1(QDialog):
     def __init__(self, *args, **kwargs):
         super(Dialog1, self).__init__(*args, **kwargs)
+        
         self.title = "Options"
         self.setWindowTitle(self.title)        
         self.setModal(True)
 
         self.width = 200
-        self.height = 300
+        self.height = 200
         self.setFixedSize(self.width, self.height)
 
         self.initUI()
@@ -36,11 +40,60 @@ class Dialog1(QDialog):
         #self.port.resize(self.port.sizeHint())
         #self.port.move(100,50) #(x,-y) relative to the top left corner of window
         self.port.setStyleSheet("font-size:12pt;")
-        
         self.list_port()
 
+
+        self.baudrate_label = QLabel("Baud Rate:",self)
+        self.baudrate_label.setStyleSheet("font-size:12pt;")
+
+        self.baudrate = QComboBox(self)
+        self.baudrate.setFixedWidth(100)
+        self.baudrate.addItems(["4800","9600","14400"])
+        self.baudrate.setStyleSheet("font-size:12pt;")
+        
+        
+        self.timeout_label = QLabel("Timeout:",self)
+        self.timeout_label.setStyleSheet("font-size:12pt;")
+
+        self.timeout = QLineEdit(self)
+        self.timeout.setFixedWidth(100)
+        self.timeout.setStyleSheet("font-size:12pt;")
+        self.timeout.setText("1")
+
+        #For now, it will be 0-255 (FIX THIS IN FUTURE; Timeout in increments of 1s to 255s is weird)
+        regex = QRegExp("^([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$")
+        regex_validator_timeout = QRegExpValidator(regex,self)
+
+        self.timeout.setValidator(regex_validator_timeout)
+ 
+        
+        self.samplenum_label = QLabel("Sample #:",self)
+        self.samplenum_label.setStyleSheet("font-size:12pt;")
+
+        self.samplenum = QLineEdit(self)
+        self.samplenum.setFixedWidth(100)
+        self.samplenum.setStyleSheet("font-size:12pt;")
+        self.samplenum.setText("100")
+
+        #For now, it will be 0-255 (FIX THIS IN FUTURE; 0 samples makes no sense)
+        regex = QRegExp("^([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$")
+        regex_validator_samplenum = QRegExpValidator(regex,self)
+
+        self.samplenum.setValidator(regex_validator_samplenum)
+
+        #Ok and cancel button
+        buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttonBox.accepted.connect(self.accept)
+        buttonBox.rejected.connect(self.reject)
+       
         leftFormLayout.addRow(self.port_label,self.port)
+        leftFormLayout.addRow(self.baudrate_label,self.baudrate)
+        leftFormLayout.addRow(self.timeout_label,self.timeout)
+        leftFormLayout.addRow(self.samplenum_label,self.samplenum)
+        leftFormLayout.addRow(buttonBox)
+
         self.setLayout(mainLayout)
+
 
     def list_port(self): #currently only works with genuine Arduinos due to parsing method
         arduino_ports = [
@@ -51,6 +104,7 @@ class Dialog1(QDialog):
         if not arduino_ports:
             raise IOError("No Arduino found. Replug in USB cable and try again.")
         self.port.addItems(arduino_ports)
+        #pass
 
     #def list_port(self):
         #ports = list(serial.tools.list_ports.comports())
@@ -59,12 +113,35 @@ class Dialog1(QDialog):
                 #self.port.addItems(p)
         #print(p)
 
+    def getDialogValues(self):
+        if self.exec_() == QDialog.Accepted:
+            self.com_value = str(self.port.currentText())
+            self.baudrate_value = str(self.baudrate.currentText())
+            self.timeout_value = int(self.timeout.text())
+            self.samplenum_value = int(self.samplenum.text())
+
+            global ser 
+            ser = serial.Serial(self.com_value, baudrate = self.baudrate_value, timeout = self.timeout_value)
+            
+            global pyqtgraph_samples
+            pyqtgraph_samples = self.samplenum_value
+            
+            print(self.com_value)
+            print(self.baudrate_value)
+            print(self.timeout_value)
+            print(self.samplenum_value)
+            return self.baudrate_value, self.timeout_value, self.samplenum_value
+
+        else:
+            print("bye")
+    
+
 class Window(QWidget):
     def __init__(self, *args, **kwargs):
         super(Window, self).__init__(*args, **kwargs)
         
         #Application Title
-        self.title = "Controlling Multiple Plots"
+        self.title = "Drone Control"
         self.setWindowTitle(self.title)
 
         #Application Size
@@ -89,25 +166,33 @@ class Window(QWidget):
         self.startbutton.setCheckable(False)  
         self.startbutton.clicked.connect(self.startbutton_pushed)
         self.startbutton.resize(100,20)
+        self.startbutton.setFixedWidth(100)
 
         self.stopbutton = QPushButton("Stop",self)
         self.stopbutton.setCheckable(False)  
         self.stopbutton.clicked.connect(self.stopbutton_pushed)
         self.stopbutton.resize(100,20)
+        self.stopbutton.setFixedWidth(100)
 
         self.clearbutton = QPushButton("Clear",self)
         self.clearbutton.setCheckable(False)
         self.clearbutton.clicked.connect(self.clearbutton_pushed)
         self.clearbutton.resize(100,20)
+        self.clearbutton.setFixedWidth(100)
 
         self.savebutton = QPushButton("Save",self)
         self.savebutton.setCheckable(False)
         #self.savebutton.clicked.connect(self.savebutton_pushed)
         self.savebutton.resize(100,20)        
+        self.savebutton.setFixedWidth(100)
 
-        self.plotall = QCheckBox("All Plots", self)
-        self.plotall.setChecked(True)
-        self.plotall.toggled.connect(self.visibility_all)
+        self.showall = QCheckBox("Show All Plots", self)
+        self.showall.setChecked(True)
+        self.showall.toggled.connect(self.visibility_all)
+
+        self.hideall = QCheckBox("Hide All Plots", self)
+        self.hideall.setChecked(False)
+        self.hideall.toggled.connect(self.hide_all)
 
         self.plot1 = QCheckBox("Plot 1", self)
         #self.plot1.setChecked(True)
@@ -122,10 +207,10 @@ class Window(QWidget):
 
         #Buttongroup
         self.group1 = QButtonGroup()
-        self.group1.addButton(self.plotall)
+        self.group1.addButton(self.showall)
         self.group1.addButton(self.plot1)
         self.group1.addButton(self.plot2)
-        self.group1.setId(self.plotall, 0)
+        self.group1.setId(self.showall, 0)
         self.group1.setId(self.plot1, 1)
         self.group1.setId(self.plot2, 2)
             
@@ -155,7 +240,8 @@ class Window(QWidget):
         leftFormLayout.addRow(self.startbutton,self.stopbutton)
         leftFormLayout.addRow(self.clearbutton,self.savebutton)
         leftFormLayout.addRow(self.options)
-        leftFormLayout.addRow(self.plotall)
+        leftFormLayout.addRow(self.showall)
+        leftFormLayout.addRow(self.hideall)
         leftFormLayout.addRow(self.plot1)
         leftFormLayout.addRow(self.plot2)
         leftFormLayout.addRow(self.plot3)
@@ -163,7 +249,7 @@ class Window(QWidget):
 
         #Plot time update settings
         self.setLayout(mainLayout)
-        self.timer=QTimer()
+        self.timer = QTimer()
         self.timer.setInterval(50) #Changes the plot speed
         
         try:
@@ -186,7 +272,8 @@ class Window(QWidget):
         self.timer.start()
         self.plotting1()
         self.plotting2()
-       
+        self.startbutton.clicked.disconnect(self.startbutton_pushed)
+
     #Stop Button
     def stopbutton_pushed(self):
         self.timer.stop()
@@ -199,6 +286,7 @@ class Window(QWidget):
         #self.graphWidget.setXRange(0, 100, padding=0) #Doesn't move with the plot. Can drag around
         #self.graphWidget.setLimits(xMin=0, xMax=100)#, yMin=c, yMax=d) #Doesn't move with the plot. Cannot drag around
         self.graphWidget.enableAutoRange(axis=None, enable=True, x=None, y=None)
+        self.startbutton.clicked.connect(self.startbutton_pushed)
 
     def update_plot_data1(self):
         self.x1 = self.x1[1:]  
@@ -217,14 +305,23 @@ class Window(QWidget):
         self.data2.setData(self.x2, self.y2)      
 
     def visibility_all(self):
-        testall = self.sender()
-        if testall.isChecked() == True:
+        showall = self.sender()
+        if showall.isChecked() == True:
             self.data1.setVisible(True)
             self.data2.setVisible(True)
         #elif testall.isCheck() == False:
         #    self.data1.setVisible(False)
-        #    self.data2.setVisible(False)        
+        #    self.data2.setVisible(False)  
 
+    def hide_all(self):
+        disappearall = self.sender()
+        if disappearall.isChecked() == True:
+            self.data1.setVisible(False)
+            self.data2.setVisible(False)
+        #elif testall.isCheck() == False:
+        #    self.data1.setVisible(False)
+        #    self.data2.setVisible(False)  
+              
     def visibility1(self):
         test1 = self.sender()
         if test1.isChecked() == True:
@@ -252,12 +349,17 @@ class Window(QWidget):
         self.x2 = list(range(100))
         #self.y2 = [1 for i in self.x2]
         self.y2 = [randint(-10,10) for i in self.x2]
-        pen2 = pg.mkPen(color = (0, 0, 255), width=1)
+        pen2 = pg.mkPen(color = (0, 255, 0), width=1)
         self.data2 = self.graphWidget.plot(self.x2, self.x2, pen = pen2)
     
     def options_menu(self):
-        self.options_popup = Dialog1(self)
+        self.options_popup = Dialog1()
         self.options_popup.show()
+        #self.options_popup.exec()
+        self.options_popup.getDialogValues()
+
+        
+
 
 def main():
     app = QApplication(sys.argv)
