@@ -189,11 +189,11 @@ class Window(QWidget):
 
         self.checkBoxShowAll = QCheckBox("Show All Plots", self)
         self.checkBoxShowAll.setChecked(True)
-        self.checkBoxShowAll.toggled.connect(self.visibility_all)
+        self.checkBoxShowAll.toggled.connect(self.visibilityAll)
 
         self.checkBoxHideAll = QCheckBox("Hide All Plots", self)
         self.checkBoxHideAll.setChecked(False)
-        self.checkBoxHideAll.toggled.connect(self.hide_all)
+        self.checkBoxHideAll.toggled.connect(self.hideAll)
 
         self.checkBoxPlot1 = QCheckBox("Plot 1", self)
         self.checkBoxPlot1.toggled.connect(self.visibility1)
@@ -201,11 +201,14 @@ class Window(QWidget):
         self.checkBoxPlot2 = QCheckBox("Plot 2", self)
         self.checkBoxPlot2.toggled.connect(self.visibility2)
 
+        #self.checkBoxPlot3 = QCheckBox("Plot 3", self)
+        #self.checkBoxPlot3.toggled.connect(self.visibility3)
+
         self.checkBoxShowAll.stateChanged.connect(self.checkbox_logic) 
         self.checkBoxHideAll.stateChanged.connect(self.checkbox_logic) 
         self.checkBoxPlot1.stateChanged.connect(self.checkbox_logic) 
         self.checkBoxPlot2.stateChanged.connect(self.checkbox_logic) 
-
+        #self.checkBoxPlot3.stateChanged.connect(self.checkbox_logic) 
 
         self.settings = QPushButton("Settings",self)
         self.settings.clicked.connect(self.settingsMenu)
@@ -219,8 +222,8 @@ class Window(QWidget):
         #self.group1.setId(self.plot1, 1)
         #self.group1.setId(self.plot2, 2)
             
-        self.plot3 = QComboBox()
-        self.plot3.addItems(["Sine","Step","Square"])
+        self.inputForms = QComboBox()
+        self.inputForms.addItems(["Sine","Step","Square"])
 
         #Creates Plotting Widget        
         self.graphWidget = pg.PlotWidget()
@@ -249,7 +252,8 @@ class Window(QWidget):
         leftFormLayout.addRow(self.checkBoxHideAll)
         leftFormLayout.addRow(self.checkBoxPlot1)
         leftFormLayout.addRow(self.checkBoxPlot2)
-        leftFormLayout.addRow(self.plot3)
+        #leftFormLayout.addRow(self.checkBoxPlot3)
+        leftFormLayout.addRow(self.inputForms)
         rightLayout.addWidget(self.graphWidget)
 
         #Plot time update settings
@@ -258,17 +262,17 @@ class Window(QWidget):
         self.timer.setInterval(50) #Changes the plot speed
         
         try:
-            self.timer.timeout.connect(self.update_plot_data1)
+            self.timer.timeout.connect(self.updatePlot1)
         except:
             raise Exception("Missing 1")
 
         try:
-            self.timer.timeout.connect(self.update_plot_data2)
+            self.timer.timeout.connect(self.updatePlot2)
         except:
             raise Exception("Missing 2")
 
         try: 
-            self.timer.timeout.connect(self.update_plot_data3)
+            self.timer.timeout.connect(self.updatePlot3)
         except:
             raise Exception("Missing 3")
 
@@ -302,13 +306,18 @@ class Window(QWidget):
                 self.checkBoxShowAll.setChecked(False) 
                 self.checkBoxHideAll.setChecked(False)
                 self.checkBoxPlot1.setChecked(False)
+
+            #elif self.sender() == self.checkBoxPlot3:
+            #    self.checkBoxShowAll.setChecked(False) 
+            #    self.checkBoxHideAll.setChecked(False)
+            #    self.checkBoxPlot1.setChecked(False)
     
     #Start Button
     def startbutton_pushed(self):
         self.timer.start()
         self.plotting1()
         self.plotting2()
-        self.plotting3()
+        self.invisiblePlot()
         self.startbutton.clicked.disconnect(self.startbutton_pushed)
 
     #Stop Button
@@ -325,39 +334,41 @@ class Window(QWidget):
         self.graphWidget.enableAutoRange(axis=None, enable=True, x=None, y=None)
         self.startbutton.clicked.connect(self.startbutton_pushed)
 
-    def update_plot_data1(self):
+    def updatePlot1(self):
         self.x1 = self.x1[1:]  
         self.x1.append(self.x1[-1] + 1)  
         self.y1 = self.y1[1:]  
         self.y1.append(randint(-10,10))
         self.data1.setData(self.x1, self.y1)  
     
-    def update_plot_data2(self):
+    def updatePlot2(self):
         self.x2 = self.x2[1:]  
         self.x2.append(self.x2[-1] + 1)  
         self.y2 = self.y2[1:]   
         self.y2.append(randint(-10,10))
         self.data2.setData(self.x2, self.y2)      
 
-    def update_plot_data3(self):
-        self.x3 = self.x2[1:]  
-        self.x3.append(self.x2[-1] + 1)  
-        self.y3 = self.y2[1:]    
+    def updatePlot3(self):
+        self.x3 = self.x3[1:]  
+        self.x3.append(self.x3[-1] + 1)  
+        self.y3 = self.y3[1:]    
         self.y3.append(np.nan)
         self.data3.setData(self.x3, self.y3) 
 
-    def visibility_all(self):
+    def visibilityAll(self):
         showall = self.sender()
         if showall.isChecked() == True:
             self.data1.setVisible(True)
             self.data2.setVisible(True) 
+            #self.data3.setVisible(True)
 
-    def hide_all(self):
+    def hideAll(self):
         disappearall = self.sender()
         if disappearall.isChecked() == True:
             self.data1.setVisible(False)
             self.data2.setVisible(False)
-              
+            #self.data3.setVisible(False)  
+
     def visibility1(self):
         test1 = self.sender()
         if test1.isChecked() == True:
@@ -369,6 +380,10 @@ class Window(QWidget):
         if test2.isChecked() == True:
             self.data2.setVisible(True)
             self.data1.setVisible(False)
+
+    #def visibility3(self):
+        #test3 = self.sender()
+        #if test3.isChecked() == True:
 
     def plotting1(self):
         self.x1 = list(range(100)) 
@@ -382,10 +397,15 @@ class Window(QWidget):
         pen2 = pg.mkPen(color = (0, 255, 0), width=1)
         self.data2 = self.graphWidget.plot(self.x2, self.y2, pen = pen2)
 
-    def plotting3(self):
+    #def plotting3(self):
+        #self.x3 = list(range(100))
+        #self.y3 = [randint(-10,10) for i in self.x3]
+        #pen3 = pg.mkPen(color = (255, 255, 255), width=1)
+        #self.data3 = self.graphWidget.plot(self.x3, self.x3, pen = pen3)
+
+    def invisiblePlot(self):
         self.x3 = list(range(100))
-        self.y3 = [1 for i in self.x3]
-        #pen3 = pg.mkPen(color = (12, 65, 64), width=1)
+        self.y3 = [0 for i in self.x3]
         self.data3 = self.graphWidget.plot(self.x3, self.y3, connect="finite", pen = None)
 
     def settingsMenu(self):
