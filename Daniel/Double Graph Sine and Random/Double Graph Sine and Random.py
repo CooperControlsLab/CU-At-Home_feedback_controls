@@ -4,7 +4,7 @@ import time
 from PyQt5.QtGui import QRegExpValidator, QDoubleValidator
 from PyQt5.QtWidgets import (QApplication, QPushButton, QWidget, QComboBox, 
 QHBoxLayout, QVBoxLayout, QFormLayout, QCheckBox, QButtonGroup, QDialog, 
-QLabel, QLineEdit, QDialogButtonBox)
+QLabel, QLineEdit, QDialogButtonBox, QFileDialog)
 from PyQt5.QtCore import Qt, QTimer, QRegExp
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
@@ -13,12 +13,8 @@ import serial
 import serial.tools.list_ports
 import numpy as np
 import psutil
+import csv
 
-
-#count = 0
-#x = list()
-#y1 = list()
-#y2 = list()
 
 class Dialog1(QDialog):
     def __init__(self, *args, **kwargs):
@@ -170,7 +166,7 @@ class Window(QWidget):
 
         self.savebutton = QPushButton("Save",self)
         self.savebutton.setCheckable(False)
-        #self.savebutton.clicked.connect(self.savebutton_pushed)
+        self.savebutton.clicked.connect(self.savebutton_pushed)
         self.savebutton.resize(100,20)        
         self.savebutton.setFixedWidth(100)
 
@@ -199,21 +195,13 @@ class Window(QWidget):
 
         self.settings = QPushButton("Settings",self)
         self.settings.clicked.connect(self.settingsMenu)
-
-        #Buttongroup
-        #self.group1 = QButtonGroup()
-        #self.group1.addButton(self.showall)
-        #self.group1.addButton(self.plot1)
-        #self.group1.addButton(self.plot2)
-        #self.group1.setId(self.showall, 0)
-        #self.group1.setId(self.plot1, 1)
-        #self.group1.setId(self.plot2, 2)
             
         self.inputForms = QComboBox()
         self.inputForms.addItems(["Sine","Step","Square"])
 
         #Creates Plotting Widget        
         self.graphWidget = pg.PlotWidget()
+        self.graphWidget1 = pg.PlotWidget()
         #state = self.graphWidget.getState()
 
         #Adds grid lines
@@ -239,9 +227,10 @@ class Window(QWidget):
         leftFormLayout.addRow(self.checkBoxHideAll)
         leftFormLayout.addRow(self.checkBoxPlot1)
         leftFormLayout.addRow(self.checkBoxPlot2)
-        #leftFormLayout.addRow(self.checkBoxPlot3)
         leftFormLayout.addRow(self.inputForms)
         rightLayout.addWidget(self.graphWidget)
+        rightLayout.addWidget(self.graphWidget1)
+
         self.setLayout(mainLayout)
         
         #Plot time update settings
@@ -281,10 +270,6 @@ class Window(QWidget):
                 self.checkBoxHideAll.setChecked(False)
                 self.checkBoxPlot1.setChecked(False)
 
-            #elif self.sender() == self.checkBoxPlot3:
-            #    self.checkBoxShowAll.setChecked(False) 
-            #    self.checkBoxHideAll.setChecked(False)
-            #    self.checkBoxPlot1.setChecked(False)
     
     #Button/Checkbox Connections
     #Start Button
@@ -321,7 +306,7 @@ class Window(QWidget):
         self.graphWidget.clear()
         self.graphWidget.enableAutoRange(axis=None, enable=True, x=None, y=None)
         self.startbutton.clicked.connect(self.startbutton_pushed)
-
+    
     def initialState(self):
         self.x = list(range(25)) #waits for x, y1, and y2 to be 0-99 samples
         #self.x = list()
@@ -329,6 +314,22 @@ class Window(QWidget):
         self.y2 = list()
         global count
         count = 25
+
+    def savebutton_pushed(self):
+        self.createCSV()
+        path = QFileDialog.getSaveFileName(self, 'Save CSV', os.getenv('HOME'), 'CSV(*.csv)')
+        if path[0] != '':
+            with open(path[0], 'w', newline = '') as csvfile:
+                csvwriter = csv.writer(csvfile)
+                csvwriter.writerow(self.header)
+                csvwriter.writerows(self.data_set)
+    
+    def createCSV(self):
+        # DUMMY DATA. Actual data will be from the readValues() function
+        self.xtest = [_ for _ in range(0,10)]
+        self.ytest = [_**2 for _ in range(0,10)]
+        self.header = ['x', 'y']
+        self.data_set = zip(self.xtest,self.ytest)
 
     def readValues(self):
         #print(self.serial_values)
@@ -357,7 +358,7 @@ class Window(QWidget):
             self.y2.append(float(arduinoData[1]))
 
 
-        print(psutil.virtual_memory())
+            print(count,psutil.virtual_memory())
 
 
     def visibilityAll(self):
