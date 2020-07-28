@@ -43,7 +43,6 @@ class Dialog1(QDialog):
         self.port.setStyleSheet("font-size:12pt;")
         self.list_port()
 
-
         self.baudrate_label = QLabel("Baud Rate:",self)
         self.baudrate_label.setStyleSheet("font-size:12pt;")
 
@@ -52,7 +51,6 @@ class Dialog1(QDialog):
         #self.baudrate.addItems(["4800","9600","14400"])
         self.baudrate.addItems(["9600","14400"])
         self.baudrate.setStyleSheet("font-size:12pt;")
-        
         
         self.timeout_label = QLabel("Timeout:",self)
         self.timeout_label.setStyleSheet("font-size:12pt;")
@@ -274,6 +272,7 @@ class Window(QWidget):
     #Button/Checkbox Connections
     #Start Button
     def startbutton_pushed(self):
+        self.initialState()
         self.ser = serial.Serial(port = self.serial_values[0], 
                                  baudrate = self.serial_values[1],
                                  timeout = self.serial_values[2])
@@ -299,7 +298,7 @@ class Window(QWidget):
             print(len(self.y2))
         except:
             print("Missing y2")
-        self.initialState()
+        #self.initialState()
 
     #Clear Button
     def clearbutton_pushed(self):
@@ -307,14 +306,6 @@ class Window(QWidget):
         self.graphWidget.enableAutoRange(axis=None, enable=True, x=None, y=None)
         self.startbutton.clicked.connect(self.startbutton_pushed)
     
-    def initialState(self):
-        self.x = list(range(25)) #waits for x, y1, and y2 to be 0-99 samples
-        #self.x = list()
-        self.y1 = list()
-        self.y2 = list()
-        global count
-        count = 25
-
     def savebutton_pushed(self):
         self.createCSV()
         path = QFileDialog.getSaveFileName(self, 'Save CSV', os.getenv('HOME'), 'CSV(*.csv)')
@@ -325,11 +316,17 @@ class Window(QWidget):
                 csvwriter.writerows(self.data_set)
     
     def createCSV(self):
-        # DUMMY DATA. Actual data will be from the readValues() function
-        self.xtest = [_ for _ in range(0,10)]
-        self.ytest = [_**2 for _ in range(0,10)]
-        self.header = ['x', 'y']
-        self.data_set = zip(self.xtest,self.ytest)
+        # INCOMPLETE DATA. Saves only 25 points in all arrays.
+        self.header = ['x', 'y1', 'y2']
+        self.data_set = zip(self.x,self.y1,self.y2)
+
+    def initialState(self):
+        self.x = list(range(25)) #waits for x, y1, and y2 to be 0-99 samples
+        #self.x = list()
+        self.y1 = list()
+        self.y2 = list()
+        global count
+        count = 25
 
     def readValues(self):
         #print(self.serial_values)
