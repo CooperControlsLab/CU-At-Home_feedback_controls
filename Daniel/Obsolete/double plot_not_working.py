@@ -1,24 +1,17 @@
 import sys 
 import os
 import time
-from PyQt5.QtGui import QRegExpValidator, QDoubleValidator
+from PyQt5.QtGui import QRegExpValidator
 from PyQt5.QtWidgets import (QApplication, QPushButton, QWidget, QComboBox, 
 QHBoxLayout, QVBoxLayout, QFormLayout, QCheckBox, QButtonGroup, QDialog, 
-QLabel, QLineEdit, QDialogButtonBox, QFileDialog)
-from PyQt5.QtCore import Qt, QTimer, QRegExp, QCoreApplication
+QLabel, QLineEdit, QDialogButtonBox)
+from PyQt5.QtCore import Qt, QTimer, QRegExp
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
 from random import randint
 import serial
 import serial.tools.list_ports
 import numpy as np
-import psutil
-import csv
-
-#Fixes Scaling for high resolution monitors
-if hasattr(Qt, 'AA_EnableHighDpiScaling'):
-    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-    QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
 
 class Dialog1(QDialog):
     def __init__(self, *args, **kwargs):
@@ -40,21 +33,25 @@ class Dialog1(QDialog):
         mainLayout.addLayout(leftFormLayout,100)
 
         self.port_label = QLabel("Ports:",self)
+        #self.port_label.move(40,55) #(x,-y) relative to the top left corner of window
         self.port_label.setStyleSheet("font-size:12pt;")
         
         self.port = QComboBox(self)
         self.port.setFixedWidth(100)
+        #self.port.resize(self.port.sizeHint())
+        #self.port.move(100,50) #(x,-y) relative to the top left corner of window
         self.port.setStyleSheet("font-size:12pt;")
         self.list_port()
+
 
         self.baudrate_label = QLabel("Baud Rate:",self)
         self.baudrate_label.setStyleSheet("font-size:12pt;")
 
         self.baudrate = QComboBox(self)
         self.baudrate.setFixedWidth(100)
-        #self.baudrate.addItems(["4800","9600","14400"])
-        self.baudrate.addItems(["9600","14400"])
+        self.baudrate.addItems(["4800","9600","14400"])
         self.baudrate.setStyleSheet("font-size:12pt;")
+        
         
         self.timeout_label = QLabel("Timeout:",self)
         self.timeout_label.setStyleSheet("font-size:12pt;")
@@ -62,14 +59,14 @@ class Dialog1(QDialog):
         self.timeout = QLineEdit(self)
         self.timeout.setFixedWidth(100)
         self.timeout.setStyleSheet("font-size:12pt;")
-        self.timeout.setText("2")
+        self.timeout.setText("1")
 
         #For now, it will be 0-255 (FIX THIS IN FUTURE; Timeout in increments of 1s to 255s is weird)
-        #regex = QRegExp("^([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$")
-        #regex_validator_timeout = QRegExpValidator(regex,self)
+        regex = QRegExp("^([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$")
+        regex_validator_timeout = QRegExpValidator(regex,self)
 
-        #self.timeout.setValidator(regex_validator_timeout)
-        self.timeout.setValidator(QDoubleValidator())
+        self.timeout.setValidator(regex_validator_timeout)
+
         
         self.samplenum_label = QLabel("Sample #:",self)
         self.samplenum_label.setStyleSheet("font-size:12pt;")
@@ -108,15 +105,32 @@ class Dialog1(QDialog):
         if not arduino_ports:
             raise IOError("No Arduino found. Replug in USB cable and try again.")
         self.port.addItems(arduino_ports)
+        #pass
 
+    #def list_port(self):
+        #ports = list(serial.tools.list_ports.comports())
+        #for p in ports:
+            #if "Arduino" in p.description:
+                #self.port.addItems(p)
+        #print(p)
 
     def getDialogValues(self):
         if self.exec_() == QDialog.Accepted:
             self.com_value = str(self.port.currentText())
             self.baudrate_value = str(self.baudrate.currentText())
-            self.timeout_value = float(self.timeout.text())
+            self.timeout_value = int(self.timeout.text())
             self.samplenum_value = int(self.samplenum.text())
-            return([self.com_value, self.baudrate_value, self.timeout_value, self.samplenum_value])
+            global ser
+            ser = serial.Serial(self.com_value, baudrate = self.baudrate_value, timeout = self.timeout_value)
+            
+            global pyqtgraph_samples
+            pyqtgraph_samples = self.samplenum_value
+            
+            print(self.com_value)
+            print(self.baudrate_value)
+            print(self.timeout_value)
+            print(self.samplenum_value)
+            return self.baudrate_value, self.timeout_value, self.samplenum_value
 
         else:
             print("Settings Menu Closed")
@@ -125,7 +139,8 @@ class Dialog1(QDialog):
 class Window(QWidget):
     def __init__(self, *args, **kwargs):
         super(Window, self).__init__(*args, **kwargs)
-        
+        self.first_handshake = True
+
         #Application Title
         self.title = "Drone Control"
         self.setWindowTitle(self.title)
@@ -168,7 +183,7 @@ class Window(QWidget):
 
         self.savebutton = QPushButton("Save",self)
         self.savebutton.setCheckable(False)
-        self.savebutton.clicked.connect(self.savebutton_pushed)
+        #self.savebutton.clicked.connect(self.savebutton_pushed)
         self.savebutton.resize(100,20)        
         self.savebutton.setFixedWidth(100)
 
@@ -197,13 +212,21 @@ class Window(QWidget):
 
         self.settings = QPushButton("Settings",self)
         self.settings.clicked.connect(self.settingsMenu)
+
+        #Buttongroup
+        #self.group1 = QButtonGroup()
+        #self.group1.addButton(self.showall)
+        #self.group1.addButton(self.plot1)
+        #self.group1.addButton(self.plot2)
+        #self.group1.setId(self.showall, 0)
+        #self.group1.setId(self.plot1, 1)
+        #self.group1.setId(self.plot2, 2)
             
         self.inputForms = QComboBox()
         self.inputForms.addItems(["Sine","Step","Square"])
 
         #Creates Plotting Widget        
         self.graphWidget = pg.PlotWidget()
-        self.graphWidget1 = pg.PlotWidget()
         #state = self.graphWidget.getState()
 
         #Adds grid lines
@@ -229,17 +252,15 @@ class Window(QWidget):
         leftFormLayout.addRow(self.checkBoxHideAll)
         leftFormLayout.addRow(self.checkBoxPlot1)
         leftFormLayout.addRow(self.checkBoxPlot2)
+        #leftFormLayout.addRow(self.checkBoxPlot3)
         leftFormLayout.addRow(self.inputForms)
         rightLayout.addWidget(self.graphWidget)
-        rightLayout.addWidget(self.graphWidget1)
 
-        self.setLayout(mainLayout)
-        
         #Plot time update settings
+        self.setLayout(mainLayout)
         self.timer = QTimer()
         self.timer.setInterval(50) #Changes the plot speed
-        self.initialState()
-        time.sleep(2)
+
         try:
             self.timer.timeout.connect(self.updatePlot1)
         except:
@@ -248,6 +269,12 @@ class Window(QWidget):
             self.timer.timeout.connect(self.updatePlot2)
         except:
             raise Exception("Missing 2")
+
+        try: 
+            self.timer.timeout.connect(self.updatePlot3)
+        except:
+            raise Exception("Missing 3")
+
         #self.show()
 
     #Checkbox logic
@@ -279,113 +306,103 @@ class Window(QWidget):
                 self.checkBoxHideAll.setChecked(False)
                 self.checkBoxPlot1.setChecked(False)
 
+            #elif self.sender() == self.checkBoxPlot3:
+            #    self.checkBoxShowAll.setChecked(False) 
+            #    self.checkBoxHideAll.setChecked(False)
+            #    self.checkBoxPlot1.setChecked(False)
     
-    #Button/Checkbox Connections
     #Start Button
     def startbutton_pushed(self):
-        self.initialState()
-        self.ser = serial.Serial(port = self.serial_values[0], 
-                                 baudrate = self.serial_values[1],
-                                 timeout = self.serial_values[2])
         self.timer.start()
         self.plotting1()
         self.plotting2()
+        self.invisiblePlot()
         self.startbutton.clicked.disconnect(self.startbutton_pushed)
 
     #Stop Button
     def stopbutton_pushed(self):
         self.timer.stop()
-        self.ser.close()
-        try:
-            print(self.x)
-            print(len(self.x))
-        except:
-            print("Missing x")
-        try:
-            print(self.y1)
-            print(len(self.y1))
-        except:
-            print("Missing y1")
-        try:
-            print(self.y2)
-            print(len(self.y2))
-        except:
-            print("Missing y2")
-        #self.initialState()
 
     #Clear Button
     def clearbutton_pushed(self):
         self.graphWidget.clear()
+        #self.graphWidget.setXRange(0, 100, padding=0)
+        #self.graphWidget.setYRange(0, 4, padding=0)
+        #self.graphWidget.setXRange(0, 100, padding=0) #Doesn't move with the plot. Can drag around
+        #self.graphWidget.setLimits(xMin=0, xMax=100)#, yMin=c, yMax=d) #Doesn't move with the plot. Cannot drag around
         self.graphWidget.enableAutoRange(axis=None, enable=True, x=None, y=None)
         self.startbutton.clicked.connect(self.startbutton_pushed)
-    
-    def savebutton_pushed(self):
-        self.createCSV()
-        path = QFileDialog.getSaveFileName(self, 'Save CSV', os.getenv('HOME'), 'CSV(*.csv)')
-        if path[0] != '':
-            with open(path[0], 'w', newline = '') as csvfile:
-                csvwriter = csv.writer(csvfile)
-                csvwriter.writerow(self.header)
-                csvwriter.writerows(self.data_set)
-    
-    def createCSV(self):
-        # INCOMPLETE DATA. Saves only 25 points in all arrays.
-        self.header = ['x1', 'y1', 'x2', 'y2']
-        self.data_set = zip(self.x1,self.y1,self.x2,self.y2)
 
-    def initialState(self):
-        self.x1 = list(range(25)) #waits for x, y1, and y2 to be 0-24 samples
-        self.x2 = list(range(25))
-        self.y1 = list()
-        self.y2 = list()
 
-    def readValues(self):
-        arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
-        return arduinoData
+# establish serial connection after UI initialize
+    ############### SERIAL COMM FUNCTIONS START ################### 
+    def hand_shake(self):
 
-    def plotting1(self):
-        a = self.readValues()
-        while len(self.y1) != 25:
-            self.y1.append(float(a[0]))
-        pen1 = pg.mkPen(color = (255, 0, 0), width=1)
-        self.data1 = self.graphWidget.plot(self.x1, self.y1, pen = pen1)
+        # establish handshake
+        # self.ser = serial.Serial("COM5",9600,timeout = 0.1)
+        
+        time.sleep(2)
+        ser.write(b'A')
+        print("Handshake sent")
+        value = ser.readline().decode()
+        print(value)
+        if(value == "Contact established"):
+            print("Hankshake success")
+            self.first_handshake = False
+        else:
+            print("Handshake failed")
 
-    def plotting2(self):
-        b = self.readValues()
-        while len(self.y2) != 25:
-            self.y2.append(float(b[0]))
-        pen2 = pg.mkPen(color = (0, 255, 0), width=1)
-        self.data2 = self.graphWidget.plot(self.x2, self.y2, pen = pen2)
+    def read_serial_value(self):
+        ser.write(b'B')
+        values = ser.readline().decode().replace('\r\n','')
+        values = values.split(",")
+        return values
+    ############### SERIAL COMM FUNCTIONS END #####################
+
 
     def updatePlot1(self):
-        a = self.readValues()
+        if(self.first_handshake):
+            print("First handshake")
+            self.hand_shake()
+        else:
+            values = self.read_serial_value()
         self.x1 = self.x1[1:]  
         self.x1.append(self.x1[-1] + 1)  
-        self.y1 = self.y1[1:]  
-        self.y1.append(float(a[0]))
+        self.y1 = self.y1[1:]
+        self.y1.append(values[0])
         self.data1.setData(self.x1, self.y1)  
-        #print(psutil.virtual_memory())
-
+    
     def updatePlot2(self):
-        b = self.readValues()
+        if(self.first_handshake):
+            self.hand_shake()
+        else:
+            values = self.read_serial_value()
         self.x2 = self.x2[1:]  
         self.x2.append(self.x2[-1] + 1)  
         self.y2 = self.y2[1:]   
-        self.y2.append(float(b[1]))
-        self.data2.setData(self.x2, self.y2) 
-        #print(psutil.virtual_memory())
+        self.y2.append(values[1])
+        self.data2.setData(self.x2, self.y2)      
+
+    def updatePlot3(self):
+        self.x3 = self.x3[1:]  
+        self.x3.append(self.x3[-1] + 1)  
+        self.y3 = self.y3[1:]    
+        self.y3.append(np.nan)
+        self.data3.setData(self.x3, self.y3) 
 
     def visibilityAll(self):
         showall = self.sender()
         if showall.isChecked() == True:
             self.data1.setVisible(True)
             self.data2.setVisible(True) 
+            #self.data3.setVisible(True)
 
     def hideAll(self):
         disappearall = self.sender()
         if disappearall.isChecked() == True:
             self.data1.setVisible(False)
             self.data2.setVisible(False)
+            #self.data3.setVisible(False)  
 
     def visibility1(self):
         test1 = self.sender()
@@ -399,11 +416,38 @@ class Window(QWidget):
             self.data2.setVisible(True)
             self.data1.setVisible(False)
 
+    #def visibility3(self):
+        #test3 = self.sender()
+        #if test3.isChecked() == True:
+
+    def plotting1(self):
+        self.x1 = list(range(100)) 
+        self.y1 = [randint(-10,10) for i in self.x1] 
+        pen1 = pg.mkPen(color = (255, 0, 0), width=1)
+        self.data1 = self.graphWidget.plot(self.x1, self.y1, pen = pen1)
+    
+    def plotting2(self):
+        self.x2 = list(range(100))
+        self.y2 = [randint(-10,10) for i in self.x2]
+        pen2 = pg.mkPen(color = (0, 255, 0), width=1)
+        self.data2 = self.graphWidget.plot(self.x2, self.y2, pen = pen2)
+
+    #def plotting3(self):
+        #self.x3 = list(range(100))
+        #self.y3 = [randint(-10,10) for i in self.x3]
+        #pen3 = pg.mkPen(color = (255, 255, 255), width=1)
+        #self.data3 = self.graphWidget.plot(self.x3, self.x3, pen = pen3)
+
+    def invisiblePlot(self):
+        self.x3 = list(range(100))
+        self.y3 = [0 for i in self.x3]
+        self.data3 = self.graphWidget.plot(self.x3, self.y3, connect="finite", pen = None)
+
     def settingsMenu(self):
         self.settingsPopUp = Dialog1()
         self.settingsPopUp.show()
         #self.settingsPopUp.exec()
-        self.serial_values = self.settingsPopUp.getDialogValues()
+        self.settingsPopUp.getDialogValues()
 
 def main():
     app = QApplication(sys.argv)
