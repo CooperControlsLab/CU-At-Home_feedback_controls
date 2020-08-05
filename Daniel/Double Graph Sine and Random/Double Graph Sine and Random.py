@@ -3,8 +3,8 @@ import os
 import time
 from PyQt5.QtGui import QRegExpValidator, QDoubleValidator
 from PyQt5.QtWidgets import (QApplication, QPushButton, QWidget, QComboBox, 
-QHBoxLayout, QVBoxLayout, QFormLayout, QCheckBox, QButtonGroup, QDialog, 
-QLabel, QLineEdit, QDialogButtonBox, QFileDialog)
+QHBoxLayout, QVBoxLayout, QFormLayout, QCheckBox, QGridLayout, QDialog, 
+QLabel, QLineEdit, QDialogButtonBox, QFileDialog, QSizePolicy)
 from PyQt5.QtCore import Qt, QTimer, QRegExp, QCoreApplication
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
@@ -14,6 +14,7 @@ import serial.tools.list_ports
 import numpy as np
 import psutil
 import csv
+import ctypes #monitor 
 
 #Fixes Scaling for high resolution monitors
 if hasattr(Qt, 'AA_EnableHighDpiScaling'):
@@ -143,10 +144,29 @@ class Window(QWidget):
     def initUI(self):
         self.setStyleSheet("font-size:12pt")
         mainLayout = QHBoxLayout()
+        """        
+        #leftMajor = QVBoxLayout()
+        leftMajor = QGridLayout()
+        leftMajor.setSpacing(20)
+        
+        leftFormLayout = QFormLayout() #only had this
+        gridtest = QGridLayout()
+        gridtest.setSpacing(10)
+
+        leftMajor.addLayout(leftFormLayout)
+        leftMajor.addLayout(gridtest)
+        
+        rightLayout = QVBoxLayout()
+        mainLayout.addLayout(leftMajor,20)
+        #mainLayout.addLayout(leftFormLayout,20)
+        mainLayout.addLayout(rightLayout,150)
+        """
+        mainLayout = QHBoxLayout()  
         leftFormLayout = QFormLayout()
         rightLayout = QVBoxLayout()
         mainLayout.addLayout(leftFormLayout,20)
         mainLayout.addLayout(rightLayout,150)
+        
 
         self.startbutton = QPushButton("Start",self)
         self.startbutton.setCheckable(False)  
@@ -186,20 +206,46 @@ class Window(QWidget):
         self.checkBoxPlot2 = QCheckBox("Plot 2", self)
         self.checkBoxPlot2.toggled.connect(self.visibility2)
 
-        #self.checkBoxPlot3 = QCheckBox("Plot 3", self)
-        #self.checkBoxPlot3.toggled.connect(self.visibility3)
+        self.AmplitudeLabel = QLabel("Amplitude",self)
+        self.AmplitudeInput = QLineEdit("",self)
+        self.AmplitudeInput.setValidator(QDoubleValidator())
+        #self.AmplitudeInput.conn
+
+        self.FrequencyLabel = QLabel("Frequency (Hz)",self)
+        self.FrequencyInput = QLineEdit("",self)
+        self.FrequencyInput.setValidator(QDoubleValidator())
+
+        self.PCheckBox = QCheckBox("P",self)
+        self.PCheckBox.setChecked(True)
+        self.PCheckBox.toggled.connect(self.PCheckBoxLogic)
+
+        self.PInput = QLineEdit("",self)
+        self.PInput.setValidator(QDoubleValidator())
+
+        self.ICheckBox = QCheckBox("I",self)
+        self.ICheckBox.setChecked(True)
+        self.ICheckBox.toggled.connect(self.ICheckBoxLogic)
+
+        self.IInput = QLineEdit("",self)    
+        self.IInput.setValidator(QDoubleValidator())
+
+        self.DCheckBox = QCheckBox("D",self)
+        self.DCheckBox.setChecked(True)
+        self.DCheckBox.toggled.connect(self.DCheckBoxLogic)
+        
+        self.DInput = QLineEdit("",self)
+        self.DInput.setValidator(QDoubleValidator())
 
         self.checkBoxShowAll.stateChanged.connect(self.checkbox_logic) 
         self.checkBoxHideAll.stateChanged.connect(self.checkbox_logic) 
         self.checkBoxPlot1.stateChanged.connect(self.checkbox_logic) 
         self.checkBoxPlot2.stateChanged.connect(self.checkbox_logic) 
-        #self.checkBoxPlot3.stateChanged.connect(self.checkbox_logic) 
 
         self.settings = QPushButton("Settings",self)
         self.settings.clicked.connect(self.settingsMenu)
             
         self.inputForms = QComboBox()
-        self.inputForms.addItems(["Sine","Step","Square"])
+        self.inputForms.addItems(["Sine","Step"])
 
         #Creates Plotting Widget        
         self.graphWidget = pg.PlotWidget()
@@ -215,7 +261,6 @@ class Window(QWidget):
         self.graphWidget.setYRange(-11, 11, padding=0)
         self.graphWidget.enableAutoRange()
 
-        
         #Changes background color of graph
         #self.graphWidget.setBackground('w')
         self.graphWidget.setBackground((0,0,0))
@@ -230,9 +275,22 @@ class Window(QWidget):
         leftFormLayout.addRow(self.checkBoxPlot1)
         leftFormLayout.addRow(self.checkBoxPlot2)
         leftFormLayout.addRow(self.inputForms)
+        leftFormLayout.addRow(self.AmplitudeLabel,self.AmplitudeInput)
+        leftFormLayout.addRow(self.FrequencyLabel,self.FrequencyInput)
+        leftFormLayout.addRow(self.PCheckBox,self.PInput)
+        leftFormLayout.addRow(self.ICheckBox,self.IInput)
+        leftFormLayout.addRow(self.DCheckBox,self.DInput)
+
         rightLayout.addWidget(self.graphWidget)
         rightLayout.addWidget(self.graphWidget1)
-
+        """
+        gridtest.addWidget(self.PCheckBox,0,0)
+        gridtest.addWidget(self.PInput,0,1)    
+        gridtest.addWidget(self.ICheckBox,1,0)
+        gridtest.addWidget(self.IInput,1,1)  
+        gridtest.addWidget(self.DCheckBox,2,0)
+        gridtest.addWidget(self.DInput,2,1)  
+        """
         self.setLayout(mainLayout)
         
         #Plot time update settings
@@ -279,7 +337,6 @@ class Window(QWidget):
                 self.checkBoxHideAll.setChecked(False)
                 self.checkBoxPlot1.setChecked(False)
 
-    
     #Button/Checkbox Connections
     #Start Button
     def startbutton_pushed(self):
@@ -404,6 +461,47 @@ class Window(QWidget):
         self.settingsPopUp.show()
         #self.settingsPopUp.exec()
         self.serial_values = self.settingsPopUp.getDialogValues()
+
+    def PCheckBoxLogic(self):
+        test1 = self.sender()
+        if test1.isChecked() == True:
+            self.PInput.setEnabled(True)
+        elif test1.isChecked() == False:
+            self.PInput.setEnabled(False)
+
+    def ICheckBoxLogic(self):
+        test1 = self.sender()
+        if test1.isChecked() == True:
+            self.IInput.setEnabled(True)
+        elif test1.isChecked() == False:
+            self.IInput.setEnabled(False)
+
+    def DCheckBoxLogic(self):
+        test1 = self.sender()
+        if test1.isChecked() == True:
+            self.DInput.setEnabled(True)
+        elif test1.isChecked() == False:
+            self.DInput.setEnabled(False)
+
+    def PIDInput(self):
+        if self.PInput.text() == "" or self.PCheckBox.checkState() == False:
+            self.Pvalue = 0
+        else:
+            self.Pvalue = self.PInput.text()
+
+        if self.IInput.text() == "" or self.ICheckBox.checkState() == False:
+            self.Ivalue = 0
+        else:
+            self.Ivalue = self.IInput.text()
+
+        if self.DInput.text() == "" or self.DCheckBox.checkState() == False:
+            self.Dvalue = 0
+        else:
+            self.Dvalue = self.DInput.text()
+        return([self.Pvalue, self.Ivalue, self.Dvalue])
+
+    def WriteValues(self):
+        pass
 
 def main():
     app = QApplication(sys.argv)
