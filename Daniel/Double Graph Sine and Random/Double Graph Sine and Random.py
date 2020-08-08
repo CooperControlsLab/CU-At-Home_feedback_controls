@@ -16,6 +16,8 @@ import psutil
 import csv
 import ctypes #monitor 
 
+#Drone: 2 inputs, 4 outputs
+#Pro Con: 1 input, 2 outputs
 #Fixes Scaling for high resolution monitors
 if hasattr(Qt, 'AA_EnableHighDpiScaling'):
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
@@ -246,25 +248,35 @@ class Window(QWidget):
             
         self.inputForms = QComboBox()
         self.inputForms.addItems(["Sine","Step"])
+        self.inputForms.activated.connect(self.getInput)
 
         #Creates Plotting Widget        
-        self.graphWidget = pg.PlotWidget()
-        self.graphWidget1 = pg.PlotWidget()
+        self.graphWidgetOutput = pg.PlotWidget()
+        self.graphWidgetInput = pg.PlotWidget()
         #state = self.graphWidget.getState()
 
         #Adds grid lines
-        self.graphWidget.showGrid(x = True, y = True, alpha=None)
+        self.graphWidgetOutput.showGrid(x = True, y = True, alpha=None)
+        self.graphWidgetInput.showGrid(x = True, y = True, alpha=None)
+
         #self.graphWidget.setXRange(0, 100, padding=0) #Doesn't move with the plot. Can drag around
         #self.graphWidget.setLimits(xMin=0, xMax=100)#, yMin=c, yMax=d) #Doesn't move with the plot. Cannot drag around
 
         #self.graphWidget.setYRange(0, 4, padding=0)
-        self.graphWidget.setYRange(-11, 11, padding=0)
-        self.graphWidget.enableAutoRange()
-
+        self.graphWidgetOutput.setYRange(-11, 11, padding=0)
+        self.graphWidgetOutput.enableAutoRange()
+        self.graphWidgetInput.setYRange(-11, 11, padding=0)
+        self.graphWidgetInput.enableAutoRange()
+        
         #Changes background color of graph
-        #self.graphWidget.setBackground('w')
-        self.graphWidget.setBackground((0,0,0))
+        self.graphWidgetOutput.setBackground((0,0,0))
+        self.graphWidgetInput.setBackground((0,0,0))
 
+        #Adds title to graphs
+        self.graphWidgetOutput.setTitle("Output", color="w", size="14pt")
+        self.graphWidgetInput.setTitle("Input", color="w", size="14pt")
+
+        
         #Positioning the buttons and checkboxes
         #leftFormLayout.setContentsMargins(70,100,10,10)
         leftFormLayout.addRow(self.startbutton,self.stopbutton)
@@ -281,8 +293,8 @@ class Window(QWidget):
         leftFormLayout.addRow(self.ICheckBox,self.IInput)
         leftFormLayout.addRow(self.DCheckBox,self.DInput)
 
-        rightLayout.addWidget(self.graphWidget)
-        rightLayout.addWidget(self.graphWidget1)
+        rightLayout.addWidget(self.graphWidgetOutput)
+        rightLayout.addWidget(self.graphWidgetInput)
         """
         gridtest.addWidget(self.PCheckBox,0,0)
         gridtest.addWidget(self.PInput,0,1)    
@@ -372,8 +384,9 @@ class Window(QWidget):
 
     #Clear Button
     def clearbutton_pushed(self):
-        self.graphWidget.clear()
-        self.graphWidget.enableAutoRange(axis=None, enable=True, x=None, y=None)
+        self.graphWidgetOutput.clear()
+        self.graphWidgetInput.clear()
+        self.graphWidgetOutput.enableAutoRange(axis=None, enable=True, x=None, y=None)
         self.startbutton.clicked.connect(self.startbutton_pushed)
     
     def savebutton_pushed(self):
@@ -391,10 +404,17 @@ class Window(QWidget):
         self.data_set = zip(self.x1,self.y1,self.x2,self.y2)
 
     def initialState(self):
+        #Windowed data. What is being shown on the graphs
         self.x1 = list(range(25)) #waits for x, y1, and y2 to be 0-24 samples
         self.x2 = list(range(25))
         self.y1 = list()
         self.y2 = list()
+
+        #Complete data. What will be written to the csv file
+        self.x1_full = list()
+        self.x2_full = list()
+        self.y1_full = list()
+        self.y2_full = list()
 
     def readValues(self):
         arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
@@ -405,14 +425,14 @@ class Window(QWidget):
         while len(self.y1) != 25:
             self.y1.append(float(a[0]))
         pen1 = pg.mkPen(color = (255, 0, 0), width=1)
-        self.data1 = self.graphWidget.plot(self.x1, self.y1, pen = pen1)
+        self.data1 = self.graphWidgetOutput.plot(self.x1, self.y1, pen = pen1)
 
     def plotting2(self):
         b = self.readValues()
         while len(self.y2) != 25:
             self.y2.append(float(b[0]))
         pen2 = pg.mkPen(color = (0, 255, 0), width=1)
-        self.data2 = self.graphWidget.plot(self.x2, self.y2, pen = pen2)
+        self.data2 = self.graphWidgetOutput.plot(self.x2, self.y2, pen = pen2)
 
     def updatePlot1(self):
         a = self.readValues()
@@ -502,6 +522,29 @@ class Window(QWidget):
 
     def WriteValues(self):
         pass
+
+    #Function that connects output pyqtgraph widget, and the combobox
+    def getInput(self):
+        self.inputType = str(self.inputForms.currentText())
+        pen_input = pg.mkPen(color = (255, 0, 0), width=1)
+
+        if self.inputType == "Sine":
+            print("Sine")
+            self.graphWidgetInput.clear()
+            self.x_input = np.arange(0,10,0.1)
+            self.y_input = np.sin(self.x_input)
+            self.data_input = self.graphWidgetInput.plot(self.x_input, self.y_input, pen = pen_input)
+            self.data_input.setData(self.x_input, self.y_input)  
+            self.graphWidgetInput.setYRange(-2, 2, padding=0)
+
+        elif self.inputType == "Step":
+            print("Step")
+            self.graphWidgetInput.clear()
+            self.x_input = np.arange(0,10,0.1)
+            self.y_input = np.heaviside(self.x_input,1)
+            self.data_input = self.graphWidgetInput.plot(self.x_input, self.y_input, pen = pen_input)
+            self.data_input.setData(self.x_input, self.y_input)
+            self.graphWidgetInput.setYRange(-2, 2, padding=0)
 
 def main():
     app = QApplication(sys.argv)
