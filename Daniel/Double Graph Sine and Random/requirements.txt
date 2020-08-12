@@ -1,0 +1,6 @@
+numpy==1.18.5
+PyQt5==5.15.0
+PyQt5-sip==12.8.0
+pyqtgraph==0.11.0
+pyserial==3.4
+QDarkStyle==2.8.1

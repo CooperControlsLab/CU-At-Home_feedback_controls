@@ -14,7 +14,7 @@ import serial.tools.list_ports
 import numpy as np
 import psutil
 import csv
-import ctypes #monitor 
+import qdarkstyle
 
 #Drone: 2 inputs, 4 outputs
 #Pro Con: 1 input, 2 outputs
@@ -23,6 +23,42 @@ if hasattr(Qt, 'AA_EnableHighDpiScaling'):
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
     QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
 
+class SerialComm:
+    def __init__(self, port, baudrate, timeout):
+        self.port = port
+        self.baudrate = baudrate
+        self.timeout = timeout    
+
+    def serialOpen(self):
+        self.ser = serial.Serial(port = self.port,
+                                 baudrate = self.baudrate,
+                                 timeout = self.timeout)
+        return(self.ser)
+    
+    """
+    handshake() method written for now. Will not have functionality yet.
+    """
+    def handshake(self):
+        self.ser.flushInput()
+        self.ser.write(b"A")
+        print("Handshake request sent")
+        response = self.ser.readline().decode().replace('\r\n','')
+        
+        if(response == "Contact established"):
+            print("Handshake success")
+        
+        else:
+            print("Handshake failed")
+            self.handshake()
+
+    def readValues(self):
+        arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
+        return arduinoData        
+    
+    def writeValues(self):
+        pass
+
+
 class Dialog1(QDialog):
     def __init__(self, *args, **kwargs):
         super(Dialog1, self).__init__(*args, **kwargs)
@@ -30,41 +66,41 @@ class Dialog1(QDialog):
         self.title = "Settings"
         self.setWindowTitle(self.title)        
         self.setModal(True)
-
         self.width = 200
         self.height = 200
         self.setFixedSize(self.width, self.height)
-
         self.initUI()
         
     def initUI(self):
+        self.setStyleSheet(qdarkstyle.load_stylesheet())
+
         mainLayout = QHBoxLayout() 
         leftFormLayout = QFormLayout()
         mainLayout.addLayout(leftFormLayout,100)
 
         self.port_label = QLabel("Ports:",self)
-        self.port_label.setStyleSheet("font-size:12pt;")
+        #self.port_label.setStyleSheet("font-size:12pt;")
         
         self.port = QComboBox(self)
         self.port.setFixedWidth(100)
-        self.port.setStyleSheet("font-size:12pt;")
+        #self.port.setStyleSheet("font-size:12pt;")
         self.list_port()
 
         self.baudrate_label = QLabel("Baud Rate:",self)
-        self.baudrate_label.setStyleSheet("font-size:12pt;")
+        #self.baudrate_label.setStyleSheet("font-size:12pt;")
 
         self.baudrate = QComboBox(self)
         self.baudrate.setFixedWidth(100)
         #self.baudrate.addItems(["4800","9600","14400"])
         self.baudrate.addItems(["9600","14400"])
-        self.baudrate.setStyleSheet("font-size:12pt;")
+        #self.baudrate.setStyleSheet("font-size:12pt;")
         
         self.timeout_label = QLabel("Timeout:",self)
-        self.timeout_label.setStyleSheet("font-size:12pt;")
+        #self.timeout_label.setStyleSheet("font-size:12pt;")
 
         self.timeout = QLineEdit(self)
         self.timeout.setFixedWidth(100)
-        self.timeout.setStyleSheet("font-size:12pt;")
+        #self.timeout.setStyleSheet("font-size:12pt;")
         self.timeout.setText("2")
 
         #For now, it will be 0-255 (FIX THIS IN FUTURE; Timeout in increments of 1s to 255s is weird)
@@ -75,11 +111,11 @@ class Dialog1(QDialog):
         self.timeout.setValidator(QDoubleValidator())
         
         self.samplenum_label = QLabel("Sample #:",self)
-        self.samplenum_label.setStyleSheet("font-size:12pt;")
+        #self.samplenum_label.setStyleSheet("font-size:12pt;")
 
         self.samplenum = QLineEdit(self)
         self.samplenum.setFixedWidth(100)
-        self.samplenum.setStyleSheet("font-size:12pt;")
+        #self.samplenum.setStyleSheet("font-size:12pt;")
         self.samplenum.setText("100")
 
         #For now, it will be 0-255 (FIX THIS IN FUTURE; 0 samples makes no sense)
@@ -140,11 +176,19 @@ class Window(QWidget):
         self.height = 700
         self.setGeometry(self.left, self.top, self.width, self.height)
         #self.setFixedSize(self.width,self.height)
-        
+
+
         self.initUI()
 
     def initUI(self):
-        self.setStyleSheet("font-size:12pt")
+        #self.setStyleSheet("font-size:12pt")
+
+        """
+        Change this to your current relative/absolute path. Will be fixed in final version.
+        """
+        #self.setStyleSheet(open(r".\Arduino\qdarkstyle\style.qss", "r").read()) #relaitve
+        #self.setStyleSheet(open(r"C:\Users\qwert\Desktop\Python VSCode\Arduino\qdarkstyle\style.qss", "r").read()) #absolute
+        self.setStyleSheet(qdarkstyle.load_stylesheet())
         mainLayout = QHBoxLayout()
         """        
         #leftMajor = QVBoxLayout()
@@ -245,6 +289,7 @@ class Window(QWidget):
 
         self.settings = QPushButton("Settings",self)
         self.settings.clicked.connect(self.settingsMenu)
+        #self.settings.setFixedWidth(205)
             
         self.inputForms = QComboBox()
         self.inputForms.addItems(["Sine","Step"])
