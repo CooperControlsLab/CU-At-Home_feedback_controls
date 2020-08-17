@@ -1,7 +1,7 @@
 import sys 
 import os
 import time
-from PyQt5.QtGui import QRegExpValidator, QDoubleValidator
+from PyQt5.QtGui import QRegExpValidator, QDoubleValidator, QPixmap
 from PyQt5.QtWidgets import (QApplication, QPushButton, QWidget, QComboBox, 
 QHBoxLayout, QVBoxLayout, QFormLayout, QCheckBox, QGridLayout, QDialog, 
 QLabel, QLineEdit, QDialogButtonBox, QFileDialog, QSizePolicy)
@@ -18,6 +18,7 @@ import qdarkstyle
 
 #Drone: 2 inputs, 4 outputs
 #Pro Con: 1 input, 2 outputs
+
 #Fixes Scaling for high resolution monitors
 if hasattr(Qt, 'AA_EnableHighDpiScaling'):
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
@@ -79,29 +80,22 @@ class Dialog1(QDialog):
         mainLayout.addLayout(leftFormLayout,100)
 
         self.port_label = QLabel("Ports:",self)
-        #self.port_label.setStyleSheet("font-size:12pt;")
         
         self.port = QComboBox(self)
         self.port.setFixedWidth(100)
-        #self.port.setStyleSheet("font-size:12pt;")
         self.list_port()
 
         self.baudrate_label = QLabel("Baud Rate:",self)
-        #self.baudrate_label.setStyleSheet("font-size:12pt;")
-
         self.baudrate = QComboBox(self)
         self.baudrate.setFixedWidth(100)
         #self.baudrate.addItems(["4800","9600","14400"])
         self.baudrate.addItems(["9600","14400"])
-        #self.baudrate.setStyleSheet("font-size:12pt;")
         
         self.timeout_label = QLabel("Timeout:",self)
-        #self.timeout_label.setStyleSheet("font-size:12pt;")
 
         self.timeout = QLineEdit(self)
         self.timeout.setFixedWidth(100)
-        #self.timeout.setStyleSheet("font-size:12pt;")
-        self.timeout.setText("2")
+        self.timeout.setText("1")
 
         #For now, it will be 0-255 (FIX THIS IN FUTURE; Timeout in increments of 1s to 255s is weird)
         #regex = QRegExp("^([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$")
@@ -111,12 +105,9 @@ class Dialog1(QDialog):
         self.timeout.setValidator(QDoubleValidator())
         
         self.samplenum_label = QLabel("Sample #:",self)
-        #self.samplenum_label.setStyleSheet("font-size:12pt;")
-
         self.samplenum = QLineEdit(self)
         self.samplenum.setFixedWidth(100)
-        #self.samplenum.setStyleSheet("font-size:12pt;")
-        self.samplenum.setText("100")
+        self.samplenum.setText("25")
 
         #For now, it will be 0-255 (FIX THIS IN FUTURE; 0 samples makes no sense)
         regex = QRegExp("^([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$")
@@ -142,7 +133,7 @@ class Dialog1(QDialog):
         arduino_ports = [
             p.device
             for p in serial.tools.list_ports.comports()
-            if 'Arduino' in p.description  
+            if 'Arduino' or 'tty' in p.description  
         ]
         if not arduino_ports:
             raise IOError("No Arduino found. Replug in USB cable and try again.")
@@ -181,38 +172,40 @@ class Window(QWidget):
         self.initUI()
 
     def initUI(self):
-        #self.setStyleSheet("font-size:12pt")
-
         """
         Change this to your current relative/absolute path. Will be fixed in final version.
         """
         #self.setStyleSheet(open(r".\Arduino\qdarkstyle\style.qss", "r").read()) #relaitve
         #self.setStyleSheet(open(r"C:\Users\qwert\Desktop\Python VSCode\Arduino\qdarkstyle\style.qss", "r").read()) #absolute
         self.setStyleSheet(qdarkstyle.load_stylesheet())
-        mainLayout = QHBoxLayout()
-        """        
-        #leftMajor = QVBoxLayout()
+        
+        """
+        mainLayout = QHBoxLayout()        
         leftMajor = QGridLayout()
-        leftMajor.setSpacing(20)
-        
-        leftFormLayout = QFormLayout() #only had this
-        gridtest = QGridLayout()
-        gridtest.setSpacing(10)
-
-        leftMajor.addLayout(leftFormLayout)
-        leftMajor.addLayout(gridtest)
-        
+        leftMajor.setSpacing(5)
         rightLayout = QVBoxLayout()
+ 
         mainLayout.addLayout(leftMajor,20)
         #mainLayout.addLayout(leftFormLayout,20)
         mainLayout.addLayout(rightLayout,150)
         """
-        mainLayout = QHBoxLayout()  
+        
+        mainLayout = QHBoxLayout()
+        leftmainLayout = QVBoxLayout()
         leftFormLayout = QFormLayout()
+        imageLayout = QHBoxLayout()
+        leftmainLayout.addLayout(imageLayout)
+        leftmainLayout.addLayout(leftFormLayout)
         rightLayout = QVBoxLayout()
-        mainLayout.addLayout(leftFormLayout,20)
+        mainLayout.addLayout(leftmainLayout,20)
         mainLayout.addLayout(rightLayout,150)
         
+        """
+        self.image = QPixmap('Arduino\CUAtHomeLogo-Horz.jpg') #640 by 267
+        self.smallerImage = self.image.scaled(200, 130, Qt.KeepAspectRatio, Qt.FastTransformation)
+        self.imageLabel = QLabel(self)
+        self.imageLabel.setPixmap(self.smallerImage)         
+        """
 
         self.startbutton = QPushButton("Start",self)
         self.startbutton.setCheckable(False)  
@@ -252,10 +245,9 @@ class Window(QWidget):
         self.checkBoxPlot2 = QCheckBox("Plot 2", self)
         self.checkBoxPlot2.toggled.connect(self.visibility2)
 
-        self.AmplitudeLabel = QLabel("Amplitude",self)
-        self.AmplitudeInput = QLineEdit("",self)
-        self.AmplitudeInput.setValidator(QDoubleValidator())
-        #self.AmplitudeInput.conn
+        self.PowerScalingLabel = QLabel("Power Scaling (%)",self)
+        self.PowerScalingInput = QLineEdit("",self)
+        self.PowerScalingInput.setValidator(QDoubleValidator(0,100,1)) #0-1 as a float FIX THIS
 
         self.FrequencyLabel = QLabel("Frequency (Hz)",self)
         self.FrequencyInput = QLineEdit("",self)
@@ -290,7 +282,11 @@ class Window(QWidget):
         self.settings = QPushButton("Settings",self)
         self.settings.clicked.connect(self.settingsMenu)
         #self.settings.setFixedWidth(205)
-            
+
+        self.LabType = QComboBox()
+        self.LabType.addItems(["Angle","Speed"])
+        self.LabType.activated.connect(self.getLabType)
+
         self.inputForms = QComboBox()
         self.inputForms.addItems(["Sine","Step"])
         self.inputForms.activated.connect(self.getInput)
@@ -317,13 +313,18 @@ class Window(QWidget):
         self.graphWidgetOutput.setBackground((0,0,0))
         self.graphWidgetInput.setBackground((0,0,0))
 
+        #Adds a legend after data starts to plot NOT before
+        self.graphWidgetOutput.addLegend()
+
         #Adds title to graphs
-        self.graphWidgetOutput.setTitle("Output", color="w", size="14pt")
-        self.graphWidgetInput.setTitle("Input", color="w", size="14pt")
+        self.graphWidgetOutput.setTitle("Output", color="w", size="12pt")
+        self.graphWidgetInput.setTitle("Input", color="w", size="12pt")
 
         
-        #Positioning the buttons and checkboxes
+        #Positioning the buttons and checkboxes. CURRENT LAYOUT DONT EDIT
         #leftFormLayout.setContentsMargins(70,100,10,10)
+        
+        #imageLayout.addWidget(self.imageLabel)
         leftFormLayout.addRow(self.startbutton,self.stopbutton)
         leftFormLayout.addRow(self.clearbutton,self.savebutton)
         leftFormLayout.addRow(self.settings)
@@ -331,8 +332,9 @@ class Window(QWidget):
         leftFormLayout.addRow(self.checkBoxHideAll)
         leftFormLayout.addRow(self.checkBoxPlot1)
         leftFormLayout.addRow(self.checkBoxPlot2)
+        leftFormLayout.addRow(self.LabType)
         leftFormLayout.addRow(self.inputForms)
-        leftFormLayout.addRow(self.AmplitudeLabel,self.AmplitudeInput)
+        leftFormLayout.addRow(self.PowerScalingLabel,self.PowerScalingInput)
         leftFormLayout.addRow(self.FrequencyLabel,self.FrequencyInput)
         leftFormLayout.addRow(self.PCheckBox,self.PInput)
         leftFormLayout.addRow(self.ICheckBox,self.IInput)
@@ -340,29 +342,49 @@ class Window(QWidget):
 
         rightLayout.addWidget(self.graphWidgetOutput)
         rightLayout.addWidget(self.graphWidgetInput)
-        """
-        gridtest.addWidget(self.PCheckBox,0,0)
-        gridtest.addWidget(self.PInput,0,1)    
-        gridtest.addWidget(self.ICheckBox,1,0)
-        gridtest.addWidget(self.IInput,1,1)  
-        gridtest.addWidget(self.DCheckBox,2,0)
-        gridtest.addWidget(self.DInput,2,1)  
-        """
+
         self.setLayout(mainLayout)
+
+
+        """
+        #leftMajor.addWidget(self.imageLabel,0,0,2,2)
+        leftMajor.addWidget(self.startbutton,0,0)
+
+        leftMajor.addWidget(self.stopbutton,0,1)
+        leftMajor.addWidget(self.clearbutton,1,0)
+        leftMajor.addWidget(self.savebutton,1,1)
+        leftMajor.addWidget(self.settings,2,0,1,2)
+        leftMajor.addWidget(self.checkBoxShowAll,3,0)
+        leftMajor.addWidget(self.checkBoxHideAll,4,0)
+        leftMajor.addWidget(self.checkBoxPlot1,5,0)
+        leftMajor.addWidget(self.checkBoxPlot2,6,0)
+        leftMajor.addWidget(self.inputForms,7,0)
+        leftMajor.addWidget(self.AmplitudeLabel,8,0)
+        leftMajor.addWidget(self.AmplitudeInput,8,1)
+        leftMajor.addWidget(self.FrequencyLabel,9,0)
+        leftMajor.addWidget(self.FrequencyInput,9,1)
+        leftMajor.addWidget(self.PCheckBox,10,0)
+        leftMajor.addWidget(self.PInput,10,1)
+        leftMajor.addWidget(self.ICheckBox,11,0)
+        leftMajor.addWidget(self.IInput,11,1)
+        leftMajor.addWidget(self.DCheckBox,12,0)
+        leftMajor.addWidget(self.DInput,12,1)
+
+        rightLayout.addWidget(self.graphWidgetOutput)
+        rightLayout.addWidget(self.graphWidgetInput)
         
+        self.setLayout(mainLayout)
+        """
+
         #Plot time update settings
         self.timer = QTimer()
-        self.timer.setInterval(50) #Changes the plot speed
+        self.timer.setInterval(50) #Changes the plot speed. Defaulted to 50. Can be placed in startbutton_pushed() method
         self.initialState()
         time.sleep(2)
         try:
-            self.timer.timeout.connect(self.updatePlot1)
+            self.timer.timeout.connect(self.update)
         except:
-            raise Exception("Missing 1")
-        try:
-            self.timer.timeout.connect(self.updatePlot2)
-        except:
-            raise Exception("Missing 2")
+            raise Exception("Not Connected")
         #self.show()
 
     #Checkbox logic
@@ -394,46 +416,39 @@ class Window(QWidget):
                 self.checkBoxHideAll.setChecked(False)
                 self.checkBoxPlot1.setChecked(False)
 
-    #Button/Checkbox Connections
-    #Start Button
+    #Resets data arrays and establishes serial communcation. Disables itself after clicking
     def startbutton_pushed(self):
-        self.initialState()
+        self.initialState() #Reinitializes arrays in case you have to retake data
+        self.size = self.serial_values[3] #Value from settings. Windows data
         self.ser = serial.Serial(port = self.serial_values[0], 
                                  baudrate = self.serial_values[1],
                                  timeout = self.serial_values[2])
+        self.ser.flushInput()
+        self.ser.write(b'A')
+        time.sleep(2)
+        print("Recording Data")
         self.timer.start()
-        self.plotting1()
-        self.plotting2()
+        #self.timer.setInterval(50)
+        self.curve()
         self.startbutton.clicked.disconnect(self.startbutton_pushed)
 
-    #Stop Button
+    #Stops timer and ends serial communication
     def stopbutton_pushed(self):
         self.timer.stop()
         self.ser.close()
-        try:
-            print(self.x)
-            print(len(self.x))
-        except:
-            print("Missing x")
-        try:
-            print(self.y1)
-            print(len(self.y1))
-        except:
-            print("Missing y1")
-        try:
-            print(self.y2)
-            print(len(self.y2))
-        except:
-            print("Missing y2")
-        #self.initialState()
+        print("y1 zeros:", self.y1_zeros)
+        print("y2 zeros:", self.y2_zeros)
+        print("y1 full:", self.y1)
+        print("y2 full:", self.y2)
 
-    #Clear Button
+    #Resets both plotting windows and reenables Start Button
     def clearbutton_pushed(self):
         self.graphWidgetOutput.clear()
         self.graphWidgetInput.clear()
         self.graphWidgetOutput.enableAutoRange(axis=None, enable=True, x=None, y=None)
         self.startbutton.clicked.connect(self.startbutton_pushed)
     
+    #Dumps data into a csv file to a selected path
     def savebutton_pushed(self):
         self.createCSV()
         path = QFileDialog.getSaveFileName(self, 'Save CSV', os.getenv('HOME'), 'CSV(*.csv)')
@@ -443,59 +458,61 @@ class Window(QWidget):
                 csvwriter.writerow(self.header)
                 csvwriter.writerows(self.data_set)
     
+    #Creates csv data
     def createCSV(self):
-        # INCOMPLETE DATA. Saves only 25 points in all arrays.
-        self.header = ['x1', 'y1', 'x2', 'y2']
-        self.data_set = zip(self.x1,self.y1,self.x2,self.y2)
+        self.header = ['x', 'y1', 'y2']
+        self.data_set = zip(self.x,self.y1,self.y2)
 
+    #Initilizes lists/arrays
     def initialState(self):
-        #Windowed data. What is being shown on the graphs
-        self.x1 = list(range(25)) #waits for x, y1, and y2 to be 0-24 samples
-        self.x2 = list(range(25))
-        self.y1 = list()
-        self.y2 = list()
+        self.buffersize = 500 #np array size that is used to plot data
+        self.step = 0 #Used for repositioning data in plot window to the left
+
+        #Data buffers. What is being plotted in the 2 windows
+        self.x1_zeros = np.zeros(self.buffersize+1, float)
+        self.y1_zeros = np.zeros(self.buffersize+1, float)
+        self.y2_zeros = np.zeros(self.buffersize+1, float)
 
         #Complete data. What will be written to the csv file
-        self.x1_full = list()
-        self.x2_full = list()
-        self.y1_full = list()
-        self.y2_full = list()
+        self.x = list()
+        self.y1 = list()
+        self.y2 = list()
 
     def readValues(self):
         arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
         return arduinoData
 
-    def plotting1(self):
-        a = self.readValues()
-        while len(self.y1) != 25:
-            self.y1.append(float(a[0]))
+    #Initializes data# to have specific attributes
+    def curve(self):
         pen1 = pg.mkPen(color = (255, 0, 0), width=1)
-        self.data1 = self.graphWidgetOutput.plot(self.x1, self.y1, pen = pen1)
-
-    def plotting2(self):
-        b = self.readValues()
-        while len(self.y2) != 25:
-            self.y2.append(float(b[0]))
         pen2 = pg.mkPen(color = (0, 255, 0), width=1)
-        self.data2 = self.graphWidgetOutput.plot(self.x2, self.y2, pen = pen2)
+        
+        self.data1 = self.graphWidgetOutput.plot(pen = pen1, name="Data 1")
+        self.data2 = self.graphWidgetOutput.plot(pen = pen2, name="Data 2")
 
-    def updatePlot1(self):
-        a = self.readValues()
-        self.x1 = self.x1[1:]  
-        self.x1.append(self.x1[-1] + 1)  
-        self.y1 = self.y1[1:]  
-        self.y1.append(float(a[0]))
-        self.data1.setData(self.x1, self.y1)  
-        #print(psutil.virtual_memory())
+    #Connected to timer to update plot    
+    def update(self):
+        fulldata = self.readValues()
+        #print(fulldata)
 
-    def updatePlot2(self):
-        b = self.readValues()
-        self.x2 = self.x2[1:]  
-        self.x2.append(self.x2[-1] + 1)  
-        self.y2 = self.y2[1:]   
-        self.y2.append(float(b[1]))
-        self.data2.setData(self.x2, self.y2) 
-        #print(psutil.virtual_memory())
+        self.step = self.step + 1
+
+        i = int(self.y1_zeros[self.buffersize])
+        self.y1_zeros[i] = self.y1_zeros[i+self.size] = float(fulldata[0])
+        self.y1_zeros[self.buffersize] = i = (i+1) % self.size
+        self.y1.append(fulldata[1])
+
+        j = int(self.y2_zeros[self.buffersize])
+        self.y2_zeros[j] = self.y2_zeros[j+self.size] = float(fulldata[1])
+        self.y2_zeros[self.buffersize] = j = (j+1) % self.size
+        self.y2.append(fulldata[2])
+
+        self.x.append(fulldata[0])
+
+        self.data1.setData(self.y1_zeros[i:i+self.size])
+        self.data1.setPos(self.step,0)
+        self.data2.setData(self.y2_zeros[j:j+self.size])
+        self.data2.setPos(self.step,0)
 
     def visibilityAll(self):
         showall = self.sender()
@@ -590,6 +607,10 @@ class Window(QWidget):
             self.data_input = self.graphWidgetInput.plot(self.x_input, self.y_input, pen = pen_input)
             self.data_input.setData(self.x_input, self.y_input)
             self.graphWidgetInput.setYRange(-2, 2, padding=0)
+
+    def getLabType(self):
+        self.inputType = str(self.inputForms.currentText())
+        pass
 
 def main():
     app = QApplication(sys.argv)
