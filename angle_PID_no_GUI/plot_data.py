@@ -1,5 +1,6 @@
 import numpy as np
 import plotly.express as px
+import pandas as pd
 
 def smooth(x,window_len=11,window='hanning'):
     """smooth the data using a window with requested size.
@@ -58,20 +59,27 @@ def smooth(x,window_len=11,window='hanning'):
     y=np.convolve(w/w.sum(),s,mode='valid')
     return y
 
-t, counter = np.loadtxt('step_response_data.txt',delimiter = ',',unpack = True)
-# print(t,data)
+# # plot Speed
+# t, counter, motorPWM = np.loadtxt('angle_PID.txt',delimiter = ',',unpack = True)
+# # print(t,data)
 
-ppr = 600
-coeff = float(60*1000/ppr)
-speed = np.divide(np.diff(counter)*coeff,np.diff(t))
-# speed = smooth(speed,window_len=11,window='hamming')
-try:
-    fig = px.line(x=t[:-1],y=speed,
-                labels = {'x':"Time [ms]",'y':"Speed [RPM]"},title="Motor Step response",
-                range_y = [-10,450])
-except:
-    fig = px.line(x=t,y=speed[0:t.size],
-                labels = {'x':"Time [ms]",'y':"Speed [RPM]"},title="Motor Step response",
-                range_y = [-10,450])
+# ppr = 600
+# coeff = float(60*1000/ppr)
+# speed = np.divide(np.diff(counter)*coeff,np.diff(t))
+# # speed = smooth(speed,window_len=11,window='hamming')
+# try:
+#     fig = px.line(x=t[:-1],y=speed,
+#                 labels = {'x':"Time [ms]",'y':"Speed [RPM]"},title="Motor Step response",
+#                 range_y = [-10,450])
+# except:
+#     fig = px.line(x=t,y=speed[0:t.size],
+#                 labels = {'x':"Time [ms]",'y':"Speed [RPM]"},title="Motor Step response",
+#                 range_y = [-10,450])
+# fig.show()
+
+# Plot enc_count and PWM input
+df = pd.read_csv("angle_PID.txt",sep = ",", header = None, names = ['time','enc_count','motorPWM'])
+# df.plot(x = 'time',y = ['enc_count','motorPWM'])
+df_melt = df.melt(id_vars='time', value_vars=['enc_count', 'motorPWM'])
+fig = px.line(df_melt, x = "time",y = "value",color = 'variable')
 fig.show()
-# fig.write_html("9V_step_response_arduino.html")

@@ -65,7 +65,7 @@ if __name__ == '__main__':
             print("Data aqcuisition terminate")
             break
         
-with open('step_response_data.txt', 'w') as f:
+with open('angle_PID.txt', 'w') as f:
     for item in amplitude:
         f.write("%s\n" % item)
     print("Data saved to", "\"",f.name,"\"")
