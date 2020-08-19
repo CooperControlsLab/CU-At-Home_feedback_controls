@@ -4,11 +4,11 @@ import time
 from PyQt5.QtGui import QRegExpValidator, QDoubleValidator, QPixmap
 from PyQt5.QtWidgets import (QApplication, QPushButton, QWidget, QComboBox, 
 QHBoxLayout, QVBoxLayout, QFormLayout, QCheckBox, QGridLayout, QDialog, 
-QLabel, QLineEdit, QDialogButtonBox, QFileDialog, QSizePolicy)
-from PyQt5.QtCore import Qt, QTimer, QRegExp, QCoreApplication
+QLabel, QLineEdit, QDialogButtonBox, QFileDialog, QSizePolicy, QLayout,
+QSpacerItem)
+from PyQt5.QtCore import Qt, QTimer, QRegExp, QCoreApplication, QSize
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
-from random import randint
 import serial
 import serial.tools.list_ports
 import numpy as np
@@ -36,6 +36,8 @@ class SerialComm:
                                  timeout = self.timeout)
         return(self.ser)
     
+    def serialClose(self):
+        self.ser.close()
     """
     handshake() method written for now. Will not have functionality yet.
     """
@@ -43,7 +45,7 @@ class SerialComm:
         self.ser.flushInput()
         self.ser.write(b"A")
         print("Handshake request sent")
-        response = self.ser.readline().decode().replace('\r\n','')
+        response = self.ser.readline().decode().replace('\r\n','') #No need for comma delimiter
         
         if(response == "Contact established"):
             print("Handshake success")
@@ -56,8 +58,13 @@ class SerialComm:
         arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
         return arduinoData        
     
-    def writeValues(self):
-        pass
+    def writeValues(self,P,I,D,LabType,PowerScaling):
+        self.P = float(P) #cast as float, receive as double?
+        self.I = float(I) #cast as float, receive as double?
+        self.D = float(D) #cast as float, receive as double?
+        self.LabType = str(LabType)
+        self.PowerScaling = round(float(PowerScaling)/100.0,3) #What decimal place are we going for?
+        print(self.LabType)
 
 
 class Dialog1(QDialog):
@@ -155,9 +162,8 @@ class Dialog1(QDialog):
 class Window(QWidget):
     def __init__(self, *args, **kwargs):
         super(Window, self).__init__(*args, **kwargs)
-        
-        #Application Title
-        self.title = "Drone Control"
+
+        self.title = "Motor Control"
         self.setWindowTitle(self.title)
 
         #Application Size
@@ -166,135 +172,224 @@ class Window(QWidget):
         self.width = 1000
         self.height = 700
         self.setGeometry(self.left, self.top, self.width, self.height)
-        #self.setFixedSize(self.width,self.height)
-
 
         self.initUI()
 
     def initUI(self):
-        """
-        Change this to your current relative/absolute path. Will be fixed in final version.
-        """
-        #self.setStyleSheet(open(r".\Arduino\qdarkstyle\style.qss", "r").read()) #relaitve
-        #self.setStyleSheet(open(r"C:\Users\qwert\Desktop\Python VSCode\Arduino\qdarkstyle\style.qss", "r").read()) #absolute
+
         self.setStyleSheet(qdarkstyle.load_stylesheet())
-        
-        """
-        mainLayout = QHBoxLayout()        
-        leftMajor = QGridLayout()
-        leftMajor.setSpacing(5)
-        rightLayout = QVBoxLayout()
- 
-        mainLayout.addLayout(leftMajor,20)
-        #mainLayout.addLayout(leftFormLayout,20)
-        mainLayout.addLayout(rightLayout,150)
-        """
-        
-        mainLayout = QHBoxLayout()
-        leftmainLayout = QVBoxLayout()
-        leftFormLayout = QFormLayout()
-        imageLayout = QHBoxLayout()
-        leftmainLayout.addLayout(imageLayout)
-        leftmainLayout.addLayout(leftFormLayout)
-        rightLayout = QVBoxLayout()
-        mainLayout.addLayout(leftmainLayout,20)
-        mainLayout.addLayout(rightLayout,150)
-        
-        """
-        self.image = QPixmap('Arduino\CUAtHomeLogo-Horz.jpg') #640 by 267
-        self.smallerImage = self.image.scaled(200, 130, Qt.KeepAspectRatio, Qt.FastTransformation)
-        self.imageLabel = QLabel(self)
-        self.imageLabel.setPixmap(self.smallerImage)         
-        """
+
+        self.horizontalLayout = QHBoxLayout()
+        self.verticalLayout = QVBoxLayout()
+        self.verticalLayout.setSizeConstraint(QLayout.SetDefaultConstraint)
+        self.verticalLayout.setSpacing(6)
+        self.gridLayout = QGridLayout()
+
+        self.imageLabel = QLabel()
+        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.imageLabel.sizePolicy().hasHeightForWidth())
+        self.imageLabel.setSizePolicy(sizePolicy)
+        self.imageLabel.setMinimumSize(QSize(200, 130))
+        self.imageLabel.setMaximumSize(QSize(200, 130))
+        self.imageLabel.setPixmap(QPixmap("../Python VSCode/Arduino/logo/CUAtHomeLogo-Horz.png").scaled(200, 130, Qt.KeepAspectRatio, Qt.FastTransformation))
+        self.verticalLayout.addWidget(self.imageLabel)
 
         self.startbutton = QPushButton("Start",self)
         self.startbutton.setCheckable(False)  
-        self.startbutton.clicked.connect(self.startbutton_pushed)
-        self.startbutton.resize(100,20)
-        self.startbutton.setFixedWidth(100)
+        self.startbutton.clicked.connect(self.startbutton_pushed)        
+        self.startbutton.setMaximumSize(QSize(100, 20))
+        self.gridLayout.addWidget(self.startbutton, 0, 0, 1, 1)
 
         self.stopbutton = QPushButton("Stop",self)
         self.stopbutton.setCheckable(False)  
         self.stopbutton.clicked.connect(self.stopbutton_pushed)
-        self.stopbutton.resize(100,20)
-        self.stopbutton.setFixedWidth(100)
-
+        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.stopbutton.sizePolicy().hasHeightForWidth())
+        self.stopbutton.setSizePolicy(sizePolicy)
+        self.stopbutton.setMaximumSize(QSize(100, 20))
+        self.gridLayout.addWidget(self.stopbutton, 0, 1, 1, 1)
+    
         self.clearbutton = QPushButton("Clear",self)
         self.clearbutton.setCheckable(False)
         self.clearbutton.clicked.connect(self.clearbutton_pushed)
-        self.clearbutton.resize(100,20)
-        self.clearbutton.setFixedWidth(100)
+        self.clearbutton.setMaximumSize(QSize(100, 20))
+        self.gridLayout.addWidget(self.clearbutton, 1, 0, 1, 1)
 
         self.savebutton = QPushButton("Save",self)
         self.savebutton.setCheckable(False)
         self.savebutton.clicked.connect(self.savebutton_pushed)
-        self.savebutton.resize(100,20)        
-        self.savebutton.setFixedWidth(100)
+        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.savebutton.sizePolicy().hasHeightForWidth())
+        self.savebutton.setSizePolicy(sizePolicy)
+        self.savebutton.setMaximumSize(QSize(100, 20))
+        self.gridLayout.addWidget(self.savebutton, 1, 1, 1, 1)
+
+        self.settings = QPushButton("Settings",self)
+        self.settings.clicked.connect(self.settingsMenu)
+        self.settings.setMaximumSize(QSize(300, 20))
+        self.gridLayout.addWidget(self.settings, 2, 0, 1, 2)
+
 
         self.checkBoxShowAll = QCheckBox("Show All Plots", self)
+        self.checkBoxShowAll.setMaximumSize(QSize(100, 20))
         self.checkBoxShowAll.setChecked(True)
         self.checkBoxShowAll.toggled.connect(self.visibilityAll)
+        self.gridLayout.addWidget(self.checkBoxShowAll, 3, 0, 1, 1)
 
         self.checkBoxHideAll = QCheckBox("Hide All Plots", self)
         self.checkBoxHideAll.setChecked(False)
         self.checkBoxHideAll.toggled.connect(self.hideAll)
+        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.checkBoxHideAll.sizePolicy().hasHeightForWidth())
+        self.checkBoxHideAll.setSizePolicy(sizePolicy)
+        self.checkBoxHideAll.setMaximumSize(QSize(100, 20))
+        self.gridLayout.addWidget(self.checkBoxHideAll, 3, 1, 1, 1)
 
         self.checkBoxPlot1 = QCheckBox("Plot 1", self)
         self.checkBoxPlot1.toggled.connect(self.visibility1)
-        
+        self.checkBoxPlot1.setMaximumSize(QSize(100, 20))
+        self.gridLayout.addWidget(self.checkBoxPlot1, 4, 0, 1, 1)
+
         self.checkBoxPlot2 = QCheckBox("Plot 2", self)
         self.checkBoxPlot2.toggled.connect(self.visibility2)
-
-        self.PowerScalingLabel = QLabel("Power Scaling (%)",self)
-        self.PowerScalingInput = QLineEdit("",self)
-        self.PowerScalingInput.setValidator(QDoubleValidator(0,100,1)) #0-1 as a float FIX THIS
-
-        self.FrequencyLabel = QLabel("Frequency (Hz)",self)
-        self.FrequencyInput = QLineEdit("",self)
-        self.FrequencyInput.setValidator(QDoubleValidator())
-
-        self.PCheckBox = QCheckBox("P",self)
-        self.PCheckBox.setChecked(True)
-        self.PCheckBox.toggled.connect(self.PCheckBoxLogic)
-
-        self.PInput = QLineEdit("",self)
-        self.PInput.setValidator(QDoubleValidator())
-
-        self.ICheckBox = QCheckBox("I",self)
-        self.ICheckBox.setChecked(True)
-        self.ICheckBox.toggled.connect(self.ICheckBoxLogic)
-
-        self.IInput = QLineEdit("",self)    
-        self.IInput.setValidator(QDoubleValidator())
-
-        self.DCheckBox = QCheckBox("D",self)
-        self.DCheckBox.setChecked(True)
-        self.DCheckBox.toggled.connect(self.DCheckBoxLogic)
-        
-        self.DInput = QLineEdit("",self)
-        self.DInput.setValidator(QDoubleValidator())
+        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.checkBoxPlot2.sizePolicy().hasHeightForWidth())
+        self.checkBoxPlot2.setSizePolicy(sizePolicy)
+        self.checkBoxPlot2.setMaximumSize(QSize(100, 20))
+        self.gridLayout.addWidget(self.checkBoxPlot2, 4, 1, 1, 1)
 
         self.checkBoxShowAll.stateChanged.connect(self.checkbox_logic) 
         self.checkBoxHideAll.stateChanged.connect(self.checkbox_logic) 
         self.checkBoxPlot1.stateChanged.connect(self.checkbox_logic) 
-        self.checkBoxPlot2.stateChanged.connect(self.checkbox_logic) 
+        self.checkBoxPlot2.stateChanged.connect(self.checkbox_logic)
 
-        self.settings = QPushButton("Settings",self)
-        self.settings.clicked.connect(self.settingsMenu)
-        #self.settings.setFixedWidth(205)
+        self.PowerScalingLabel = QLabel("Power Scaling (%)",self)
+        self.PowerScalingLabel.setMinimumSize(QSize(100, 20))
+        self.PowerScalingLabel.setMaximumSize(QSize(100, 20))
+        self.gridLayout.addWidget(self.PowerScalingLabel, 7, 0, 1, 1)
+        self.PowerScalingInput = QLineEdit("",self)
+        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.PowerScalingInput.sizePolicy().hasHeightForWidth())
+        self.PowerScalingInput.setSizePolicy(sizePolicy)
+        self.PowerScalingInput.setMaximumSize(QSize(100, 20))
+        self.PowerScalingInput.setValidator(QDoubleValidator(0,100,1)) #0-1 as a float FIX THIS
+        self.gridLayout.addWidget(self.PowerScalingInput, 7, 1, 1, 1)
+
+        self.FrequencyLabel = QLabel("Frequency (Hz)",self)
+        self.FrequencyLabel.setMinimumSize(QSize(100, 20))
+        self.FrequencyLabel.setMaximumSize(QSize(100, 20))
+        self.gridLayout.addWidget(self.FrequencyLabel, 8, 0, 1, 1)
+        self.FrequencyInput = QLineEdit("",self)
+        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.FrequencyInput.sizePolicy().hasHeightForWidth())
+        self.FrequencyInput.setSizePolicy(sizePolicy)
+        self.FrequencyInput.setMaximumSize(QSize(100, 20))
+        self.FrequencyInput.setValidator(QDoubleValidator())
+        self.gridLayout.addWidget(self.FrequencyInput, 8, 1, 1, 1)
+
+        self.PCheckBox = QCheckBox("P",self)
+        self.PCheckBox.setMaximumSize(QSize(100, 20))
+        self.PCheckBox.setChecked(True)
+        self.PCheckBox.toggled.connect(self.PCheckBoxLogic)
+        self.gridLayout.addWidget(self.PCheckBox, 9, 0, 1, 1)
+        self.PInput = QLineEdit("",self)
+        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.PInput.sizePolicy().hasHeightForWidth())
+        self.PInput.setSizePolicy(sizePolicy)
+        self.PInput.setMaximumSize(QSize(100, 20))
+        self.PInput.setValidator(QDoubleValidator())
+        self.gridLayout.addWidget(self.PInput, 9, 1, 1, 1)
+
+        self.ICheckBox = QCheckBox("I",self)
+        self.ICheckBox.setMaximumSize(QSize(100, 20))
+        self.ICheckBox.setChecked(True)
+        self.ICheckBox.toggled.connect(self.ICheckBoxLogic)
+        self.gridLayout.addWidget(self.ICheckBox, 10, 0, 1, 1)
+        self.IInput = QLineEdit("",self)    
+        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.IInput.sizePolicy().hasHeightForWidth())
+        self.IInput.setSizePolicy(sizePolicy)
+        self.IInput.setMaximumSize(QSize(100, 20))
+        self.IInput.setValidator(QDoubleValidator())
+        self.gridLayout.addWidget(self.IInput, 10, 1, 1, 1)
+
+        self.DCheckBox = QCheckBox("D",self)
+        self.DCheckBox.setMaximumSize(QSize(100, 20))
+        self.DCheckBox.setChecked(True)
+        self.DCheckBox.toggled.connect(self.DCheckBoxLogic)
+        self.gridLayout.addWidget(self.DCheckBox, 11, 0, 1, 1)
+        self.DInput = QLineEdit("",self)
+        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.DInput.sizePolicy().hasHeightForWidth())
+        self.DInput.setSizePolicy(sizePolicy)
+        self.DInput.setMaximumSize(QSize(100, 20))
+        self.DInput.setValidator(QDoubleValidator())
+        self.gridLayout.addWidget(self.DInput, 11, 1, 1, 1)
 
         self.LabType = QComboBox()
         self.LabType.addItems(["Angle","Speed"])
         self.LabType.activated.connect(self.getLabType)
+        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.LabType.sizePolicy().hasHeightForWidth())
+        self.LabType.setSizePolicy(sizePolicy)
+        self.LabType.setMaximumSize(QSize(100, 20))
+        self.gridLayout.addWidget(self.LabType, 5, 1, 1, 1)
+        self.LabLabel = QLabel("Lab Type")
+        self.LabLabel.setMaximumSize(QSize(100, 20))
+        self.gridLayout.addWidget(self.LabLabel, 5, 0, 1, 1)
 
         self.inputForms = QComboBox()
         self.inputForms.addItems(["Sine","Step"])
         self.inputForms.activated.connect(self.getInput)
+        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.inputForms.sizePolicy().hasHeightForWidth())
+        self.inputForms.setSizePolicy(sizePolicy)
+        self.inputForms.setMaximumSize(QSize(100, 20))
+        self.gridLayout.addWidget(self.inputForms, 6, 1, 1, 1)
+        self.inputType = QLabel("Input Type")
+        self.inputType.setMaximumSize(QSize(100, 20))
+        self.gridLayout.addWidget(self.inputType, 6, 0, 1, 1)
 
-        #Creates Plotting Widget        
-        self.graphWidgetOutput = pg.PlotWidget()
-        self.graphWidgetInput = pg.PlotWidget()
-        #state = self.graphWidget.getState()
+        self.verticalLayout.addLayout(self.gridLayout)
+        spacerItem = QSpacerItem(20, 80, QSizePolicy.Minimum, QSizePolicy.Fixed)
+        self.verticalLayout.addItem(spacerItem)
+
+        #What is this?
+        
+        self.label = QLabel()
+        self.label.setMaximumSize(QSize(200, 130))
+        self.label.setText("")
+        self.verticalLayout.addWidget(self.label)
+
+        self.horizontalLayout.addLayout(self.verticalLayout)
+        self.rightVerticalLayout = QVBoxLayout()
+
+        self.graphWidgetOutput = PlotWidget()
+        self.graphWidgetInput = PlotWidget()
 
         #Adds grid lines
         self.graphWidgetOutput.showGrid(x = True, y = True, alpha=None)
@@ -320,61 +415,11 @@ class Window(QWidget):
         self.graphWidgetOutput.setTitle("Output", color="w", size="12pt")
         self.graphWidgetInput.setTitle("Input", color="w", size="12pt")
 
-        
-        #Positioning the buttons and checkboxes. CURRENT LAYOUT DONT EDIT
-        #leftFormLayout.setContentsMargins(70,100,10,10)
-        
-        #imageLayout.addWidget(self.imageLabel)
-        leftFormLayout.addRow(self.startbutton,self.stopbutton)
-        leftFormLayout.addRow(self.clearbutton,self.savebutton)
-        leftFormLayout.addRow(self.settings)
-        leftFormLayout.addRow(self.checkBoxShowAll)
-        leftFormLayout.addRow(self.checkBoxHideAll)
-        leftFormLayout.addRow(self.checkBoxPlot1)
-        leftFormLayout.addRow(self.checkBoxPlot2)
-        leftFormLayout.addRow(self.LabType)
-        leftFormLayout.addRow(self.inputForms)
-        leftFormLayout.addRow(self.PowerScalingLabel,self.PowerScalingInput)
-        leftFormLayout.addRow(self.FrequencyLabel,self.FrequencyInput)
-        leftFormLayout.addRow(self.PCheckBox,self.PInput)
-        leftFormLayout.addRow(self.ICheckBox,self.IInput)
-        leftFormLayout.addRow(self.DCheckBox,self.DInput)
+        self.rightVerticalLayout.addWidget(self.graphWidgetOutput)
+        self.rightVerticalLayout.addWidget(self.graphWidgetInput)
+        self.horizontalLayout.addLayout(self.rightVerticalLayout)
 
-        rightLayout.addWidget(self.graphWidgetOutput)
-        rightLayout.addWidget(self.graphWidgetInput)
-
-        self.setLayout(mainLayout)
-
-
-        """
-        #leftMajor.addWidget(self.imageLabel,0,0,2,2)
-        leftMajor.addWidget(self.startbutton,0,0)
-
-        leftMajor.addWidget(self.stopbutton,0,1)
-        leftMajor.addWidget(self.clearbutton,1,0)
-        leftMajor.addWidget(self.savebutton,1,1)
-        leftMajor.addWidget(self.settings,2,0,1,2)
-        leftMajor.addWidget(self.checkBoxShowAll,3,0)
-        leftMajor.addWidget(self.checkBoxHideAll,4,0)
-        leftMajor.addWidget(self.checkBoxPlot1,5,0)
-        leftMajor.addWidget(self.checkBoxPlot2,6,0)
-        leftMajor.addWidget(self.inputForms,7,0)
-        leftMajor.addWidget(self.AmplitudeLabel,8,0)
-        leftMajor.addWidget(self.AmplitudeInput,8,1)
-        leftMajor.addWidget(self.FrequencyLabel,9,0)
-        leftMajor.addWidget(self.FrequencyInput,9,1)
-        leftMajor.addWidget(self.PCheckBox,10,0)
-        leftMajor.addWidget(self.PInput,10,1)
-        leftMajor.addWidget(self.ICheckBox,11,0)
-        leftMajor.addWidget(self.IInput,11,1)
-        leftMajor.addWidget(self.DCheckBox,12,0)
-        leftMajor.addWidget(self.DInput,12,1)
-
-        rightLayout.addWidget(self.graphWidgetOutput)
-        rightLayout.addWidget(self.graphWidgetInput)
-        
-        self.setLayout(mainLayout)
-        """
+        self.setLayout(self.horizontalLayout)
 
         #Plot time update settings
         self.timer = QTimer()
@@ -393,7 +438,6 @@ class Window(QWidget):
         # checking if state is checked 
         if state == Qt.Checked: 
   
-            # if first check box is selected 
             if self.sender() == self.checkBoxShowAll: 
                 self.checkBoxHideAll.setChecked(False) 
                 self.checkBoxPlot1.setChecked(False)
@@ -420,6 +464,7 @@ class Window(QWidget):
     def startbutton_pushed(self):
         self.initialState() #Reinitializes arrays in case you have to retake data
         self.size = self.serial_values[3] #Value from settings. Windows data
+        '''
         self.ser = serial.Serial(port = self.serial_values[0], 
                                  baudrate = self.serial_values[1],
                                  timeout = self.serial_values[2])
@@ -431,11 +476,20 @@ class Window(QWidget):
         #self.timer.setInterval(50)
         self.curve()
         self.startbutton.clicked.disconnect(self.startbutton_pushed)
+        '''
+        self.serialInstance = SerialComm(self.serial_values[0],self.serial_values[1],self.serial_values[2])
+        self.serialInstance.serialOpen()
+        time.sleep(2)
+        print("Recording Data")
+        self.timer.start()
+        self.curve()
+        self.startbutton.clicked.disconnect(self.startbutton_pushed)
 
     #Stops timer and ends serial communication
     def stopbutton_pushed(self):
         self.timer.stop()
-        self.ser.close()
+        #self.ser.close()
+        self.serialInstance.serialClose()
         print("y1 zeros:", self.y1_zeros)
         print("y2 zeros:", self.y2_zeros)
         print("y1 full:", self.y1)
@@ -469,7 +523,7 @@ class Window(QWidget):
         self.step = 0 #Used for repositioning data in plot window to the left
 
         #Data buffers. What is being plotted in the 2 windows
-        self.x1_zeros = np.zeros(self.buffersize+1, float)
+        self.x_zeros = np.zeros(self.buffersize+1, float)
         self.y1_zeros = np.zeros(self.buffersize+1, float)
         self.y2_zeros = np.zeros(self.buffersize+1, float)
 
@@ -477,43 +531,47 @@ class Window(QWidget):
         self.x = list()
         self.y1 = list()
         self.y2 = list()
-
+    '''
     def readValues(self):
         arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
         return arduinoData
-
+    '''
     #Initializes data# to have specific attributes
     def curve(self):
         pen1 = pg.mkPen(color = (255, 0, 0), width=1)
         pen2 = pg.mkPen(color = (0, 255, 0), width=1)
-        
         self.data1 = self.graphWidgetOutput.plot(pen = pen1, name="Data 1")
         self.data2 = self.graphWidgetOutput.plot(pen = pen2, name="Data 2")
 
-    #Connected to timer to update plot    
+    #Connected to timer to update plot. Incoming data is in the form of timestamp,data1,data2...    
     def update(self):
-        fulldata = self.readValues()
+        #fulldata = self.readValues()
         #print(fulldata)
+        fulldata = self.serialInstance.readValues()
 
         self.step = self.step + 1
 
         i = int(self.y1_zeros[self.buffersize])
-        self.y1_zeros[i] = self.y1_zeros[i+self.size] = float(fulldata[0])
+        self.y1_zeros[i] = self.y1_zeros[i+self.size] = float(fulldata[1])
         self.y1_zeros[self.buffersize] = i = (i+1) % self.size
         self.y1.append(fulldata[1])
 
         j = int(self.y2_zeros[self.buffersize])
-        self.y2_zeros[j] = self.y2_zeros[j+self.size] = float(fulldata[1])
+        self.y2_zeros[j] = self.y2_zeros[j+self.size] = float(fulldata[2])
         self.y2_zeros[self.buffersize] = j = (j+1) % self.size
         self.y2.append(fulldata[2])
 
+        k = int(self.x_zeros[self.buffersize])
+        self.x_zeros[k] = self.x_zeros[k+self.size] = float(fulldata[0])
+        self.x_zeros[self.buffersize] = k = (k+1) % self.size
         self.x.append(fulldata[0])
 
-        self.data1.setData(self.y1_zeros[i:i+self.size])
+        self.data1.setData(self.x_zeros[k:k+self.size],self.y1_zeros[i:i+self.size])
         self.data1.setPos(self.step,0)
-        self.data2.setData(self.y2_zeros[j:j+self.size])
+        self.data2.setData(self.x_zeros[k:k+self.size],self.y2_zeros[j:j+self.size])
         self.data2.setPos(self.step,0)
 
+    #Below 4 change visibility of data# in the curves() method
     def visibilityAll(self):
         showall = self.sender()
         if showall.isChecked() == True:
@@ -538,6 +596,7 @@ class Window(QWidget):
             self.data2.setVisible(True)
             self.data1.setVisible(False)
 
+    #Class instance of settings menu. Creates a dialog (popup)
     def settingsMenu(self):
         self.settingsPopUp = Dialog1()
         self.settingsPopUp.show()
