@@ -38,6 +38,9 @@ class SerialComm:
     
     def serialClose(self):
         self.ser.close()
+
+    def serialFlushInput(self):
+        self.ser.flushInput()
     """
     handshake() method written for now. Will not have functionality yet.
     """
@@ -55,8 +58,10 @@ class SerialComm:
             self.handshake()
 
     def readValues(self):
+        self.ser.write(b'B')
         arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
         return arduinoData        
+    
     
     def writeValues(self,P,I,D,LabType,PowerScaling):
         self.P = float(P) #cast as float, receive as double?
@@ -193,7 +198,7 @@ class Window(QWidget):
         self.imageLabel.setSizePolicy(sizePolicy)
         self.imageLabel.setMinimumSize(QSize(200, 130))
         self.imageLabel.setMaximumSize(QSize(200, 130))
-        self.imageLabel.setPixmap(QPixmap("../Python VSCode/Arduino/logo/CUAtHomeLogo-Horz.png").scaled(200, 130, Qt.KeepAspectRatio, Qt.FastTransformation))
+        self.imageLabel.setPixmap(QPixmap("./logo/CUAtHomeLogo-Horz.jpg").scaled(200, 130, Qt.KeepAspectRatio, Qt.FastTransformation))
         self.verticalLayout.addWidget(self.imageLabel)
 
         self.startbutton = QPushButton("Start",self)
@@ -479,6 +484,7 @@ class Window(QWidget):
         '''
         self.serialInstance = SerialComm(self.serial_values[0],self.serial_values[1],self.serial_values[2])
         self.serialInstance.serialOpen()
+        self.serialInstance.serialFlushInput()
         time.sleep(2)
         print("Recording Data")
         self.timer.start()
@@ -545,9 +551,8 @@ class Window(QWidget):
 
     #Connected to timer to update plot. Incoming data is in the form of timestamp,data1,data2...    
     def update(self):
-        #fulldata = self.readValues()
-        #print(fulldata)
         fulldata = self.serialInstance.readValues()
+        print(fulldata)
 
         self.step = self.step + 1
 

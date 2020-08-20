@@ -71,19 +71,19 @@ int main(void){
     print_enc_degree();
 //    if(micros() - start_time > 10000000){break;}
   }
-  digitalWrite(PWM_B,HIGH); // Stops Motor
+  digitalWrite(BRK_B,HIGH); // Stops Motor
 //  while(1){Serial.println("End");delay(300);}
 }
 
 void print_enc_degree(){
   float cur_time = micros();
-//  if(Serial.read() == 'B'){
-//      Serial.print(cur_time-start_time);
-//      Serial.print(",");
+  if(Serial.read() == 'B'){
+      Serial.print(cur_time-start_time);
+      Serial.print(",");
       Serial.print(enc_degree);
       Serial.print(",");
       Serial.println(motorPWM);
-//    }
+    }
 }
 
 //Encoder interrupts
