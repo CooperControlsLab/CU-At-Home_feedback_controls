@@ -61,10 +61,9 @@ float SerialComms::parseNumber(char* cmd_string, char key, int def)
         // Serial.print("i: "); Serial.print(i); Serial.print(" | "); Serial.println(first[i]);
         if(cmd_string[i] == ',' || cmd_string[i] == '\0')
         {
-            delim_len = i;
             break;
         }
-
+        delim_len++;
     }
     // Serial.print("delim len: "); Serial.println(delim_len);
 
@@ -72,6 +71,6 @@ float SerialComms::parseNumber(char* cmd_string, char key, int def)
     char substring[20];
     strncpy(substring, &cmd_string[key_len+1], delim_len);  //Copy subset of string to substring
     
-    // Serial.print("test string: "); Serial.println(substring);
+    Serial.print("test string: "); Serial.println(substring);
     return atof(substring); //return the substring in float format
 }
