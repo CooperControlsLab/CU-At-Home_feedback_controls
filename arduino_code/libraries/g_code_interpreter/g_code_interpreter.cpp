@@ -1,13 +1,14 @@
 #include <g_code_interpreter.h>
 #include <string.h>
+#include <Arduino.h>
 
-void SerialComms::processCommand(char* cmd_string)
+void SerialComms::process_command(char* cmd_string)
 {
     int pos;
     int cmd;
 
     //Request command
-    // cmd = parseNumber(cmd_string, 'R', -1);
+    // cmd = parse_number(cmd_string, 'R', -1);
     switch(cmd){
         case 0: // Serial write the data packet back to GUI
 
@@ -16,29 +17,35 @@ void SerialComms::processCommand(char* cmd_string)
     }
 
     //Set value/mode commands
-    cmd = parseNumber(cmd_string, 'S', -1);
+    cmd = parse_number(cmd_string, 'S', -1);
     switch(int(cmd)){
-        case 0: 
-            double kp = parseNumber(cmd_string, 'P', -1);
-            double ki = parseNumber(cmd_string, 'I', -1);
-            double kd = parseNumber(cmd_string, 'D', -1);
+        case 0: //Set PID gains
+            kp = parse_number(cmd_string, 'P', -1);
+            ki = parse_number(cmd_string, 'I', -1);
+            kd = parse_number(cmd_string, 'D', -1);
 
         case 1://Set Setpoint
+            setpoint = parse_number(cmd_string, 'Z' , -1);
 
         case 2: //Set Lab type
+            labType = parse_number(cmd_string, 'Y', -1);
 
         case 3: //Set Controller Mode (on/off)
+            mode = parse_number(cmd_string, 'M', -1);
 
         case 4: //Set Sample Time
+            sampleTime = parse_number(cmd_string, 'T', -1);
 
         case 5: //Set Output Limits
+            lowerOutputLimit = parse_number(cmd_string, 'L', -1);
+            upperOutputLimit = parse_number(cmd_string, 'U', -1);
 
 
         default: break;
     }
 }
 
-float SerialComms::parseNumber(char* cmd_string, char key, int def)
+float SerialComms::parse_number(char* cmd_string, char key, int def)
 {
     //Search cmd_string for key, return the number between key and delimiter
     // Serial.println(cmd_string);
@@ -50,6 +57,7 @@ float SerialComms::parseNumber(char* cmd_string, char key, int def)
     //Search string for first instance of key, increment key length each time key isn't found
     for(int i=0; i<100; i++)
     {
+        if(cmd_string[i] == '\0') { return def; } //If we can't find key, return default value
         if(cmd_string[i] == key){key_len = i; break;}
     }
     // Serial.print("key len: "); Serial.println(key_len);
@@ -58,7 +66,6 @@ float SerialComms::parseNumber(char* cmd_string, char key, int def)
     for(int i=key_len+1; i<100; i++)
     {
 
-        // Serial.print("i: "); Serial.print(i); Serial.print(" | "); Serial.println(first[i]);
         if(cmd_string[i] == ',' || cmd_string[i] == '\0')
         {
             break;
@@ -68,7 +75,7 @@ float SerialComms::parseNumber(char* cmd_string, char key, int def)
     // Serial.print("delim len: "); Serial.println(delim_len);
 
     //Create empty substring to use strncpy
-    char substring[20];
+    char substring[20] = {0};
     strncpy(substring, &cmd_string[key_len+1], delim_len);  //Copy subset of string to substring
     
     Serial.print("test string: "); Serial.println(substring);

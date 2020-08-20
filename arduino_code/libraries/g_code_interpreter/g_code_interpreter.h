@@ -1,11 +1,21 @@
 #include <Arduino.h>
 
 class SerialComms{
-    public:
+public:
     //Process a command received from serial buffer
-    void processCommand(char*);
+    void process_command(char*);
     //Search cmd for letter, return number immideately after letter
-    float parseNumber(char*, char, int);
+    float parse_number(char*, char, int);
+private:
+    int labType;
+    double setpoint;
+    int mode;
+    int lowerOutputLimit;
+    int upperOutputLimit;
+    int sampleTime;
+    double kp;
+    double ki;
+    double kd;
 };
 
 
