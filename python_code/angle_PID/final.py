@@ -38,9 +38,6 @@ class SerialComm:
     
     def serialClose(self):
         self.ser.close()
-
-    def serialFlushInput(self):
-        self.ser.flushInput()
     """
     handshake() method written for now. Will not have functionality yet.
     """
@@ -58,10 +55,9 @@ class SerialComm:
             self.handshake()
 
     def readValues(self):
-        self.ser.write(b'B')
+        self.ser.write(b'B') #used to call for the next line
         arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
         return arduinoData        
-    
     
     def writeValues(self,P,I,D,LabType,PowerScaling):
         self.P = float(P) #cast as float, receive as double?
@@ -70,6 +66,10 @@ class SerialComm:
         self.LabType = str(LabType)
         self.PowerScaling = round(float(PowerScaling)/100.0,3) #What decimal place are we going for?
         print(self.LabType)
+    
+    def test(self):
+        pass
+        
 
 
 class Dialog1(QDialog):
@@ -107,25 +107,27 @@ class Dialog1(QDialog):
 
         self.timeout = QLineEdit(self)
         self.timeout.setFixedWidth(100)
-        self.timeout.setText("1")
-
-        #For now, it will be 0-255 (FIX THIS IN FUTURE; Timeout in increments of 1s to 255s is weird)
-        #regex = QRegExp("^([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$")
-        #regex_validator_timeout = QRegExpValidator(regex,self)
-
-        #self.timeout.setValidator(regex_validator_timeout)
-        self.timeout.setValidator(QDoubleValidator())
+        self.timeout.setText("0.1")
+        timeout_validator = QDoubleValidator(0.0000, 5.0000, 4, notation=QDoubleValidator.StandardNotation)
+        self.timeout.setValidator(timeout_validator)
         
-        self.samplenum_label = QLabel("Sample #:",self)
+        
+        regex = QRegExp("([1-9]|[1-9][0-9]|[1-9][0-9][0-9]|1000)") #takes 1-1000 as input
+        sampnum_buffernum_validator = QRegExpValidator(regex,self)
+
+        self.samplenum_label = QLabel("Sample Size:",self)
         self.samplenum = QLineEdit(self)
         self.samplenum.setFixedWidth(100)
-        self.samplenum.setText("25")
+        self.samplenum.setText("25") #Default is 25
+        self.samplenum.setValidator(sampnum_buffernum_validator)
 
-        #For now, it will be 0-255 (FIX THIS IN FUTURE; 0 samples makes no sense)
-        regex = QRegExp("^([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$")
-        regex_validator_samplenum = QRegExpValidator(regex,self)
-
-        self.samplenum.setValidator(regex_validator_samplenum)
+        """
+        self.buffernum_label = QLabel("Buffer Size:",self)
+        self.buffernum = QLineEdit(self)
+        self.buffernum.setFixedWidth(100)
+        self.buffernum.setText("500") #Default is 500
+        self.buffernum.setValidator(sampnum_buffernum_validator)
+        """
 
         #Ok and cancel button
         buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
@@ -136,6 +138,7 @@ class Dialog1(QDialog):
         leftFormLayout.addRow(self.baudrate_label,self.baudrate)
         leftFormLayout.addRow(self.timeout_label,self.timeout)
         leftFormLayout.addRow(self.samplenum_label,self.samplenum)
+        #leftFormLayout.addRow(self.buffernum_label,self.buffernum)
         leftFormLayout.addRow(buttonBox)
 
         self.setLayout(mainLayout)
@@ -151,14 +154,14 @@ class Dialog1(QDialog):
             raise IOError("No Arduino found. Replug in USB cable and try again.")
         self.port.addItems(arduino_ports)
 
-
     def getDialogValues(self):
         if self.exec_() == QDialog.Accepted:
             self.com_value = str(self.port.currentText())
             self.baudrate_value = str(self.baudrate.currentText())
             self.timeout_value = float(self.timeout.text())
             self.samplenum_value = int(self.samplenum.text())
-            return([self.com_value, self.baudrate_value, self.timeout_value, self.samplenum_value])
+            #self.buffernum_value = int(self.buffernum.text())
+            return([self.com_value, self.baudrate_value, self.timeout_value, self.samplenum_value])#, self.buffernum_value])
 
         else:
             print("Settings Menu Closed")
@@ -198,7 +201,7 @@ class Window(QWidget):
         self.imageLabel.setSizePolicy(sizePolicy)
         self.imageLabel.setMinimumSize(QSize(200, 130))
         self.imageLabel.setMaximumSize(QSize(200, 130))
-        self.imageLabel.setPixmap(QPixmap("./logo/CUAtHomeLogo-Horz.jpg").scaled(200, 130, Qt.KeepAspectRatio, Qt.FastTransformation))
+        self.imageLabel.setPixmap(QPixmap("./Arduino/logo/CUAtHomeLogo-Horz.png").scaled(200, 130, Qt.KeepAspectRatio, Qt.FastTransformation))
         self.verticalLayout.addWidget(self.imageLabel)
 
         self.startbutton = QPushButton("Start",self)
@@ -239,7 +242,6 @@ class Window(QWidget):
         self.settings.clicked.connect(self.settingsMenu)
         self.settings.setMaximumSize(QSize(300, 20))
         self.gridLayout.addWidget(self.settings, 2, 0, 1, 2)
-
 
         self.checkBoxShowAll = QCheckBox("Show All Plots", self)
         self.checkBoxShowAll.setMaximumSize(QSize(100, 20))
@@ -289,7 +291,7 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.PowerScalingInput.sizePolicy().hasHeightForWidth())
         self.PowerScalingInput.setSizePolicy(sizePolicy)
         self.PowerScalingInput.setMaximumSize(QSize(100, 20))
-        self.PowerScalingInput.setValidator(QDoubleValidator(0,100,1)) #0-1 as a float FIX THIS
+        #self.PowerScalingInput.setValidator(QRegExpValidator(QRegExp("^[0-9][0-9]?$|^100$"))) #0-1 as a float FIX THIS
         self.gridLayout.addWidget(self.PowerScalingInput, 7, 1, 1, 1)
 
         self.FrequencyLabel = QLabel("Frequency (Hz)",self)
@@ -306,6 +308,8 @@ class Window(QWidget):
         self.FrequencyInput.setValidator(QDoubleValidator())
         self.gridLayout.addWidget(self.FrequencyInput, 8, 1, 1, 1)
 
+        PID_validator = QDoubleValidator(0.0000, 50.000, 4, notation=QDoubleValidator.StandardNotation)
+
         self.PCheckBox = QCheckBox("P",self)
         self.PCheckBox.setMaximumSize(QSize(100, 20))
         self.PCheckBox.setChecked(True)
@@ -318,7 +322,7 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.PInput.sizePolicy().hasHeightForWidth())
         self.PInput.setSizePolicy(sizePolicy)
         self.PInput.setMaximumSize(QSize(100, 20))
-        self.PInput.setValidator(QDoubleValidator())
+        self.PInput.setValidator(PID_validator)
         self.gridLayout.addWidget(self.PInput, 9, 1, 1, 1)
 
         self.ICheckBox = QCheckBox("I",self)
@@ -333,7 +337,7 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.IInput.sizePolicy().hasHeightForWidth())
         self.IInput.setSizePolicy(sizePolicy)
         self.IInput.setMaximumSize(QSize(100, 20))
-        self.IInput.setValidator(QDoubleValidator())
+        self.IInput.setValidator(PID_validator)
         self.gridLayout.addWidget(self.IInput, 10, 1, 1, 1)
 
         self.DCheckBox = QCheckBox("D",self)
@@ -348,12 +352,12 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.DInput.sizePolicy().hasHeightForWidth())
         self.DInput.setSizePolicy(sizePolicy)
         self.DInput.setMaximumSize(QSize(100, 20))
-        self.DInput.setValidator(QDoubleValidator())
+        self.DInput.setValidator(PID_validator)
         self.gridLayout.addWidget(self.DInput, 11, 1, 1, 1)
 
         self.LabType = QComboBox()
-        self.LabType.addItems(["Angle","Speed"])
-        self.LabType.activated.connect(self.getLabType)
+        self.LabType.addItems(["Position","Speed"])
+        #self.LabType.activated.connect(self.getLabType)
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -417,8 +421,8 @@ class Window(QWidget):
         self.graphWidgetOutput.addLegend()
 
         #Adds title to graphs
-        self.graphWidgetOutput.setTitle("Output", color="w", size="12pt")
-        self.graphWidgetInput.setTitle("Input", color="w", size="12pt")
+        self.graphWidgetOutput.setTitle("Response", color="w", size="12pt")
+        self.graphWidgetInput.setTitle("PWM Actuation Signal", color="w", size="12pt")
 
         self.rightVerticalLayout.addWidget(self.graphWidgetOutput)
         self.rightVerticalLayout.addWidget(self.graphWidgetInput)
@@ -469,6 +473,7 @@ class Window(QWidget):
     def startbutton_pushed(self):
         self.initialState() #Reinitializes arrays in case you have to retake data
         self.size = self.serial_values[3] #Value from settings. Windows data
+        #self.buffersize = self.serial_values[4] #Value from settings. Restricts buffer data
         '''
         self.ser = serial.Serial(port = self.serial_values[0], 
                                  baudrate = self.serial_values[1],
@@ -484,7 +489,6 @@ class Window(QWidget):
         '''
         self.serialInstance = SerialComm(self.serial_values[0],self.serial_values[1],self.serial_values[2])
         self.serialInstance.serialOpen()
-        self.serialInstance.serialFlushInput()
         time.sleep(2)
         print("Recording Data")
         self.timer.start()
@@ -496,11 +500,12 @@ class Window(QWidget):
         self.timer.stop()
         #self.ser.close()
         self.serialInstance.serialClose()
+        '''
         print("y1 zeros:", self.y1_zeros)
         print("y2 zeros:", self.y2_zeros)
         print("y1 full:", self.y1)
         print("y2 full:", self.y2)
-
+        '''
     #Resets both plotting windows and reenables Start Button
     def clearbutton_pushed(self):
         self.graphWidgetOutput.clear()
@@ -520,8 +525,8 @@ class Window(QWidget):
     
     #Creates csv data
     def createCSV(self):
-        self.header = ['x', 'y1', 'y2']
-        self.data_set = zip(self.x,self.y1,self.y2)
+        self.header = ['time', 'y1', 'y2']
+        self.data_set = zip(self.time,self.y1,self.y2)
 
     #Initilizes lists/arrays
     def initialState(self):
@@ -529,32 +534,47 @@ class Window(QWidget):
         self.step = 0 #Used for repositioning data in plot window to the left
 
         #Data buffers. What is being plotted in the 2 windows
-        self.x_zeros = np.zeros(self.buffersize+1, float)
+        self.time_zeros = np.zeros(self.buffersize+1, float)
         self.y1_zeros = np.zeros(self.buffersize+1, float)
         self.y2_zeros = np.zeros(self.buffersize+1, float)
+        self.y3_zeros = np.zeros(self.buffersize+1, float)
 
         #Complete data. What will be written to the csv file
-        self.x = list()
+        self.time = list()
         self.y1 = list()
         self.y2 = list()
+        self.y3 = list()
+
+        self.getLabType()
+
     '''
     def readValues(self):
         arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
         return arduinoData
     '''
+
     #Initializes data# to have specific attributes
     def curve(self):
         pen1 = pg.mkPen(color = (255, 0, 0), width=1)
         pen2 = pg.mkPen(color = (0, 255, 0), width=1)
-        self.data1 = self.graphWidgetOutput.plot(pen = pen1, name="Data 1")
-        self.data2 = self.graphWidgetOutput.plot(pen = pen2, name="Data 2")
+        pen3 = pg.mkPen(color = (0, 0, 255), width=1)
+
+        self.data1 = self.graphWidgetOutput.plot(pen = pen1, name="Data 1") #Response
+        self.data2 = self.graphWidgetOutput.plot(pen = pen2, name="Data 2") #Setpoint
+        self.data3 = self.graphWidgetInput.plot(pen = pen3, name="Data 3") #PWM Actuation Signal
 
     #Connected to timer to update plot. Incoming data is in the form of timestamp,data1,data2...    
     def update(self):
+        #fulldata = self.readValues()
+        #print(fulldata)
         fulldata = self.serialInstance.readValues()
-        print(fulldata)
 
         self.step = self.step + 1
+
+        time_index = int(self.time_zeros[self.buffersize])
+        self.time_zeros[time_index] = self.time_zeros[time_index+self.size] = float(fulldata[0])
+        self.time_zeros[self.buffersize] = time_index = (time_index+1) % self.size
+        self.time.append(fulldata[0])
 
         i = int(self.y1_zeros[self.buffersize])
         self.y1_zeros[i] = self.y1_zeros[i+self.size] = float(fulldata[1])
@@ -566,15 +586,17 @@ class Window(QWidget):
         self.y2_zeros[self.buffersize] = j = (j+1) % self.size
         self.y2.append(fulldata[2])
 
-        k = int(self.x_zeros[self.buffersize])
-        self.x_zeros[k] = self.x_zeros[k+self.size] = float(fulldata[0])
-        self.x_zeros[self.buffersize] = k = (k+1) % self.size
-        self.x.append(fulldata[0])
+        k = int(self.y3_zeros[self.buffersize])
+        self.y3_zeros[k] = self.y3_zeros[k+self.size] = float(fulldata[3])
+        self.y3_zeros[self.buffersize] = k = (k+1) % self.size
+        self.y3.append(fulldata[3])
 
-        self.data1.setData(self.x_zeros[k:k+self.size],self.y1_zeros[i:i+self.size])
+        self.data1.setData(self.time_zeros[time_index:time_index+self.size],self.y1_zeros[i:i+self.size])
         self.data1.setPos(self.step,0)
-        self.data2.setData(self.x_zeros[k:k+self.size],self.y2_zeros[j:j+self.size])
+        self.data2.setData(self.time_zeros[time_index:time_index+self.size],self.y2_zeros[j:j+self.size])
         self.data2.setPos(self.step,0)
+        self.data3.setData(self.time_zeros[time_index:time_index+self.size],self.y3_zeros[k:k+self.size])
+        self.data3.setPos(self.step,0)
 
     #Below 4 change visibility of data# in the curves() method
     def visibilityAll(self):
@@ -646,9 +668,6 @@ class Window(QWidget):
             self.Dvalue = self.DInput.text()
         return([self.Pvalue, self.Ivalue, self.Dvalue])
 
-    def WriteValues(self):
-        pass
-
     #Function that connects output pyqtgraph widget, and the combobox
     def getInput(self):
         self.inputType = str(self.inputForms.currentText())
@@ -673,9 +692,23 @@ class Window(QWidget):
             self.graphWidgetInput.setYRange(-2, 2, padding=0)
 
     def getLabType(self):
-        self.inputType = str(self.inputForms.currentText())
-        pass
-
+        self.inputType = str(self.LabType.currentText())
+        if self.inputType == "Position":
+            print("Lab: Position")
+            return(
+            self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&theta; (°)</span>"),
+            self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>"),
+            self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>"),
+            self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
+            )
+        elif self.inputType == "Speed":
+            print("Lab: Speed")
+            return(
+            self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (°/s)</span>"),
+            self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>"),
+            self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>"),
+            self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>"),
+            )
 def main():
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
