@@ -13,25 +13,27 @@
 
 //Global Variables
 //Encoder Counting Variables, Encoder Parameters
-volatile long enc_count=0; //Encoder counting variable
+long enc_count = 0; //Encoder counting variable
 float deg = 0;    // Angle rotated
 float start_time = 0;
-////PID controller variables
-//double input, output;
-//double setpoint=25;
-//double kp = 1.5;
-//double ki = 0.1;
-//double kd = 0.5;
-//int base_pwm = 50; //Default power for both propellers
-//PID balance(&input, &output, &setpoint, kp, ki, kd, DIRECT);
 
+////PID controller variables
+double input;
+double motorPWM = 0.0;
+double setpoint=1000;
+double kp = 0.5; // 0.12 was sort of stable
+double ki = 0;
+double kd = 0;
+int base_pwm = 50; //Default power for both propellers
+
+int count = 0;
 
 int main(void){
   init();
   #if defined(USBCON)
       USBDevice.attach();
   #endif
-  Serial.begin(19200);
+  Serial.begin(9600);
   
   //Setup  
   //Set digial pin modes
@@ -44,26 +46,35 @@ int main(void){
   digitalWrite(BRK_B,HIGH);  // Prevent Motor Rotate
   //Set interrupt connection
   attachInterrupt(digitalPinToInterrupt(ENC_CHAN_A), do_count, RISING);
+  //Setup PID
+  PID anglePID(&input, &motorPWM, &setpoint, kp, ki, kd, DIRECT);
+  anglePID.SetOutputLimits(-225,225);
+  anglePID.SetMode(AUTOMATIC);
+  digitalWrite(BRK_B, LOW);   //Disengage the Brake for Channel B
+//  Serial.println(count);
 
   //Handshake
-  while(!Serial.available()){Serial.println('A');delay(300);}
-  if(Serial.read() == 'A'){Serial.println("Contact established");delay(1000);}
-  
-  
-  //Motor Step Response
-  start_time = millis();
-  for(int i = 0;i<3;i++){
-      digitalWrite(DIR_B, LOW); //Establishes forward direction of Channel B
-      digitalWrite(BRK_B, LOW);   //Disengage the Brake for Channel B
-      analogWrite(PWM_B, 150);   //Spins the motor on Channel B at full speed
-      delay_enc(1000);
-      digitalWrite(BRK_B, HIGH);   //Lock Motor at Channel B
-      analogWrite(PWM_B, 0);   //Disengage motor on Channel B
-      delay_enc(1000);
-//      enc_count = 0;
+//  while(!Serial.available()){Serial.println('A');delay(300);}
+//  if(Serial.read() == 'A'){delay(1000);}
+////  {Serial.println("Contact established");delay(1000);}
+
+  start_time = micros();
+  while(1){
+    input = double(enc_count);
+    anglePID.Compute();
+    if(motorPWM<0){                         // Spins motor in reverse direction
+      digitalWrite(DIR_B,HIGH);
+      analogWrite(PWM_B,abs(motorPWM));}
+    else{                                   // Spins motor in forward direction
+      digitalWrite(DIR_B,LOW);
+      analogWrite(PWM_B,motorPWM);}
+    print_enc_count();
+    count = count + 1;
+    if(micros() - start_time > 10000000){break;}
   }
-  while(1){if(Serial.available()){Serial.println("End");delay(300);}} // Send "End" to terminate python code
-  return 0;
+  if(Serial.available()){Serial.print("-1,-1,");Serial.println(count);delay(10);}; // Prints how many times this loop was executed
+  digitalWrite(PWM_B,LOW); // Stops Motor
+  while(1){Serial.println("End");delay(300);}
 }
 
 void do_count(){
@@ -71,16 +82,13 @@ void do_count(){
   else {enc_count--;} //Else decrement
 }
 
-void delay_enc(float t){
-  float t_max = millis()+t;
-  float cur_time = millis();
-  while(cur_time < t_max){
-    if(Serial.read() == 'B'){
-//    if(Serial.available()){
+void print_enc_count(){
+  float cur_time = micros();
+//  if(Serial.read() == 'B'){
       Serial.print(cur_time-start_time);
       Serial.print(",");
-      Serial.println(enc_count);
-    }
-    cur_time = millis();
-  }
+      Serial.print(enc_count);
+      Serial.print(",");
+      Serial.println(motorPWM);
+//    }
 }

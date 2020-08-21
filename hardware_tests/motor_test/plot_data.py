@@ -78,7 +78,7 @@ def smooth(x,window_len=11,window='hanning'):
 # fig.show()
 
 # Plot enc_count and PWM input
-df = pd.read_csv("angle_PID.txt",sep = ",", header = None, names = ['time','enc_count','motorPWM'])
+df = pd.read_csv("results.txt",sep = ",", header = None, names = ['time','enc_count','motorPWM'])
 # df.plot(x = 'time',y = ['enc_count','motorPWM'])
 df_melt = df.melt(id_vars='time', value_vars=['enc_count', 'motorPWM'])
 fig = px.line(df_melt, x = "time",y = "value",color = 'variable')
