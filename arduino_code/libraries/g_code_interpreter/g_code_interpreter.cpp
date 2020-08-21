@@ -7,9 +7,16 @@ void SerialComms::process_command(char* cmd_string)
     int pos;
     int cmd;
 
+    //Handshake command
+    cmd = parse_number(cmd_string, 'H', -1);
+    switch(int(cmd)){
+        case 0:
+        default: break;
+    }
+
     //Request command
-    // cmd = parse_number(cmd_string, 'R', -1);
-    switch(cmd){
+    cmd = parse_number(cmd_string, 'R', -1);
+    switch(int(cmd)){
         case 0: // Serial write the data packet back to GUI
 
         //If no matches, break
@@ -20,9 +27,9 @@ void SerialComms::process_command(char* cmd_string)
     cmd = parse_number(cmd_string, 'S', -1);
     switch(int(cmd)){
         case 0: //Set PID gains
-            kp = parse_number(cmd_string, 'P', -1);
-            ki = parse_number(cmd_string, 'I', -1);
-            kd = parse_number(cmd_string, 'D', -1);
+            kp = double(parse_number(cmd_string, 'P', -1));
+            ki = double(parse_number(cmd_string, 'I', -1));
+            kd = double(parse_number(cmd_string, 'D', -1));
 
         case 1://Set Setpoint
             setpoint = parse_number(cmd_string, 'Z' , -1);
@@ -55,7 +62,7 @@ float SerialComms::parse_number(char* cmd_string, char key, int def)
     int delim_len=0; //Position of next delimiter after key in string
 
     //Search string for first instance of key, increment key length each time key isn't found
-    for(int i=0; i<100; i++)
+    for(int i=0; i<100; i++) //TODO: Make this 100 value a HEADER_LENGTH #define
     {
         if(cmd_string[i] == '\0') { return def; } //If we can't find key, return default value
         if(cmd_string[i] == key){key_len = i; break;}
