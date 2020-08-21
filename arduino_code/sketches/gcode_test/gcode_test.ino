@@ -12,8 +12,6 @@ double ki;
 double kd;
 double setpoint;
 SerialComms com;
-PID controller;
-double input;
 
 
 void setup() {
