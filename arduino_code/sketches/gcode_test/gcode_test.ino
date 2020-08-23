@@ -13,20 +13,27 @@
 
 
 //Global Variables
-int labType;
-int mode;
-double setpoint;
+char incoming_char;
+char cmd [200];
+int cmd_index = 0;
+double input,motorPWM,setpoint,kp,ki,kd; // Controller params
+int lowerOutputLimit = -255;  // Controller upper limit
+int upperOutputLimit = 255;   // Controller lower limit
+
+double enc_count,enc_deg;
+double motor_speed;
+double valA,valB;
+
 SerialComms com;
 
-
 // Initialize PID motor controller
-PID motor_controller(&input, &motorPWM, &setpoint, kp, ki, kd, DIRECT);  // Set up PID controller
+PID motor_controller(&input, &motorPWM, &com.setpoint, kp, ki, kd, DIRECT);  // Set up PID controller
 
 void setup() {
   Serial.begin(9600);  // Begins Serial communication
   
   motor_controller.SetMode(AUTOMATIC); // Setup controller mode
-  motor_controller.SetOutputLimits(-255,255); // Default controller to use full power
+  motor_controller.SetOutputLimits(-255,255); // Default controller to use full range of PWM
   
   //Encoder Setup
   pinMode(ENC_A, INPUT_PULLUP);
@@ -38,61 +45,73 @@ void setup() {
   pinMode(PWM_B, OUTPUT);
   pinMode(DIR_B, OUTPUT);
   digitalWrite(PWM_B,LOW);  // Breaks Motor
-
-  start_time = micros(); //Loop start time
 }
 
 void loop() {
-  //Process incoming command
+  if(com.mode != 0){
+    handle_command();  //Process incoming command
+    update_control_params();    //Check and update gains
+    motor_controller.Compute();
+
+    analogWrite(PWM_B,motorPWM);
+  }
+}
+
+double calc_motor_speed(){
+  motor_speed = 10;
+}
+
+void update_control_params(){
+  // Update input
+  if(com.labType == 0){  // Angle Control
+    input = enc_deg;
+  }
+  else if(com.labType == 1){  // Speed Control
+    calc_motor_speed();
+    input = motor_speed;
+  }
+  if(kp != com.kp || ki!= com.ki || kd!= com.kd){
+    kp = com.kp; ki = com.ki; kd = com.kd;
+    motor_controller.SetTunings(kp,ki,kd);  // Update gains
+  }
+  if(lowerOutputLimit != com.lowerOutputLimit || upperOutputLimit != com.upperOutputLimit){
+    lowerOutputLimit = com.lowerOutputLimit;
+    upperOutputLimit = com.upperOutputLimit;
+    motor_controller.SetOutputLimits(lowerOutputLimit,upperOutputLimit);
+  }
+}
+
+// Arduino command handler
+void handle_command(){
   if(Serial.available() != 0){
     incoming_char = Serial.read();
     cmd[cmd_index] = incoming_char;
     if(incoming_char == '\0'){
       Serial.println("End of line, processing commands!");
       com.process_command(cmd);
-      update_params();
+      // Check and if there is a request, send data
+      if(com.write_data == 1){
+        Serial.print("T");Serial.print(micros());Serial.print(',');
+        Serial.print('S');Serial.print(setpoint);Serial.print(',');
+        
+        if(com.labType == 0){ // Angle
+          Serial.print('A');
+          Serial.print(enc_deg);
+        }
+        else if(com.labType == 1){
+          Serial.print('V');
+          Serial.print(motor_speed);
+        }
+        Serial.print(',');
+        Serial.print('Q');Serial.print(motorPWM);Serial.print(',');Serial.println('\0');
+        com.write_data = 0; // Reset write data flag
+      }
+      // Reset command buffer
       cmd_index = 0;
       char cmd [200];
     }
     else{cmd_index ++;}
   }
-
-  // Determine lab type, compute appropriate setpoint and input signal
-  if(com.labType == 0){  // Motor Angle Control
-//    input = coef*enc_count;  // update input as angle
-  }
-  else if(com.labType == 1){ // Motor Speed Control
-      input = calc_motor_speed();  // update input as motor speed
-  }
-
-  //Update PID limits and Compute PWM
-  motor_controller.SetOutputLimits(lowerOutputLimit,upperOutputLimit);
-  motor_controller.Compute();  //PID compute, update output
-}
-
-void update_params(){
-  labType = com.labType;
-  setpoint = com.setpoint;
-  mode = com.mode;
-  lowerOutputLimit = com.lowerOutputLimit;
-  upperOutputLimit = com.upperOutputLimit;
-  sampleTime = com.sampleTime;
-  kp = com.kp;
-  ki = com.ki;
-  kd = com.kd;
-  motor_controller.SetTunings(kp, ki, kd); //Update Controller Gains
-}
-
-double calc_motor_speed(){
-  for(int i = 0;i<sizeof(enc_count_memory);i++){
-    diff += enc_count_memory[i+1] - enc_count_memory[i];
-    enc_count_memory[i] = enc_count_memory[i+1];
-  }
-  diff += enc_count - enc_count_memory[sizeof(enc_count_memory)];
-  enc_count_memory[sizeof(enc_count_memory)] = enc_count;
-  diff = 0;
-  
-  return double(diff/sizeof(enc_count_memory));
 }
 
 //Encoder interrupts

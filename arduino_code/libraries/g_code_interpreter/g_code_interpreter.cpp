@@ -5,11 +5,12 @@
 void SerialComms::process_command(char* cmd_string){
     int pos;
     int cmd;
+    int write_data;
 
     //Handshake command
     cmd = parse_number(cmd_string, 'H', -1);
     switch(int(cmd)){
-        case 0:
+        case 0: write_data = 1;
         default: break;
     }
 

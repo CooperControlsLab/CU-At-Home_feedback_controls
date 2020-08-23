@@ -17,6 +17,7 @@ public:
     double kp;
     double ki;
     double kd;
+    int write_data;
 };
 
 
