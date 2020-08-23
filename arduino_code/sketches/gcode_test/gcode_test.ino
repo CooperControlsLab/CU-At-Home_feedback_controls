@@ -16,30 +16,8 @@
 int labType;
 int mode;
 double setpoint;
-int sampleTime;
-double kp = 0;
-double ki = 0;
-double kd = 0;
-int lowerOutputLimit = -255;
-int upperOutputLimit = 255;
-
-double motorPWM = 0;
-double input;
-char incoming_char;
-char cmd [200];
-int cmd_index = 0;
-int enc_count_memory [100];
-int diff = 0;
-int enc_count;
-double start_time;
-double pulse_A_start_time;
-double pulse_B_start_time;
-double pulse_interval;
-
-int valA,valB;
-
-// Comms class initialize
 SerialComms com;
+
 
 // Initialize PID motor controller
 PID motor_controller(&input, &motorPWM, &setpoint, kp, ki, kd, DIRECT);  // Set up PID controller
