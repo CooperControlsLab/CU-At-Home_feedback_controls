@@ -2,8 +2,7 @@
 #include <string.h>
 #include <Arduino.h>
 
-void SerialComms::process_command(char* cmd_string)
-{
+void SerialComms::process_command(char* cmd_string){
     int pos;
     int cmd;
 
@@ -47,13 +46,11 @@ void SerialComms::process_command(char* cmd_string)
             lowerOutputLimit = parse_number(cmd_string, 'L', -1);
             upperOutputLimit = parse_number(cmd_string, 'U', -1);
 
-
         default: break;
     }
 }
 
-float SerialComms::parse_number(char* cmd_string, char key, int def)
-{
+float SerialComms::parse_number(char* cmd_string, char key, int def){
     //Search cmd_string for key, return the number between key and delimiter
     // Serial.println(cmd_string);
     // Serial.println(key);
@@ -70,9 +67,7 @@ float SerialComms::parse_number(char* cmd_string, char key, int def)
     // Serial.print("key len: "); Serial.println(key_len);
 
     //Search string starting at character after key, looking for next delimiter the comma
-    for(int i=key_len+1; i<100; i++)
-    {
-
+    for(int i=key_len+1; i<100; i++){
         if(cmd_string[i] == ',' || cmd_string[i] == '\0')
         {
             break;

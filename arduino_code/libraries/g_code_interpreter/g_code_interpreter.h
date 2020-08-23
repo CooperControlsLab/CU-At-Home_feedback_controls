@@ -6,8 +6,7 @@ public:
     void process_command(char*);
     //Search cmd for letter, return number immideately after letter
     float parse_number(char*, char, int);
-    SerialComms(int*, double*, pwmAngle, pwmVelocity, time, )
-private:
+public:
     int labType;
     double setpoint;
     int mode;

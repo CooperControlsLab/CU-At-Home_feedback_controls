@@ -1,61 +1,147 @@
 #include "g_code_interpreter.h"
 //#include <string.h>
-//#include <motor_control.h>
 #include <PID_v1.h>
 
+// Define hardware pins
+#define ENC_A 2   //Encoder A
+#define ENC_B 3   //Encoder B
+#define PPR 211.2 //Encoder pulses per revolution 
+
+#define DIR_B 13 //Motor Direction
+#define PWM_B 11 //Motor PWM
+#define BRK_B 8  //Motor Break
+
+
 //Global Variables
-
-char command[200] = {0};
-int command_index =0;
-double kp;
-double ki;
-double kd;
+int labType;
+int mode;
 double setpoint;
-SerialComms com;
-PID controller;
-double input;
+int sampleTime;
+double kp = 0;
+double ki = 0;
+double kd = 0;
+int lowerOutputLimit = -255;
+int upperOutputLimit = 255;
 
+double motorPWM = 0;
+double input;
+char incoming_char;
+char cmd [200];
+int cmd_index = 0;
+int enc_count_memory [100];
+int diff = 0;
+int enc_count;
+double start_time;
+double pulse_A_start_time;
+double pulse_B_start_time;
+double pulse_interval;
+
+int valA,valB;
+
+// Comms class initialize
+SerialComms com;
+
+// Initialize PID motor controller
+PID motor_controller(&input, &motorPWM, &setpoint, kp, ki, kd, DIRECT);  // Set up PID controller
 
 void setup() {
-  // put your setup code here, to run once:
-  Serial.begin(9600);
-  char a[20] = "S0,I1,P2252.025,D3,\0";
-  char b[20] = "S1,Z20,\0";
-  com.process_command(a);
-  com.process_command(b);
+  Serial.begin(9600);  // Begins Serial communication
+  
+  motor_controller.SetMode(AUTOMATIC); // Setup controller mode
+  motor_controller.SetOutputLimits(-255,255); // Default controller to use full power
+  
+  //Encoder Setup
+  pinMode(ENC_A, INPUT_PULLUP);
+  pinMode(ENC_B, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(ENC_A), pulseA, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENC_B), pulseB, CHANGE);
+  
+  //Motor Setup
+  pinMode(PWM_B, OUTPUT);
+  pinMode(DIR_B, OUTPUT);
+  digitalWrite(PWM_B,LOW);  // Breaks Motor
+
+  start_time = micros(); //Loop start time
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  if(Serial.available() != 0)
-  {
-    
-    command[command_index] = Serial.read();
-    if(command[command_index] == '\0')
-    { com.process_command(command);
-      //reset command_index
-      //reset command char array
-      //update global variables with data from processed command
-      }
-    command_index++;
-    
+  //Process incoming command
+  if(Serial.available() != 0){
+    incoming_char = Serial.read();
+    cmd[cmd_index] = incoming_char;
+    if(incoming_char == '\0'){
+      Serial.println("End of line, processing commands!");
+      com.process_command(cmd);
+      update_params();
+      cmd_index = 0;
+      char cmd [200];
+    }
+    else{cmd_index ++;}
   }
-  //Compute
-  if(com.labType == 0) { angle.Compute(); }
-  if(com.labType == 1) { velocity.Compute(); }
 
-  //update input
-  if(com.labType == 0) { //do angle shit}
-  if(com.labType == 1) { //do velocity calc etc..
+  // Determine lab type, compute appropriate setpoint and input signal
+  if(com.labType == 0){  // Motor Angle Control
+//    input = coef*enc_count;  // update input as angle
   }
-  //update output
+  else if(com.labType == 1){ // Motor Speed Control
+      input = calc_motor_speed();  // update input as motor speed
+  }
+
+  //Update PID limits and Compute PWM
+  motor_controller.SetOutputLimits(lowerOutputLimit,upperOutputLimit);
+  motor_controller.Compute();  //PID compute, update output
 }
 
-void update()
-{
+void update_params(){
+  labType = com.labType;
+  setpoint = com.setpoint;
+  mode = com.mode;
+  lowerOutputLimit = com.lowerOutputLimit;
+  upperOutputLimit = com.upperOutputLimit;
+  sampleTime = com.sampleTime;
   kp = com.kp;
   ki = com.ki;
+  kd = com.kd;
+  motor_controller.SetTunings(kp, ki, kd); //Update Controller Gains
+}
+
+double calc_motor_speed(){
+  for(int i = 0;i<sizeof(enc_count_memory);i++){
+    diff += enc_count_memory[i+1] - enc_count_memory[i];
+    enc_count_memory[i] = enc_count_memory[i+1];
+  }
+  diff += enc_count - enc_count_memory[sizeof(enc_count_memory)];
+  enc_count_memory[sizeof(enc_count_memory)] = enc_count;
+  diff = 0;
   
-  if(com.labType == 0) {angle.SetMode(com.mode); velocity.SetMode(!com.mode);}
-  if(com.labType == 1) {angle.SetMode(!com.mode); velocity.SetMode(com.mode);}
+  return double(diff/sizeof(enc_count_memory));
+}
+
+//Encoder interrupts
+void pulseA() {
+  valA = digitalRead(ENC_A);
+  valB = digitalRead(ENC_B);
+  
+  if(valA == HIGH){  // A Rise
+    if(valB == LOW){enc_count ++;}  // CW
+    else{enc_count --;}  // CCW
+  }
+  else{  // A fall
+    if(valB == HIGH){enc_count ++;}  // CW
+    else{enc_count --;}  //CCW
+  }
+}
+
+void pulseB() {
+  valA = digitalRead(ENC_A);
+  valB = digitalRead(ENC_B);
+  
+  if(valB == HIGH){  // B rise
+    if(valA == HIGH){enc_count ++;}  // CW
+    else{enc_count --;}  // CCW
+  }
+  else{  //B fall
+    if(valA == LOW){enc_count ++;}  // CW
+    else{enc_count --;}  // CCW
+  }
 }
