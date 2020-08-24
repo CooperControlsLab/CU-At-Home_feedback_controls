@@ -6,7 +6,7 @@
 #define ENC_A 2   //Encoder A
 #define ENC_B 3   //Encoder B
 #define PPR 211.2 //Encoder pulses per revolution 
-
+#define PPR_A 52.8 //Pulse A per r
 #define DIR_B 13 //Motor Direction
 #define PWM_B 11 //Motor PWM
 #define BRK_B 8  //Motor Break
@@ -22,7 +22,8 @@ int upperOutputLimit = 255;   // Controller lower limit
 
 double enc_count,enc_deg;
 double motor_speed;
-double valA,valB;
+double valA,valB, prev_pulse_time, pulse_interval;
+double stationary_thresh = 8000; //8000 us
 
 SerialComms com;
 
@@ -48,19 +49,38 @@ void setup() {
 }
 
 void loop() {
-  if(com.mode != 0){
     handle_command();  //Process incoming command
-    update_control_params();    //Check and update gains
+    enc_deg = double(enc_count/PPR*360);
+    update_control_params();    //Update gains, update inputs based on labtype
     motor_controller.Compute();
 
-    analogWrite(PWM_B,motorPWM);
+    //Mode turns on and off motor
+    if(com.mode == 0){
+      analogWrite(PWM_B,0);
+    }
+    else{
+      analogWrite(PWM_B,motorPWM);
+    }
+  send_data();
+}
+
+//*****************************************************//
+// Arduino command handler
+void handle_command(){
+  if(Serial.available() != 0){
+    incoming_char = Serial.read();
+    cmd[cmd_index] = incoming_char;
+    if(incoming_char == '%'){
+//      Serial.println("End of line, processing commands!");
+      com.process_command(cmd);
+      // Reset command buffer
+      cmd_index = 0;
+      char cmd [200];
+    }
+    else{cmd_index ++;}
   }
 }
-
-double calc_motor_speed(){
-  motor_speed = 10;
-}
-
+//*****************************************************//
 void update_control_params(){
   // Update input
   if(com.labType == 0){  // Angle Control
@@ -71,7 +91,7 @@ void update_control_params(){
     input = motor_speed;
   }
   if(kp != com.kp || ki!= com.ki || kd!= com.kd){
-    kp = com.kp; ki = com.ki; kd = com.kd;
+    kp = com.kp; ki = com.ki; kd = com.kd;  // Checking for difference before setting to prevent jitter
     motor_controller.SetTunings(kp,ki,kd);  // Update gains
   }
   if(lowerOutputLimit != com.lowerOutputLimit || upperOutputLimit != com.upperOutputLimit){
@@ -80,42 +100,48 @@ void update_control_params(){
     motor_controller.SetOutputLimits(lowerOutputLimit,upperOutputLimit);
   }
 }
-
-// Arduino command handler
-void handle_command(){
-  if(Serial.available() != 0){
-    incoming_char = Serial.read();
-    cmd[cmd_index] = incoming_char;
-    if(incoming_char == '\0'){
-      Serial.println("End of line, processing commands!");
-      com.process_command(cmd);
-      // Check and if there is a request, send data
-      if(com.write_data == 1){
-        Serial.print("T");Serial.print(micros());Serial.print(',');
-        Serial.print('S');Serial.print(setpoint);Serial.print(',');
-        
-        if(com.labType == 0){ // Angle
-          Serial.print('A');
-          Serial.print(enc_deg);
-        }
-        else if(com.labType == 1){
-          Serial.print('V');
-          Serial.print(motor_speed);
-        }
-        Serial.print(',');
-        Serial.print('Q');Serial.print(motorPWM);Serial.print(',');Serial.println('\0');
-        com.write_data = 0; // Reset write data flag
-      }
-      // Reset command buffer
-      cmd_index = 0;
-      char cmd [200];
-    }
-    else{cmd_index ++;}
+//*****************************************************//
+double calc_motor_speed(){
+//  Check if motor is stationary
+  if(micros() -  prev_pulse_time > stationary_thresh){
+    motor_speed = 0;
+  }
+  else{
+    motor_speed = double(1000000/(pulse_interval)/PPR_A/2*60.00);
   }
 }
 
+//*****************************************************//
+// Send data on request
+void send_data(){
+  // Check and if there is a request, send data
+//  Serial.println(com.write_data);
+  if(com.write_data == 0){
+    Serial.print("T");Serial.print(micros());Serial.print(',');
+    Serial.print('S');Serial.print(setpoint);Serial.print(',');
+    
+    if(com.labType == 0){ // Angle
+      Serial.print('A');
+      Serial.print(enc_deg);
+    }
+    else if(com.labType == 1){
+      Serial.print('V');
+      Serial.print(motor_speed);
+    }
+    Serial.print(',');
+    Serial.print('Q');Serial.print(motorPWM);Serial.print(',');
+    Serial.print(com.labType);Serial.print(',');
+    Serial.println('\0');
+//    com.write_data = 0; // Reset write data flag
+  }
+}
+
+//*****************************************************//
 //Encoder interrupts
 void pulseA() {
+  pulse_interval = prev_pulse_time - micros();
+  prev_pulse_time = micros();
+  
   valA = digitalRead(ENC_A);
   valB = digitalRead(ENC_B);
   

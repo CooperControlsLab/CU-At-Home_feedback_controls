@@ -6,18 +6,24 @@ void SerialComms::process_command(char* cmd_string){
     int pos;
     int cmd;
     int write_data;
+    labType = 0; // Default angle control
+    mode = 0; // Default off
 
     //Handshake command
     cmd = parse_number(cmd_string, 'H', -1);
     switch(int(cmd)){
-        case 0: write_data = 1;
+        case 0: // Handshake stuff to be implemented
         default: break;
     }
 
     //Request command
     cmd = parse_number(cmd_string, 'R', -1);
     switch(int(cmd)){
-        case 0: // Serial write the data packet back to GUI
+        case 0: //Flag to write data
+            write_data = 1; 
+            Serial.print(write_data);
+            Serial.print(',');
+            Serial.println("Request flagged");
 
         //If no matches, break
         default: break;
@@ -81,6 +87,6 @@ float SerialComms::parse_number(char* cmd_string, char key, int def){
     char substring[20] = {0};
     strncpy(substring, &cmd_string[key_len+1], delim_len);  //Copy subset of string to substring
     
-    Serial.print("test string: "); Serial.println(substring);
+    // Serial.print("test string: "); Serial.println(substring);
     return atof(substring); //return the substring in float format
 }
