@@ -2,17 +2,28 @@
 #include <string.h>
 #include <Arduino.h>
 
+SerialComms::SerialComms(){
+    setpoint = 0;
+    labType = 0;
+    mode = 0;
+    lowerOutputLimit = -125;
+    upperOutputLimit = 125;
+    sampleTime = 0;
+    kp = 0;
+    ki = 0;
+    kd = 0;
+    write_data = 0;
+}
+
 void SerialComms::process_command(char* cmd_string){
     int pos;
     int cmd;
-    int write_data;
-    labType = 0; // Default angle control
-    mode = 0; // Default off
 
     //Handshake command
     cmd = parse_number(cmd_string, 'H', -1);
     switch(int(cmd)){
         case 0: // Handshake stuff to be implemented
+            break;
         default: break;
     }
 
@@ -20,10 +31,8 @@ void SerialComms::process_command(char* cmd_string){
     cmd = parse_number(cmd_string, 'R', -1);
     switch(int(cmd)){
         case 0: //Flag to write data
-            write_data = 1; 
-            Serial.print(write_data);
-            Serial.print(',');
-            Serial.println("Request flagged");
+            write_data = 1;
+            break;
 
         //If no matches, break
         default: break;
@@ -36,22 +45,28 @@ void SerialComms::process_command(char* cmd_string){
             kp = double(parse_number(cmd_string, 'P', -1));
             ki = double(parse_number(cmd_string, 'I', -1));
             kd = double(parse_number(cmd_string, 'D', -1));
+            break;
 
         case 1://Set Setpoint
-            setpoint = parse_number(cmd_string, 'Z' , -1);
+            setpoint = double(parse_number(cmd_string, 'Z' , -1));
+            break;
 
         case 2: //Set Lab type
-            labType = parse_number(cmd_string, 'Y', -1);
+            labType = int(parse_number(cmd_string, 'Y', -1));
+            break;
 
         case 3: //Set Controller Mode (on/off)
-            mode = parse_number(cmd_string, 'M', -1);
+            mode = int(parse_number(cmd_string, 'M', -1));
+            break;
 
         case 4: //Set Sample Time
-            sampleTime = parse_number(cmd_string, 'T', -1);
+            sampleTime = double(parse_number(cmd_string, 'T', -1));
+            break;
 
         case 5: //Set Output Limits
-            lowerOutputLimit = parse_number(cmd_string, 'L', -1);
-            upperOutputLimit = parse_number(cmd_string, 'U', -1);
+            lowerOutputLimit = double(parse_number(cmd_string, 'L', -1));
+            upperOutputLimit = double(parse_number(cmd_string, 'U', -1));
+            break;
 
         default: break;
     }
@@ -68,14 +83,14 @@ float SerialComms::parse_number(char* cmd_string, char key, int def){
     //Search string for first instance of key, increment key length each time key isn't found
     for(int i=0; i<100; i++) //TODO: Make this 100 value a HEADER_LENGTH #define
     {
-        if(cmd_string[i] == '\0') { return def; } //If we can't find key, return default value
+        if(cmd_string[i] == '%') { return def; } //If we can't find key, return default value
         if(cmd_string[i] == key){key_len = i; break;}
     }
     // Serial.print("key len: "); Serial.println(key_len);
 
     //Search string starting at character after key, looking for next delimiter the comma
     for(int i=key_len+1; i<100; i++){
-        if(cmd_string[i] == ',' || cmd_string[i] == '\0')
+        if(cmd_string[i] == ',' || cmd_string[i] == '%')
         {
             break;
         }

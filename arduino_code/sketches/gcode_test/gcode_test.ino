@@ -28,7 +28,7 @@ double stationary_thresh = 8000; //8000 us
 SerialComms com;
 
 // Initialize PID motor controller
-PID motor_controller(&input, &motorPWM, &com.setpoint, kp, ki, kd, DIRECT);  // Set up PID controller
+PID motor_controller(&input, &motorPWM, &(com.setpoint), kp, ki, kd, DIRECT);  // Set up PID controller
 
 void setup() {
   Serial.begin(9600);  // Begins Serial communication
@@ -71,11 +71,12 @@ void handle_command(){
     incoming_char = Serial.read();
     cmd[cmd_index] = incoming_char;
     if(incoming_char == '%'){
+      cmd[cmd_index+1] = '\0';
 //      Serial.println("End of line, processing commands!");
       com.process_command(cmd);
       // Reset command buffer
       cmd_index = 0;
-      char cmd [200];
+      memset(cmd,'\0',sizeof(cmd));
     }
     else{cmd_index ++;}
   }
@@ -116,7 +117,7 @@ double calc_motor_speed(){
 void send_data(){
   // Check and if there is a request, send data
 //  Serial.println(com.write_data);
-  if(com.write_data == 0){
+  if(com.write_data == 1){
     Serial.print("T");Serial.print(micros());Serial.print(',');
     Serial.print('S');Serial.print(setpoint);Serial.print(',');
     
@@ -132,7 +133,7 @@ void send_data(){
     Serial.print('Q');Serial.print(motorPWM);Serial.print(',');
     Serial.print(com.labType);Serial.print(',');
     Serial.println('\0');
-//    com.write_data = 0; // Reset write data flag
+    com.write_data = 0; // Reset write data flag
   }
 }
 
