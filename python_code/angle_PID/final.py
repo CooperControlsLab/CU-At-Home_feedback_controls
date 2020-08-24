@@ -12,9 +12,9 @@ import pyqtgraph as pg
 import serial
 import serial.tools.list_ports
 import numpy as np
-import psutil
 import csv
 import qdarkstyle
+from QLed import QLed
 
 #Drone: 2 inputs, 4 outputs
 #Pro Con: 1 input, 2 outputs
@@ -39,6 +39,9 @@ class SerialComm:
     def serialClose(self):
         self.ser.close()
 
+    def serialIsOpen(self):
+        self.ser.is_open
+
     def handshake(self):
         self.ser.flushInput()
         self.ser.write(b"H0,\0")
@@ -54,6 +57,7 @@ class SerialComm:
 
     def readValues(self):
         self.ser.write(b"R,\0") #used to call for the next line (Request)
+        #current format of received data is b"T23533228,S0.00,A0.00,Q0.00,\0\r\n"
         arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
         return arduinoData        
     
@@ -199,13 +203,46 @@ class Window(QWidget):
         self.imageLabel.setPixmap(QPixmap("./Arduino/logo/CUAtHomeLogo-Horz.png").scaled(200, 130, Qt.KeepAspectRatio, Qt.FastTransformation))
         self.verticalLayout.addWidget(self.imageLabel)
 
-        self.startbutton = QPushButton("Start",self)
+        """
+        self.LEDLabel = QLabel("Arduino Status",self)
+        self.LEDLabel.setMinimumSize(QSize(100, 20))
+        self.LEDLabel.setMaximumSize(QSize(100, 20))
+        self.gridLayout.addWidget(self.LEDLabel, 0, 0, 1, 1)
+
+        self._led = QLed(self, onColour=QLed.Red, shape=QLed.Circle)
+        self._led.clickable = False
+        self.gridLayout.addWidget(self._led, 0, 1, 1, 1)
+        """
+
+
+
+        self.serialOpenButton = QPushButton("Open Serial",self)
+        self.serialOpenButton.setCheckable(False)  
+        self.serialOpenButton.clicked.connect(self.serialOpenPushed)        
+        self.serialOpenButton.setMaximumSize(QSize(100, 20))
+        self.gridLayout.addWidget(self.serialOpenButton, 0, 0, 1, 1)
+
+        self.serialCloseButton = QPushButton("Close Serial",self)
+        self.serialCloseButton.setCheckable(False)  
+        self.serialCloseButton.clicked.connect(self.serialClosePushed)
+        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.serialCloseButton.sizePolicy().hasHeightForWidth())
+        self.serialCloseButton.setSizePolicy(sizePolicy)
+        self.serialCloseButton.setMaximumSize(QSize(100, 20))
+        self.gridLayout.addWidget(self.serialCloseButton, 0, 1, 1, 1)
+
+
+
+
+        self.startbutton = QPushButton("Start Plot",self)
         self.startbutton.setCheckable(False)  
         self.startbutton.clicked.connect(self.startbutton_pushed)        
         self.startbutton.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.startbutton, 0, 0, 1, 1)
+        self.gridLayout.addWidget(self.startbutton, 1, 0, 1, 1)
 
-        self.stopbutton = QPushButton("Stop",self)
+        self.stopbutton = QPushButton("Stop Plot",self)
         self.stopbutton.setCheckable(False)  
         self.stopbutton.clicked.connect(self.stopbutton_pushed)
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
@@ -214,15 +251,15 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.stopbutton.sizePolicy().hasHeightForWidth())
         self.stopbutton.setSizePolicy(sizePolicy)
         self.stopbutton.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.stopbutton, 0, 1, 1, 1)
+        self.gridLayout.addWidget(self.stopbutton, 1, 1, 1, 1)
     
-        self.clearbutton = QPushButton("Clear",self)
+        self.clearbutton = QPushButton("Clear Plot",self)
         self.clearbutton.setCheckable(False)
         self.clearbutton.clicked.connect(self.clearbutton_pushed)
         self.clearbutton.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.clearbutton, 1, 0, 1, 1)
+        self.gridLayout.addWidget(self.clearbutton, 2, 0, 1, 1)
 
-        self.savebutton = QPushButton("Save",self)
+        self.savebutton = QPushButton("Save Plot",self)
         self.savebutton.setCheckable(False)
         self.savebutton.clicked.connect(self.savebutton_pushed)
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
@@ -231,18 +268,18 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.savebutton.sizePolicy().hasHeightForWidth())
         self.savebutton.setSizePolicy(sizePolicy)
         self.savebutton.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.savebutton, 1, 1, 1, 1)
+        self.gridLayout.addWidget(self.savebutton, 2, 1, 1, 1)
 
         self.settings = QPushButton("Settings",self)
         self.settings.clicked.connect(self.settingsMenu)
         self.settings.setMaximumSize(QSize(300, 20))
-        self.gridLayout.addWidget(self.settings, 2, 0, 1, 2)
+        self.gridLayout.addWidget(self.settings, 3, 0, 1, 2)
 
         self.checkBoxShowAll = QCheckBox("Show All Plots", self)
         self.checkBoxShowAll.setMaximumSize(QSize(100, 20))
         self.checkBoxShowAll.setChecked(True)
         self.checkBoxShowAll.toggled.connect(self.visibilityAll)
-        self.gridLayout.addWidget(self.checkBoxShowAll, 3, 0, 1, 1)
+        self.gridLayout.addWidget(self.checkBoxShowAll, 4, 0, 1, 1)
 
         self.checkBoxHideAll = QCheckBox("Hide All Plots", self)
         self.checkBoxHideAll.setChecked(False)
@@ -253,12 +290,12 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.checkBoxHideAll.sizePolicy().hasHeightForWidth())
         self.checkBoxHideAll.setSizePolicy(sizePolicy)
         self.checkBoxHideAll.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.checkBoxHideAll, 3, 1, 1, 1)
+        self.gridLayout.addWidget(self.checkBoxHideAll, 4, 1, 1, 1)
 
         self.checkBoxPlot1 = QCheckBox("Plot 1", self)
         self.checkBoxPlot1.toggled.connect(self.visibility1)
         self.checkBoxPlot1.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.checkBoxPlot1, 4, 0, 1, 1)
+        self.gridLayout.addWidget(self.checkBoxPlot1, 5, 0, 1, 1)
 
         self.checkBoxPlot2 = QCheckBox("Plot 2", self)
         self.checkBoxPlot2.toggled.connect(self.visibility2)
@@ -268,12 +305,43 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.checkBoxPlot2.sizePolicy().hasHeightForWidth())
         self.checkBoxPlot2.setSizePolicy(sizePolicy)
         self.checkBoxPlot2.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.checkBoxPlot2, 4, 1, 1, 1)
+        self.gridLayout.addWidget(self.checkBoxPlot2, 5, 1, 1, 1)
 
         self.checkBoxShowAll.stateChanged.connect(self.checkbox_logic) 
         self.checkBoxHideAll.stateChanged.connect(self.checkbox_logic) 
         self.checkBoxPlot1.stateChanged.connect(self.checkbox_logic) 
         self.checkBoxPlot2.stateChanged.connect(self.checkbox_logic)
+
+        self.LabType = QComboBox()
+        self.LabType.addItems(["Position","Speed"])
+        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.LabType.sizePolicy().hasHeightForWidth())
+        self.LabType.setSizePolicy(sizePolicy)
+        self.LabType.setMaximumSize(QSize(100, 20))
+        self.gridLayout.addWidget(self.LabType, 6, 1, 1, 1)
+        self.LabLabel = QLabel("Lab Type")
+        self.LabLabel.setMaximumSize(QSize(100, 20))
+        self.gridLayout.addWidget(self.LabLabel, 6, 0, 1, 1)
+
+        """
+        self.inputForms = QComboBox()
+        self.inputForms.addItems(["Sine","Step"])
+        #self.inputForms.activated.connect(self.getInput)
+        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.inputForms.sizePolicy().hasHeightForWidth())
+        self.inputForms.setSizePolicy(sizePolicy)
+        self.inputForms.setMaximumSize(QSize(100, 20))
+        self.gridLayout.addWidget(self.inputForms, 7, 1, 1, 1)
+        self.inputType = QLabel("Input Type")
+        self.inputType.setMaximumSize(QSize(100, 20))
+        self.gridLayout.addWidget(self.inputType, 7, 0, 1, 1)
+        """
+
+
 
         self.SetpointLabel = QLabel("Setpoint",self)
         self.SetpointLabel.setMinimumSize(QSize(100, 20))
@@ -294,7 +362,7 @@ class Window(QWidget):
         self.SaturationLabel.setMaximumSize(QSize(100, 20))
         self.gridLayout.addWidget(self.SaturationLabel, 8, 0, 1, 1)
         self.SaturationInput = QLineEdit("",self)
-        self.SaturationInput.setPlaceholderText("0,1000")
+        self.SaturationInput.setPlaceholderText("-255,255")
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -364,39 +432,12 @@ class Window(QWidget):
         self.DInput.setValidator(PID_validator)
         self.gridLayout.addWidget(self.DInput, 12, 1, 1, 1)
 
-        self.LabType = QComboBox()
-        self.LabType.addItems(["Position","Speed"])
-        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.LabType.sizePolicy().hasHeightForWidth())
-        self.LabType.setSizePolicy(sizePolicy)
-        self.LabType.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.LabType, 5, 1, 1, 1)
-        self.LabLabel = QLabel("Lab Type")
-        self.LabLabel.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.LabLabel, 5, 0, 1, 1)
-
-        self.inputForms = QComboBox()
-        self.inputForms.addItems(["Sine","Step"])
-        #self.inputForms.activated.connect(self.getInput)
-        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.inputForms.sizePolicy().hasHeightForWidth())
-        self.inputForms.setSizePolicy(sizePolicy)
-        self.inputForms.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.inputForms, 6, 1, 1, 1)
-        self.inputType = QLabel("Input Type")
-        self.inputType.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.inputType, 6, 0, 1, 1)
-
         self.verticalLayout.addLayout(self.gridLayout)
         spacerItem = QSpacerItem(20, 80, QSizePolicy.Minimum, QSizePolicy.Fixed)
         self.verticalLayout.addItem(spacerItem)
 
-        #What is this?
         
+        #Fixes some spacing issues on GUI
         self.label = QLabel()
         self.label.setMaximumSize(QSize(200, 130))
         self.label.setText("")
@@ -477,40 +518,53 @@ class Window(QWidget):
                 self.checkBoxHideAll.setChecked(False)
                 self.checkBoxPlot1.setChecked(False)
 
-    #Resets data arrays and establishes serial communcation. Disables itself after clicking
-    def startbutton_pushed(self):
-        self.initialState() #Reinitializes arrays in case you have to retake data
-
+    def serialOpenPushed(self):
         #Try/except statement is to check whether settings menu was opened/changed
         try:
             self.size = self.serial_values[3] #Value from settings. Windows data
             self.serialInstance = SerialComm(self.serial_values[0],self.serial_values[1],self.serial_values[2])
+            self.serialInstance.serialOpen()    
         except AttributeError:
             print("Settings menu was never opened")
-
-        '''
-        self.ser = serial.Serial(port = self.serial_values[0], 
-                                 baudrate = self.serial_values[1],
-                                 timeout = self.serial_values[2])
-        self.ser.flushInput()
-        self.ser.write(b'A')
-        time.sleep(2)
-        print("Recording Data")
-        self.timer.start()
-        #self.timer.setInterval(50)
-        self.curve()
-        self.startbutton.clicked.disconnect(self.startbutton_pushed)
-        '''
-        self.serialInstance.serialOpen()
         #self.serialInstance.handshake()
+        
         time.sleep(2)
-        self.serialInstance.writeValues(self.PIDInput()["P"],
-                                        self.PIDInput()["I"],
-                                        self.PIDInput()["D"],
-                                        self.getSetpointValue(),
-                                        self.getLabType(),
-                                        self.getSampleTimeValue(),
-                                        self.getSaturationValue())
+        
+        try:
+            self.serialInstance.writeValues(self.PIDInput()["P"],
+                                            self.PIDInput()["I"],
+                                            self.PIDInput()["D"],
+                                            self.getSetpointValue(),
+                                            self.getLabType(),
+                                            self.getSampleTimeValue(),
+                                            self.getSaturationValue()) 
+        except AttributeError:
+            print("Some fields are empty. Recheck then try again")
+
+        print("Serial open")   
+        self.serialOpenButton.clicked.disconnect(self.serialOpenPushed)
+
+    def serialClosePushed(self):
+        print("Serial Close Pressed")
+        
+        try:
+            self.serialInstance.serialClose()
+        except:
+            print("Something went wrong")
+
+        print("Serial was open. Now closed")
+        """
+        if self.serialInstance.serialIsOpen() == True:
+            self.serialInstance.serialClose()
+            print("Serial was open. Now closed")   
+        elif self.serialInstance.serialIsOpen() == False:
+            print("Serial is already closed")
+        """
+        self.serialOpenButton.clicked.connect(self.serialOpenPushed)
+
+    #Resets data arrays and establishes serial communcation. Disables itself after clicking
+    def startbutton_pushed(self):
+        self.initialState() #Reinitializes arrays in case you have to retake data
         print("Recording Data")
         self.timer.start()
         self.curve()
@@ -519,8 +573,6 @@ class Window(QWidget):
     #Stops timer and ends serial communication
     def stopbutton_pushed(self):
         self.timer.stop()
-        #self.ser.close()
-        self.serialInstance.serialClose()
         print("Stopping Data Recording")
 
 
@@ -528,8 +580,11 @@ class Window(QWidget):
     def clearbutton_pushed(self):
         self.graphWidgetOutput.clear()
         self.graphWidgetInput.clear()
-        self.graphWidgetOutput.enableAutoRange(axis=None, enable=True, x=None, y=None)
-        self.graphWidgetInput.enableAutoRange(axis=None, enable=True, x=None, y=None)
+
+        self.graphWidgetOutput.setYRange(-11, 11, padding=0)
+        self.graphWidgetOutput.enableAutoRange()
+        self.graphWidgetInput.setYRange(-11, 11, padding=0)
+        self.graphWidgetInput.enableAutoRange()
         self.startbutton.clicked.connect(self.startbutton_pushed)
         print("Cleared All Graphs")
 
@@ -591,6 +646,15 @@ class Window(QWidget):
         fulldata = self.serialInstance.readValues()
 
         self.step = self.step + 1
+
+        """
+        New data format reading. Based off of GCode. Since incoming serial data
+        is in the form b"T23533228,S0.00,A0.00,Q0.00,\0\r\n", this parsing searches for specific starting letter,
+        converts from list to string as the list is length 1, then removes the starting character. 
+        Hasn't been implemented due to problem on Arduino end
+        #result = [item for item in example if item.startswith('T')][0][1:]
+        """
+
 
         time_index = int(self.time_zeros[self.buffersize])
         self.time_zeros[time_index] = self.time_zeros[time_index+self.size] = float(fulldata[0])
