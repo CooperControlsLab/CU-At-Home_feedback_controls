@@ -145,11 +145,11 @@ void send_data(){
   if(com.write_data == 1){
     Serial.print(micros());Serial.print(',');
     if(com.labType == 0){ // Angle
-      Serial.print('A');
+//      Serial.print('A');
       Serial.print(enc_deg);
     }
     else if(com.labType == 1){
-      Serial.print('V');
+//      Serial.print('V');
       Serial.print(motor_speed);
     }
     Serial.print(',');

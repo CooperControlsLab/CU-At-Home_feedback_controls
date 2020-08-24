@@ -64,7 +64,7 @@ class SerialComm:
     #def writeValues(self,P,I,D,Setpoint,LabType,SampleTime,Saturation):
     def writeValues(self,P,I,D,Setpoint,LabType,SampleTime,Saturation):
         Saturation = Saturation.split(",") 
-        input2system = f"S0,P{P},I{I},D{D},S1,Z{Setpoint},S2,Y{LabType},S4,T{SampleTime},S5,L{Saturation[0]},U{Saturation[1]},\0"
+        input2system = f"S0,P{P},I{I},D{D},S1,Z{Setpoint},S2,Y{LabType},S3,M1,S4,T{SampleTime},S5,L{Saturation[0]},U{Saturation[1]},\0"
         print(input2system)
         self.ser.write(str.encode(input2system))
     
