@@ -183,8 +183,7 @@ class Window(QWidget):
     def initUI(self):
 
         self.setStyleSheet(qdarkstyle.load_stylesheet())
-        #self.statusBar = QStatusBar()
-        #self.setStatusBar(self.statusBar)
+
 
         self.horizontalLayout = QHBoxLayout()
         self.verticalLayout = QVBoxLayout()
@@ -203,7 +202,8 @@ class Window(QWidget):
         self.imageLabel.setPixmap(QPixmap("./Arduino/logo/CUAtHomeLogo-Horz.png").scaled(200, 130, Qt.KeepAspectRatio, Qt.FastTransformation))
         self.verticalLayout.addWidget(self.imageLabel)
 
-        """
+
+        
         self.LEDLabel = QLabel("Arduino Status",self)
         self.LEDLabel.setMinimumSize(QSize(100, 20))
         self.LEDLabel.setMaximumSize(QSize(100, 20))
@@ -212,7 +212,9 @@ class Window(QWidget):
         self._led = QLed(self, onColour=QLed.Red, shape=QLed.Circle)
         self._led.clickable = False
         self.gridLayout.addWidget(self._led, 0, 1, 1, 1)
-        """
+        self._led.value = True
+        self._led.setMinimumSize(QSize(20,20))
+        self._led.setMaximumSize(QSize(20,20))        
 
 
 
@@ -220,7 +222,7 @@ class Window(QWidget):
         self.serialOpenButton.setCheckable(False)  
         self.serialOpenButton.clicked.connect(self.serialOpenPushed)        
         self.serialOpenButton.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.serialOpenButton, 0, 0, 1, 1)
+        self.gridLayout.addWidget(self.serialOpenButton, 1, 0, 1, 1)
 
         self.serialCloseButton = QPushButton("Close Serial",self)
         self.serialCloseButton.setCheckable(False)  
@@ -231,7 +233,7 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.serialCloseButton.sizePolicy().hasHeightForWidth())
         self.serialCloseButton.setSizePolicy(sizePolicy)
         self.serialCloseButton.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.serialCloseButton, 0, 1, 1, 1)
+        self.gridLayout.addWidget(self.serialCloseButton, 1, 1, 1, 1)
 
 
 
@@ -240,7 +242,7 @@ class Window(QWidget):
         self.startbutton.setCheckable(False)  
         self.startbutton.clicked.connect(self.startbutton_pushed)        
         self.startbutton.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.startbutton, 1, 0, 1, 1)
+        self.gridLayout.addWidget(self.startbutton, 2, 0, 1, 1)
 
         self.stopbutton = QPushButton("Stop Plot",self)
         self.stopbutton.setCheckable(False)  
@@ -251,13 +253,13 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.stopbutton.sizePolicy().hasHeightForWidth())
         self.stopbutton.setSizePolicy(sizePolicy)
         self.stopbutton.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.stopbutton, 1, 1, 1, 1)
+        self.gridLayout.addWidget(self.stopbutton, 2, 1, 1, 1)
     
         self.clearbutton = QPushButton("Clear Plot",self)
         self.clearbutton.setCheckable(False)
         self.clearbutton.clicked.connect(self.clearbutton_pushed)
         self.clearbutton.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.clearbutton, 2, 0, 1, 1)
+        self.gridLayout.addWidget(self.clearbutton, 3, 0, 1, 1)
 
         self.savebutton = QPushButton("Save Plot",self)
         self.savebutton.setCheckable(False)
@@ -268,18 +270,18 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.savebutton.sizePolicy().hasHeightForWidth())
         self.savebutton.setSizePolicy(sizePolicy)
         self.savebutton.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.savebutton, 2, 1, 1, 1)
+        self.gridLayout.addWidget(self.savebutton, 3, 1, 1, 1)
 
         self.settings = QPushButton("Settings",self)
         self.settings.clicked.connect(self.settingsMenu)
         self.settings.setMaximumSize(QSize(300, 20))
-        self.gridLayout.addWidget(self.settings, 3, 0, 1, 2)
+        self.gridLayout.addWidget(self.settings, 4, 0, 1, 2)
 
         self.checkBoxShowAll = QCheckBox("Show All Plots", self)
         self.checkBoxShowAll.setMaximumSize(QSize(100, 20))
         self.checkBoxShowAll.setChecked(True)
         self.checkBoxShowAll.toggled.connect(self.visibilityAll)
-        self.gridLayout.addWidget(self.checkBoxShowAll, 4, 0, 1, 1)
+        self.gridLayout.addWidget(self.checkBoxShowAll, 5, 0, 1, 1)
 
         self.checkBoxHideAll = QCheckBox("Hide All Plots", self)
         self.checkBoxHideAll.setChecked(False)
@@ -290,12 +292,12 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.checkBoxHideAll.sizePolicy().hasHeightForWidth())
         self.checkBoxHideAll.setSizePolicy(sizePolicy)
         self.checkBoxHideAll.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.checkBoxHideAll, 4, 1, 1, 1)
+        self.gridLayout.addWidget(self.checkBoxHideAll, 5, 1, 1, 1)
 
         self.checkBoxPlot1 = QCheckBox("Plot 1", self)
         self.checkBoxPlot1.toggled.connect(self.visibility1)
         self.checkBoxPlot1.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.checkBoxPlot1, 5, 0, 1, 1)
+        self.gridLayout.addWidget(self.checkBoxPlot1, 6, 0, 1, 1)
 
         self.checkBoxPlot2 = QCheckBox("Plot 2", self)
         self.checkBoxPlot2.toggled.connect(self.visibility2)
@@ -305,7 +307,7 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.checkBoxPlot2.sizePolicy().hasHeightForWidth())
         self.checkBoxPlot2.setSizePolicy(sizePolicy)
         self.checkBoxPlot2.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.checkBoxPlot2, 5, 1, 1, 1)
+        self.gridLayout.addWidget(self.checkBoxPlot2, 6, 1, 1, 1)
 
         self.checkBoxShowAll.stateChanged.connect(self.checkbox_logic) 
         self.checkBoxHideAll.stateChanged.connect(self.checkbox_logic) 
@@ -320,10 +322,10 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.LabType.sizePolicy().hasHeightForWidth())
         self.LabType.setSizePolicy(sizePolicy)
         self.LabType.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.LabType, 6, 1, 1, 1)
+        self.gridLayout.addWidget(self.LabType, 7, 1, 1, 1)
         self.LabLabel = QLabel("Lab Type")
         self.LabLabel.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.LabLabel, 6, 0, 1, 1)
+        self.gridLayout.addWidget(self.LabLabel, 7, 0, 1, 1)
 
         """
         self.inputForms = QComboBox()
@@ -346,7 +348,7 @@ class Window(QWidget):
         self.SetpointLabel = QLabel("Setpoint",self)
         self.SetpointLabel.setMinimumSize(QSize(100, 20))
         self.SetpointLabel.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.SetpointLabel, 7, 0, 1, 1)
+        self.gridLayout.addWidget(self.SetpointLabel, 8, 0, 1, 1)
         self.SetpointInput = QLineEdit("",self)
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -355,12 +357,12 @@ class Window(QWidget):
         self.SetpointInput.setSizePolicy(sizePolicy)
         self.SetpointInput.setMaximumSize(QSize(100, 20))
         self.SetpointInput.setValidator(QDoubleValidator())
-        self.gridLayout.addWidget(self.SetpointInput, 7, 1, 1, 1)
+        self.gridLayout.addWidget(self.SetpointInput, 8, 1, 1, 1)
 
         self.SaturationLabel = QLabel("Saturation",self)
         self.SaturationLabel.setMinimumSize(QSize(100, 20))
         self.SaturationLabel.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.SaturationLabel, 8, 0, 1, 1)
+        self.gridLayout.addWidget(self.SaturationLabel, 9, 0, 1, 1)
         self.SaturationInput = QLineEdit("",self)
         self.SaturationInput.setPlaceholderText("-255,255")
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
@@ -369,12 +371,12 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.SaturationInput.sizePolicy().hasHeightForWidth())
         self.SaturationInput.setSizePolicy(sizePolicy)
         self.SaturationInput.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.SaturationInput, 8, 1, 1, 1)
+        self.gridLayout.addWidget(self.SaturationInput, 9, 1, 1, 1)
 
         self.SampleTimeLabel = QLabel("Sample Time",self)
         self.SampleTimeLabel.setMinimumSize(QSize(100, 20))
         self.SampleTimeLabel.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.SampleTimeLabel, 9, 0, 1, 1)
+        self.gridLayout.addWidget(self.SampleTimeLabel, 10, 0, 1, 1)
         self.SampleTimeInput = QLineEdit("",self)
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -382,7 +384,7 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.SampleTimeInput.sizePolicy().hasHeightForWidth())
         self.SampleTimeInput.setSizePolicy(sizePolicy)
         self.SampleTimeInput.setMaximumSize(QSize(100, 20))
-        self.gridLayout.addWidget(self.SampleTimeInput, 9, 1, 1, 1)
+        self.gridLayout.addWidget(self.SampleTimeInput, 10, 1, 1, 1)
         #self.PowerScalingInput.setValidator(QRegExpValidator(QRegExp("^[0-9][0-9]?$|^100$"))) #0-1 as a float FIX THIS
 
         PID_validator = QDoubleValidator(0.0000, 50.000, 4, notation=QDoubleValidator.StandardNotation)
@@ -391,7 +393,7 @@ class Window(QWidget):
         self.PCheckBox.setMaximumSize(QSize(100, 20))
         self.PCheckBox.setChecked(True)
         self.PCheckBox.toggled.connect(self.PCheckBoxLogic)
-        self.gridLayout.addWidget(self.PCheckBox, 10, 0, 1, 1)
+        self.gridLayout.addWidget(self.PCheckBox, 11, 0, 1, 1)
         self.PInput = QLineEdit("",self)
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -400,13 +402,13 @@ class Window(QWidget):
         self.PInput.setSizePolicy(sizePolicy)
         self.PInput.setMaximumSize(QSize(100, 20))
         self.PInput.setValidator(PID_validator)
-        self.gridLayout.addWidget(self.PInput, 10, 1, 1, 1)
+        self.gridLayout.addWidget(self.PInput, 11, 1, 1, 1)
 
         self.ICheckBox = QCheckBox("I",self)
         self.ICheckBox.setMaximumSize(QSize(100, 20))
         self.ICheckBox.setChecked(True)
         self.ICheckBox.toggled.connect(self.ICheckBoxLogic)
-        self.gridLayout.addWidget(self.ICheckBox, 11, 0, 1, 1)
+        self.gridLayout.addWidget(self.ICheckBox, 12, 0, 1, 1)
         self.IInput = QLineEdit("",self)    
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -415,13 +417,13 @@ class Window(QWidget):
         self.IInput.setSizePolicy(sizePolicy)
         self.IInput.setMaximumSize(QSize(100, 20))
         self.IInput.setValidator(PID_validator)
-        self.gridLayout.addWidget(self.IInput, 11, 1, 1, 1)
+        self.gridLayout.addWidget(self.IInput, 12, 1, 1, 1)
 
         self.DCheckBox = QCheckBox("D",self)
         self.DCheckBox.setMaximumSize(QSize(100, 20))
         self.DCheckBox.setChecked(True)
         self.DCheckBox.toggled.connect(self.DCheckBoxLogic)
-        self.gridLayout.addWidget(self.DCheckBox, 12, 0, 1, 1)
+        self.gridLayout.addWidget(self.DCheckBox, 13, 0, 1, 1)
         self.DInput = QLineEdit("",self)
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -430,7 +432,7 @@ class Window(QWidget):
         self.DInput.setSizePolicy(sizePolicy)
         self.DInput.setMaximumSize(QSize(100, 20))
         self.DInput.setValidator(PID_validator)
-        self.gridLayout.addWidget(self.DInput, 12, 1, 1, 1)
+        self.gridLayout.addWidget(self.DInput, 13, 1, 1, 1)
 
         self.verticalLayout.addLayout(self.gridLayout)
         spacerItem = QSpacerItem(20, 80, QSizePolicy.Minimum, QSizePolicy.Fixed)
@@ -543,6 +545,7 @@ class Window(QWidget):
 
         print("Serial open")   
         self.serialOpenButton.clicked.disconnect(self.serialOpenPushed)
+        self._led.onColour = QLed.Green
 
     def serialClosePushed(self):
         print("Serial Close Pressed")
@@ -574,6 +577,7 @@ class Window(QWidget):
     def stopbutton_pushed(self):
         self.timer.stop()
         print("Stopping Data Recording")
+        self._led.onColour = QLed.Red
 
 
     #Resets both plotting windows and reenables Start Button
