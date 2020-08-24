@@ -56,7 +56,7 @@ class SerialComm:
             self.handshake()
 
     def readValues(self):
-        self.ser.write(b"R,\0") #used to call for the next line (Request)
+        self.ser.write(b"R0,\0") #used to call for the next line (Request)
         #current format of received data is b"T23533228,S0.00,A0.00,Q0.00,\0\r\n"
         arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
         return arduinoData        
@@ -357,6 +357,7 @@ class Window(QWidget):
         self.SetpointInput.setSizePolicy(sizePolicy)
         self.SetpointInput.setMaximumSize(QSize(100, 20))
         self.SetpointInput.setValidator(QDoubleValidator())
+        self.SetpointInput.setText("100")
         self.gridLayout.addWidget(self.SetpointInput, 8, 1, 1, 1)
 
         self.SaturationLabel = QLabel("Saturation",self)
@@ -364,7 +365,7 @@ class Window(QWidget):
         self.SaturationLabel.setMaximumSize(QSize(100, 20))
         self.gridLayout.addWidget(self.SaturationLabel, 9, 0, 1, 1)
         self.SaturationInput = QLineEdit("",self)
-        self.SaturationInput.setPlaceholderText("-255,255")
+        self.SaturationInput.setText("-125,125")
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -384,6 +385,7 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.SampleTimeInput.sizePolicy().hasHeightForWidth())
         self.SampleTimeInput.setSizePolicy(sizePolicy)
         self.SampleTimeInput.setMaximumSize(QSize(100, 20))
+        self.SampleTimeInput.setText("25")
         self.gridLayout.addWidget(self.SampleTimeInput, 10, 1, 1, 1)
         #self.PowerScalingInput.setValidator(QRegExpValidator(QRegExp("^[0-9][0-9]?$|^100$"))) #0-1 as a float FIX THIS
 
@@ -402,6 +404,7 @@ class Window(QWidget):
         self.PInput.setSizePolicy(sizePolicy)
         self.PInput.setMaximumSize(QSize(100, 20))
         self.PInput.setValidator(PID_validator)
+        self.PInput.setText("1")
         self.gridLayout.addWidget(self.PInput, 11, 1, 1, 1)
 
         self.ICheckBox = QCheckBox("I",self)
@@ -417,6 +420,7 @@ class Window(QWidget):
         self.IInput.setSizePolicy(sizePolicy)
         self.IInput.setMaximumSize(QSize(100, 20))
         self.IInput.setValidator(PID_validator)
+        self.IInput.setText("0")
         self.gridLayout.addWidget(self.IInput, 12, 1, 1, 1)
 
         self.DCheckBox = QCheckBox("D",self)
@@ -432,6 +436,7 @@ class Window(QWidget):
         self.DInput.setSizePolicy(sizePolicy)
         self.DInput.setMaximumSize(QSize(100, 20))
         self.DInput.setValidator(PID_validator)
+        self.DInput.setText("0")
         self.gridLayout.addWidget(self.DInput, 13, 1, 1, 1)
 
         self.verticalLayout.addLayout(self.gridLayout)
