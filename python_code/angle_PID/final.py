@@ -56,7 +56,7 @@ class SerialComm:
             self.handshake()
 
     def readValues(self):
-        self.ser.write(b"R,\0") #used to call for the next line (Request)
+        self.ser.write(b"R0,\0") #used to call for the next line (Request)
         #current format of received data is b"T23533228,S0.00,A0.00,Q0.00,\0\r\n"
         arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
         return arduinoData        
@@ -66,7 +66,7 @@ class SerialComm:
         Saturation = Saturation.split(",") 
         input2system = f"S0,P{P},I{I},D{D},S1,Z{Setpoint},S2,Y{LabType},S4,T{SampleTime},S5,L{Saturation[0]},U{Saturation[1]},\0"
         print(input2system)
-        #self.ser.write(str.encode(input2system))
+        self.ser.write(str.encode(input2system))
     
 
 class Dialog1(QDialog):
@@ -656,7 +656,7 @@ class Window(QWidget):
         is in the form b"T23533228,S0.00,A0.00,Q0.00,\0\r\n", this parsing searches for specific starting letter,
         converts from list to string as the list is length 1, then removes the starting character. 
         Hasn't been implemented due to problem on Arduino end
-        #result = [item for item in example if item.startswith('T')][0][1:]
+        # result = [item for item in example if item.startswith('T')][0][1:]
         """
 
 
@@ -818,4 +818,8 @@ def main():
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    main()
+    while(1):
+        try:
+            main()
+        except Exception as e:
+            print(e)
