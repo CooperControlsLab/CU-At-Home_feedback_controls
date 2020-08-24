@@ -41,7 +41,7 @@ class SerialComm:
 
     def handshake(self):
         self.ser.flushInput()
-        self.ser.write(b"H0")
+        self.ser.write(b"H0,\0")
         print("Handshake request sent")
         response = self.ser.readline().decode().replace('\r\n','') #No need for comma delimiter
         
@@ -53,7 +53,7 @@ class SerialComm:
             self.handshake()
 
     def readValues(self):
-        self.ser.write(b'R') #used to call for the next line (Request)
+        self.ser.write(b"R,\0") #used to call for the next line (Request)
         arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
         return arduinoData        
     
