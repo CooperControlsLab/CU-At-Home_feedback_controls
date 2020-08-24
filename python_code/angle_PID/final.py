@@ -5,7 +5,7 @@ from PyQt5.QtGui import QRegExpValidator, QDoubleValidator, QPixmap
 from PyQt5.QtWidgets import (QApplication, QPushButton, QWidget, QComboBox, 
 QHBoxLayout, QVBoxLayout, QFormLayout, QCheckBox, QGridLayout, QDialog, 
 QLabel, QLineEdit, QDialogButtonBox, QFileDialog, QSizePolicy, QLayout,
-QSpacerItem)
+QSpacerItem, QStatusBar)
 from PyQt5.QtCore import Qt, QTimer, QRegExp, QCoreApplication, QSize
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
@@ -41,7 +41,7 @@ class SerialComm:
 
     def handshake(self):
         self.ser.flushInput()
-        self.ser.write(b"A")
+        self.ser.write(b"H0,\0")
         print("Handshake request sent")
         response = self.ser.readline().decode().replace('\r\n','') #No need for comma delimiter
         
@@ -53,14 +53,14 @@ class SerialComm:
             self.handshake()
 
     def readValues(self):
-        self.ser.write(b'R') #used to call for the next line (Request)
+        self.ser.write(b"R,\0") #used to call for the next line (Request)
         arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
         return arduinoData        
     
     #def writeValues(self,P,I,D,Setpoint,LabType,SampleTime,Saturation):
     def writeValues(self,P,I,D,Setpoint,LabType,SampleTime,Saturation):
         Saturation = Saturation.split(",") 
-        input2system = f"P{P}I{I}D{D}S{Setpoint}L{LabType}T{SampleTime}O0{Saturation[0]}O1{Saturation[1]}"
+        input2system = f"S0,P{P},I{I},D{D},S1,Z{Setpoint},S2,Y{LabType},S4,T{SampleTime},S5,L{Saturation[0]},U{Saturation[1]},\0"
         print(input2system)
         #self.ser.write(str.encode(input2system))
     
@@ -179,6 +179,8 @@ class Window(QWidget):
     def initUI(self):
 
         self.setStyleSheet(qdarkstyle.load_stylesheet())
+        #self.statusBar = QStatusBar()
+        #self.setStatusBar(self.statusBar)
 
         self.horizontalLayout = QHBoxLayout()
         self.verticalLayout = QVBoxLayout()
@@ -519,6 +521,8 @@ class Window(QWidget):
         self.timer.stop()
         #self.ser.close()
         self.serialInstance.serialClose()
+        print("Stopping Data Recording")
+
 
     #Resets both plotting windows and reenables Start Button
     def clearbutton_pushed(self):
@@ -527,7 +531,8 @@ class Window(QWidget):
         self.graphWidgetOutput.enableAutoRange(axis=None, enable=True, x=None, y=None)
         self.graphWidgetInput.enableAutoRange(axis=None, enable=True, x=None, y=None)
         self.startbutton.clicked.connect(self.startbutton_pushed)
-    
+        print("Cleared All Graphs")
+
     #Dumps data into a csv file to a selected path
     def savebutton_pushed(self):
         self.createCSV()
@@ -537,7 +542,8 @@ class Window(QWidget):
                 csvwriter = csv.writer(csvfile)
                 csvwriter.writerow(self.header)
                 csvwriter.writerows(self.data_set)
-    
+        print("Saved All Data")
+
     #Creates csv data
     def createCSV(self):
         self.header = ['time', 'response', 'pwm', 'setpoint']
