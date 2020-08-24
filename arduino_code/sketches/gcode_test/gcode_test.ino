@@ -70,8 +70,7 @@ void handle_command(){
   if(Serial.available() != 0){
     incoming_char = Serial.read();
     cmd[cmd_index] = incoming_char;
-    if(incoming_char == '%'){
-      cmd[cmd_index+1] = '\0';
+    if(incoming_char == '\0'){
 //      Serial.println("End of line, processing commands!");
       com.process_command(cmd);
       // Reset command buffer
@@ -114,13 +113,37 @@ double calc_motor_speed(){
 
 //*****************************************************//
 // Send data on request
+//void send_data(){
+//  // Check and if there is a request, send data
+////  Serial.println(com.write_data);
+//  if(com.write_data == 1){
+//    Serial.print("T");Serial.print(micros());Serial.print(',');
+//    Serial.print('S');Serial.print(setpoint);Serial.print(',');
+//    
+//    if(com.labType == 0){ // Angle
+//      Serial.print('A');
+//      Serial.print(enc_deg);
+//    }
+//    else if(com.labType == 1){
+//      Serial.print('V');
+//      Serial.print(motor_speed);
+//    }
+//    Serial.print(',');
+//    Serial.print('Q');Serial.print(motorPWM);Serial.print(',');
+//    Serial.print(com.labType);Serial.print(',');
+//    Serial.println('\0');
+//    com.write_data = 0; // Reset write data flag
+//  }
+//}
+
+
+
+
 void send_data(){
   // Check and if there is a request, send data
 //  Serial.println(com.write_data);
   if(com.write_data == 1){
-    Serial.print("T");Serial.print(micros());Serial.print(',');
-    Serial.print('S');Serial.print(setpoint);Serial.print(',');
-    
+    Serial.print(micros());Serial.print(',');
     if(com.labType == 0){ // Angle
       Serial.print('A');
       Serial.print(enc_deg);
@@ -130,8 +153,8 @@ void send_data(){
       Serial.print(motor_speed);
     }
     Serial.print(',');
-    Serial.print('Q');Serial.print(motorPWM);Serial.print(',');
-    Serial.print(com.labType);Serial.print(',');
+    Serial.print(motorPWM);Serial.print(',');
+    Serial.print(setpoint);Serial.print(',');
     Serial.println('\0');
     com.write_data = 0; // Reset write data flag
   }

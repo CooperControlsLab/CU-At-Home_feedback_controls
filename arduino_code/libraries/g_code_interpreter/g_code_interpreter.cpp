@@ -83,14 +83,14 @@ float SerialComms::parse_number(char* cmd_string, char key, int def){
     //Search string for first instance of key, increment key length each time key isn't found
     for(int i=0; i<100; i++) //TODO: Make this 100 value a HEADER_LENGTH #define
     {
-        if(cmd_string[i] == '%') { return def; } //If we can't find key, return default value
+        if(cmd_string[i] == '\0') { return def; } //If we can't find key, return default value
         if(cmd_string[i] == key){key_len = i; break;}
     }
     // Serial.print("key len: "); Serial.println(key_len);
 
     //Search string starting at character after key, looking for next delimiter the comma
     for(int i=key_len+1; i<100; i++){
-        if(cmd_string[i] == ',' || cmd_string[i] == '%')
+        if(cmd_string[i] == ',' || cmd_string[i] == '\0')
         {
             break;
         }
