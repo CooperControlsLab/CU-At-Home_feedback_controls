@@ -5,7 +5,7 @@
 SerialComms::SerialComms(){
     setpoint = 0;
     labType = 0;
-    mode = 0;
+    mode = 1;
     lowerOutputLimit = -125;
     upperOutputLimit = 125;
     sampleTime = 0;
@@ -13,6 +13,7 @@ SerialComms::SerialComms(){
     ki = 0;
     kd = 0;
     write_data = 0;
+    open_loop_PWM = 0;
 }
 
 void SerialComms::process_command(char* cmd_string){
