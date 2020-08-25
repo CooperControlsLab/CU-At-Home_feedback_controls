@@ -40,7 +40,7 @@ class SerialComm:
         self.ser.close()
 
     def serialIsOpen(self):
-        self.ser.is_open
+        return(self.ser.is_open)
 
     def handshake(self):
         self.ser.flushInput()
@@ -517,6 +517,7 @@ class Window(QWidget):
 
         #Adds a legend after data starts to plot NOT before
         self.graphWidgetOutput.addLegend()
+        self.graphWidgetInput.addLegend()
 
         #Adds title to graphs
         self.graphWidgetOutput.setTitle("Response", color="w", size="12pt")
@@ -597,7 +598,7 @@ class Window(QWidget):
 
     def serialClosePushed(self):
         print("Serial Close Pressed")
-        
+        """
         try:
             self.serialInstance.serialClose()
         except:
@@ -605,12 +606,14 @@ class Window(QWidget):
 
         print("Serial was open. Now closed")
         """
+
+        
         if self.serialInstance.serialIsOpen() == True:
             self.serialInstance.serialClose()
             print("Serial was open. Now closed")   
         elif self.serialInstance.serialIsOpen() == False:
             print("Serial is already closed")
-        """
+        
 
         try:
             self.serialOpenButton.clicked.connect(self.serialOpenPushed)
@@ -635,7 +638,6 @@ class Window(QWidget):
         self.timer.stop()
         print("Stopping Data Recording")
 
-
     #Resets both plotting windows and reenables Start Button
     def clearbutton_pushed(self):
         self.graphWidgetOutput.clear()
@@ -646,6 +648,8 @@ class Window(QWidget):
         self.graphWidgetInput.setYRange(-11, 11, padding=0)
         self.graphWidgetInput.enableAutoRange()
         self.startbutton.clicked.connect(self.startbutton_pushed)
+        #self.legend.scene().removeItem(self.legend)
+
         print("Cleared All Graphs")
 
     #Dumps data into a csv file to a selected path
@@ -855,23 +859,23 @@ class Window(QWidget):
         else:
             self.openLoopInput.setEnabled(False)
 
+    #This method will only be activated once serial is starting up
     def getControllerState(self):
-        while self.serialInstance.serialIsOpen() == True:
-            if self.ControllerSwitch.checkState() == False:
-                #return 0
-                #self.serialInstance.write(b"Off")
-                print("Off")
-            elif self.ControllerSwitch.checkState() == True:
-                #return 1
-                #self.serialInstance.write(b"On")
-                print("On")
+        if self.ControllerSwitch.isChecked() == False:
+            return("0")
+        elif self.ControllerSwitch.isChecked() == True:
+            return("1")
 
+    #This method can be activated as many times as long as Led is Green.
+    # which is when serial communication is open. Otherwise it will do nothing
     def controllerToggle(self):
         test1 = self.sender()
-        if test1.isChecked() == True:
-            print("Controller On (Automatic)")
-        elif test1.isChecked() == False:
-            print("Controller Off (Manual)")
+        if self._led.onColour == QLed.Green:
+            if test1.isChecked() == False:
+                self.serialInstance.writeController("0")
+
+            elif test1.isChecked() == True:
+                self.serialInstance.writeController("1")
 
     #GCode format for Sample Time
     def getSampleTimeValue(self):
