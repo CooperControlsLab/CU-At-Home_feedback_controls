@@ -56,7 +56,7 @@ class SerialComm:
             self.handshake()
 
     def readValues(self):
-        self.ser.write(b"R0,\0") #used to call for the next line (Request)
+        #self.ser.write(b"R0,\0") #used to call for the next line (Request)
         #current format of received data is b"T23533228,S0.00,A0.00,Q0.00,\0\r\n"
         arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
         return arduinoData        
@@ -520,8 +520,7 @@ class Window(QWidget):
         self.graphWidgetInput.addLegend()
 
         #Adds title to graphs
-        self.graphWidgetOutput.setTitle("Response", color="w", size="12pt")
-        self.graphWidgetInput.setTitle("PWM Actuation Signal", color="w", size="12pt")
+
 
         self.rightVerticalLayout.addWidget(self.graphWidgetOutput)
         self.rightVerticalLayout.addWidget(self.graphWidgetInput)
@@ -598,23 +597,13 @@ class Window(QWidget):
 
     def serialClosePushed(self):
         print("Serial Close Pressed")
-        """
-        try:
-            self.serialInstance.serialClose()
-        except:
-            print("Something went wrong")
 
-        print("Serial was open. Now closed")
-        """
-
-        
         if self.serialInstance.serialIsOpen() == True:
             self.serialInstance.serialClose()
             print("Serial was open. Now closed")   
         elif self.serialInstance.serialIsOpen() == False:
             print("Serial is already closed")
         
-
         try:
             self.serialOpenButton.clicked.connect(self.serialOpenPushed)
         except:
@@ -625,7 +614,7 @@ class Window(QWidget):
             print("Update Button already disconnected")
         self._led.onColour = QLed.Red
 
-    #Resets data arrays and establishes serial communcation. Disables itself after clicking
+    #Resets data arrays and starts plotting. Disables itself after clicking
     def startbutton_pushed(self):
         self.initialState() #Reinitializes arrays in case you have to retake data
         print("Recording Data")
@@ -633,7 +622,7 @@ class Window(QWidget):
         self.curve()
         self.startbutton.clicked.disconnect(self.startbutton_pushed)
 
-    #Stops timer and ends serial communication
+    #Stops timer and ends plotting
     def stopbutton_pushed(self):
         self.timer.stop()
         print("Stopping Data Recording")
@@ -693,46 +682,78 @@ class Window(QWidget):
         pen2 = pg.mkPen(color = (0, 255, 0), width=1)
         pen3 = pg.mkPen(color = (0, 0, 255), width=1)
 
-        self.data1 = self.graphWidgetOutput.plot(pen = pen1, name="Data 1") #Response
-        self.data2 = self.graphWidgetOutput.plot(pen = pen2, name="Data 2") #Setpoint
-        self.data3 = self.graphWidgetInput.plot(pen = pen3, name="Data 3") #PWM Actuation Signal
+        self.data1 = self.graphWidgetOutput.plot(pen = pen1, name="Response") #Response
+        self.data2 = self.graphWidgetOutput.plot(pen = pen2, name="Setpoint") #Setpoint
+        self.data3 = self.graphWidgetInput.plot(pen = pen3, name="PWM Actuation") #PWM Actuation Signal
 
     #Connected to timer to update plot. Incoming data is in the form of timestamp,data1,data2...    
     def updatePlot(self):
         #fulldata = self.readValues()
         #print(fulldata)
         fulldata = self.serialInstance.readValues()
-
         self.step = self.step + 1
-
         """
         New data format reading. Based off of GCode. Since incoming serial data
         is in the form b"T23533228,S0.00,A0.00,Q0.00,\0\r\n", this parsing searches for specific starting letter,
         converts from list to string as the list is length 1, then removes the starting character. 
-        Hasn't been implemented due to problem on Arduino end
         #result = [item for item in example if item.startswith('T')][0][1:]
         """
 
+        try:
+            """
+            time_index = int(self.time_zeros[self.buffersize])
+            self.time_zeros[time_index] = self.time_zeros[time_index+self.size] = float(fulldata[0])
+            self.time_zeros[self.buffersize] = time_index = (time_index+1) % self.size
+            self.time.append(fulldata[0])
+            """
+            time_index = int(self.time_zeros[self.buffersize])
+            self.time_zeros[time_index] = self.time_zeros[time_index+self.size] = float(self.gcodeParsing("T",fulldata))
+            self.time_zeros[self.buffersize] = time_index = (time_index+1) % self.size
+            self.time.append(self.gcodeParsing("T",fulldata))            
+        except ValueError:
+            print("Couldn't parse")
 
-        time_index = int(self.time_zeros[self.buffersize])
-        self.time_zeros[time_index] = self.time_zeros[time_index+self.size] = float(fulldata[0])
-        self.time_zeros[self.buffersize] = time_index = (time_index+1) % self.size
-        self.time.append(fulldata[0])
+        try:
+            """
+            i = int(self.y1_zeros[self.buffersize])
+            self.y1_zeros[i] = self.y1_zeros[i+self.size] = float(fulldata[1])
+            self.y1_zeros[self.buffersize] = i = (i+1) % self.size
+            self.y1.append(fulldata[1])
+            """
+            i = int(self.y1_zeros[self.buffersize])
+            self.y1_zeros[i] = self.y1_zeros[i+self.size] = float(self.gcodeParsing("S",fulldata))
+            self.y1_zeros[self.buffersize] = i = (i+1) % self.size
+            self.y1.append(self.gcodeParsing("S",fulldata))
+        except ValueError:
+            print("Couldn't parse")
 
-        i = int(self.y1_zeros[self.buffersize])
-        self.y1_zeros[i] = self.y1_zeros[i+self.size] = float(fulldata[1])
-        self.y1_zeros[self.buffersize] = i = (i+1) % self.size
-        self.y1.append(fulldata[1])
+        try:
+            """
+            j = int(self.y2_zeros[self.buffersize])
+            self.y2_zeros[j] = self.y2_zeros[j+self.size] = float(fulldata[2])
+            self.y2_zeros[self.buffersize] = j = (j+1) % self.size
+            self.y2.append(fulldata[2])
+            """
+            j = int(self.y2_zeros[self.buffersize])
+            self.y2_zeros[j] = self.y2_zeros[j+self.size] = float(self.gcodeParsing("A",fulldata))
+            self.y2_zeros[self.buffersize] = j = (j+1) % self.size
+            self.y2.append(self.gcodeParsing("A",fulldata))
+        except ValueError:
+            print("Couldn't parse")
 
-        j = int(self.y2_zeros[self.buffersize])
-        self.y2_zeros[j] = self.y2_zeros[j+self.size] = float(fulldata[2])
-        self.y2_zeros[self.buffersize] = j = (j+1) % self.size
-        self.y2.append(fulldata[2])
-
-        k = int(self.y3_zeros[self.buffersize])
-        self.y3_zeros[k] = self.y3_zeros[k+self.size] = float(fulldata[3])
-        self.y3_zeros[self.buffersize] = k = (k+1) % self.size
-        self.y3.append(fulldata[3])
+        try:
+            """
+            k = int(self.y3_zeros[self.buffersize])
+            self.y3_zeros[k] = self.y3_zeros[k+self.size] = float(fulldata[3])
+            self.y3_zeros[self.buffersize] = k = (k+1) % self.size
+            self.y3.append(fulldata[3])
+            """
+            k = int(self.y3_zeros[self.buffersize])
+            self.y3_zeros[k] = self.y3_zeros[k+self.size] = float(self.gcodeParsing("Q",fulldata))
+            self.y3_zeros[self.buffersize] = k = (k+1) % self.size
+            self.y3.append(self.gcodeParsing("Q",fulldata))
+        except ValueError:
+            print("Couldn't parse")
 
         self.data1.setData(self.time_zeros[time_index:time_index+self.size],self.y1_zeros[i:i+self.size])
         self.data1.setPos(self.step,0)
@@ -740,6 +761,10 @@ class Window(QWidget):
         self.data2.setPos(self.step,0)
         self.data3.setData(self.time_zeros[time_index:time_index+self.size],self.y3_zeros[k:k+self.size])
         self.data3.setPos(self.step,0)
+
+    def gcodeParsing(self,letter,input_list):
+        result = [_ for _ in input_list if _.startswith(letter)][0][1:]
+        return(result)
 
     #Below 4 change visibility of data# in the curves() method
     def visibilityAll(self):
@@ -844,13 +869,22 @@ class Window(QWidget):
             self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>")
             self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
-
+            self.graphWidgetOutput.setTitle("Position Control", color="w", size="12pt")
+            self.graphWidgetInput.setTitle("PWM Actuation Signal", color="w", size="12pt")
         elif inputType == "Speed":
             self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (°/s)</span>")
             self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>")
             self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
-
+            self.graphWidgetOutput.setTitle("Velocity Control", color="w", size="12pt")
+            self.graphWidgetInput.setTitle("PWM Actuation Signal", color="w", size="12pt")
+        elif inputType == "OL":
+            self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (°/s)</span>")
+            self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>")
+            self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
+            self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
+            self.graphWidgetOutput.setTitle("Speed Control", color="w", size="12pt")
+            self.graphWidgetInput.setTitle("PWM Actuation Signal", color="w", size="12pt")
     #This exists as if the LabType isn't PWM, the field should not be active
     def onlyOpenLoop(self):
         test1 = str(self.LabType.currentText())
