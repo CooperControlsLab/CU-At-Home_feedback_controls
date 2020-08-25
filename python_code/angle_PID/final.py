@@ -476,6 +476,8 @@ class Window(QWidget):
         self.gridLayout.addWidget(self.ControllerSwitch, 15, 1, 1, 1)
 
         self.updateButton = QPushButton("Update Parameters",self)
+        #Below line is commented as this button should on be live when
+        #serial communication is open
         #self.updateButton.clicked.connect(self.updateParameters)
         self.updateButton.setMaximumSize(QSize(300, 20))
         self.gridLayout.addWidget(self.updateButton, 16, 0, 1, 2)
@@ -903,7 +905,17 @@ class Window(QWidget):
 
     def updateParameters(self):
         #if self.serialInstance.serialIsOpen() == True:
-        print("Update Button Pressed")
+        try:
+            self.serialInstance.writePID(self.PIDInput()["P"],
+                                         self.PIDInput()["I"],
+                                         self.PIDInput()["D"])
+            self.serialInstance.writeSetpoint(self.getSetpointValue())
+            self.serialInstance.writeLabType(self.getLabType())        
+            self.serialInstance.writeSampleTime(self.getSampleTimeValue())
+            self.serialInstance.writeSaturation(self.getSaturationValue())
+            self.serialInstance.writeOLPWM(self.getOLPWMValue())
+        except AttributeError:
+            print("Some fields are empty when trying to update values. Recheck then try again")
 
 def main():
     app = QApplication(sys.argv)
