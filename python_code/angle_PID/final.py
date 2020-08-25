@@ -462,12 +462,10 @@ class Window(QWidget):
         self.updateButton.setMaximumSize(QSize(300, 20))
         self.gridLayout.addWidget(self.updateButton, 16, 0, 1, 2)
 
-
         self.verticalLayout.addLayout(self.gridLayout)
         spacerItem = QSpacerItem(20, 80, QSizePolicy.Minimum, QSizePolicy.Fixed)
         self.verticalLayout.addItem(spacerItem)
 
-        
         #Fixes some spacing issues on GUI
         self.label = QLabel()
         self.label.setMaximumSize(QSize(200, 130))
@@ -664,12 +662,6 @@ class Window(QWidget):
 
         self.getLabTypeAxes()
 
-    '''
-    def readValues(self):
-        arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
-        return arduinoData
-    '''
-
     #Initializes data# to have specific attributes
     def curve(self):
         pen1 = pg.mkPen(color = (255, 0, 0), width=1)
@@ -758,14 +750,14 @@ class Window(QWidget):
 
     #Changes axes labels depending on what lab is selected
     def getLabTypeAxes(self):
-        self.inputType = str(self.LabType.currentText())
-        if self.inputType == "Position":
+        inputType = str(self.LabType.currentText())
+        if inputType == "Position":
             self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&theta; (°)</span>")
             self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>")
             self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
 
-        elif self.inputType == "Speed":
+        elif inputType == "Speed":
             self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (°/s)</span>")
             self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>")
             self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
@@ -773,15 +765,15 @@ class Window(QWidget):
     
     #GCode format for Labtype (int)
     def getLabType(self):
-        self.input = str(self.LabType.currentText())
-        if self.inputType == "Position":
-            return(0)
+        test1 = str(self.LabType.currentText())
+        if test1 == "Position":
+            return("0")
         
-        elif self.inputType =="Speed":
-            return(1)
+        elif test1 =="Speed":
+            return("1")
 
-        elif self.inputType =="OL":
-            return(2)
+        elif test1 =="OL":
+            return("2")
 
     def onlyOpenLoop(self):
         test1 = str(self.LabType.currentText())
@@ -836,27 +828,27 @@ class Window(QWidget):
 
     #GCode format for Setpoint (float?)
     def getSetpointValue(self):
-        self.SetpointValue = self.SetpointInput.text()
-        if self.SetpointValue == "":
+        SetpointValue = self.SetpointInput.text()
+        if SetpointValue == "":
             raise ValueError("Setpoint Field is empty. Enter in a value")
                     
-        return(self.SetpointValue)
+        return(SetpointValue)
 
     #GCode format for Saturation (float?)
     def getSaturationValue(self):
-        self.SaturationValue = self.SaturationInput.text()
-        if self.SaturationValue == "":
+        SaturationValue = self.SaturationInput.text()
+        if SaturationValue == "":
             raise ValueError("Saturation Field is empty. Enter in a comma separated value")
                     
-        return(self.SaturationValue)
+        return(SaturationValue)
 
     #GCode format for Sample Time
     def getSampleTimeValue(self):
-        self.SampleTimeValue = self.SampleTimeInput.text()
-        if self.SampleTimeValue == "":
+        SampleTimeValue = self.SampleTimeInput.text()
+        if SampleTimeValue == "":
             raise ValueError("Sample Time Field is empty. Enter in a a value")
 
-        return(self.SampleTimeValue)
+        return(SampleTimeValue)
 
     def getControllerState(self):
         while self.serialInstance.serialIsOpen() == True:
