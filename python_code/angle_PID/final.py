@@ -56,7 +56,7 @@ class SerialComm:
             self.handshake()
 
     def readValues(self):
-        #self.ser.write(b"R0,\0") #used to call for the next line (Request)
+        self.ser.write(b"R0,\0") #used to call for the next line (Request)
         #current format of received data is b"T23533228,S0.00,A0.00,Q0.00,\0\r\n"
         arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
         return arduinoData        
@@ -64,39 +64,39 @@ class SerialComm:
     #S0 
     def writePID(self,P,I,D):
         values = f"S0,P{P},I{I},D{D},\0"
-        #self.ser.write(str.encode(values))
+        self.ser.write(str.encode(values))
         print("S0:", values)
     #S1
     def writeSetpoint(self,Setpoint):
         values = f"S1,Z{Setpoint},\0"
-        #self.ser.write(str.encode(values))
+        self.ser.write(str.encode(values))
         print("S1:", values)
     #S2
     def writeLabType(self,LabType):
         values = f"S2,Y{LabType},\0"
-        #self.ser.write(str.encode(values))
+        self.ser.write(str.encode(values))
         print("S2:", values)
     #S3
     def writeController(self,Controller):
         values = f"S3,M{Controller},\0"
-        #self.ser.write(str.encode(values))
+        self.ser.write(str.encode(values))
         print("S3:", values)
     #S4
     def writeSampleTime(self,SampleTime):
         values = f"S4,T{SampleTime},\0"
-        #self.ser.write(str.encode(values))
+        self.ser.write(str.encode(values))
         print("S4:", values)
     #S5
     def writeSaturation(self,Saturation):
         Saturation = Saturation.split(",") 
         values = f"S5,L{Saturation[0]},U{Saturation[1]},\0"
-        #self.ser.write(str.encode(values))
+        self.ser.write(str.encode(values))
         print("S5:", values)
     #S6
     def writeOLPWM(self,OLPWM):
         if OLPWM != None:
             values = f"S6,O{OLPWM},\0"
-            #self.ser.write(str.encode(values))
+            self.ser.write(str.encode(values))
             print("S6:", values)
 
 
@@ -721,7 +721,7 @@ class Window(QWidget):
             self.y1.append(fulldata[1])
             """
             i = int(self.y1_zeros[self.buffersize])
-            self.y1_zeros[i] = self.y1_zeros[i+self.size] = float(self.gcodeParsing("S",fulldata))
+            self.y1_zeros[i] = self.y1_zeros[i+self.size] = float(self.gcodeParsing("A",fulldata))
             self.y1_zeros[self.buffersize] = i = (i+1) % self.size
             self.y1.append(self.gcodeParsing("S",fulldata))
         except ValueError:
@@ -735,7 +735,7 @@ class Window(QWidget):
             self.y2.append(fulldata[2])
             """
             j = int(self.y2_zeros[self.buffersize])
-            self.y2_zeros[j] = self.y2_zeros[j+self.size] = float(self.gcodeParsing("A",fulldata))
+            self.y2_zeros[j] = self.y2_zeros[j+self.size] = float(self.gcodeParsing("S",fulldata))
             self.y2_zeros[self.buffersize] = j = (j+1) % self.size
             self.y2.append(self.gcodeParsing("A",fulldata))
         except ValueError:
