@@ -34,7 +34,7 @@ PID motor_controller(&input, &motor_PWM, &setpoint, kp, ki, kd, DIRECT);  // Set
 void setup() {
   Serial.begin(9600);  // Begins Serial communication
   
-  motor_controller.SetMode(AUTOMATIC); // Setup controller mode
+  mode = 1; // Default controller mode to automatic
   motor_controller.SetOutputLimits(-255,255); // Default controller to use full range of PWM
   
   //Encoder Setup
@@ -47,9 +47,6 @@ void setup() {
   pinMode(PWM_B, OUTPUT);
   pinMode(DIR_B, OUTPUT);
   digitalWrite(PWM_B,LOW);  // Breaks Motor
-
-  motor_controller.SetTunings(0.8,0.1,0.1);
-  setpoint = 100;
 }
 
 void loop() {
@@ -70,6 +67,9 @@ void loop() {
         digitalWrite(DIR_B,LOW);
       }
       analogWrite(PWM_B,abs(motor_PWM));
+//      Serial.print(setpoint);
+//      Serial.print(',');
+//      Serial.println(motor_PWM);
     }
   send_data();
 }
@@ -102,8 +102,8 @@ void update_control_params(){
   }
   
   //Update Setpoint
-  if(setpoint != com.setpoint){setpoint = com.setpoint;}
-
+  setpoint = com.setpoint;
+  
   //Update Mode
   if(com.mode == 0){motor_controller.SetMode(MANUAL);}  // M0 - Controller Off
   else if(com.mode == 1){motor_controller.SetMode(AUTOMATIC);}  // M1 - Controller On
@@ -135,49 +135,45 @@ double calc_motor_speed(){
 }
 //*****************************************************//
 // Send data on request
-//void send_data(){
-//  // Check and if there is a request, send data
-////  Serial.println(com.write_data);
-//  if(com.write_data == 1){
-//    Serial.print("T");Serial.print(micros());Serial.print(',');
-//    Serial.print('S');Serial.print(setpoint);Serial.print(',');
-//    
-//    if(com.labType == 0){ // Angle
-//      Serial.print('A');
-//      Serial.print(enc_deg);
-//    }
-//    else if(com.labType == 1){
-//      Serial.print('V');
-//      Serial.print(motor_speed);
-//    }
-//    Serial.print(',');
-//    Serial.print('Q');Serial.print(motor_PWM);Serial.print(',');
-//    Serial.print(com.labType);Serial.print(',');
-//    Serial.println('\0');
-//    com.write_data = 0; // Reset write data flag
-//  }
-//}
-
 void send_data(){
   // Check and if there is a request, send data
-//  Serial.println(com.write_data);
   if(com.write_data == 1){
-    Serial.print(micros());Serial.print(',');
+    Serial.print("T");Serial.print(micros());Serial.print(',');
+    Serial.print('S');Serial.print(setpoint);Serial.print(',');
+    Serial.print('A');
     if(com.labType == 0){ // Angle
-//      Serial.print('A');
       Serial.print(enc_deg);
     }
     else if(com.labType == 1){
-//      Serial.print('V');
       Serial.print(motor_speed);
     }
     Serial.print(',');
-    Serial.print(motor_PWM);Serial.print(',');
-    Serial.print(setpoint);Serial.print(',');
+    Serial.print('Q');Serial.print(motor_PWM);Serial.print(',');
+//    Serial.print(com.labType);Serial.print(',');
     Serial.println('\0');
     com.write_data = 0; // Reset write data flag
   }
 }
+
+//void send_data(){
+//  // Check and if there is a request, send data
+//  if(com.write_data == 1){
+//    Serial.print(micros());Serial.print(',');
+//    if(com.labType == 0){ // Angle
+////      Serial.print('A');
+//      Serial.print(enc_deg);
+//    }
+//    else if(com.labType == 1){
+////      Serial.print('V');
+//      Serial.print(motor_speed);
+//    }
+//    Serial.print(',');
+//    Serial.print(motor_PWM);Serial.print(',');
+//    Serial.print(setpoint);Serial.print(',');
+//    Serial.println('\0');
+//    com.write_data = 0; // Reset write data flag
+//  }
+//}
 
 //*****************************************************//
 //Encoder interrupts
