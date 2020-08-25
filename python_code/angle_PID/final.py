@@ -721,9 +721,9 @@ class Window(QWidget):
             self.y1.append(fulldata[1])
             """
             i = int(self.y1_zeros[self.buffersize])
-            self.y1_zeros[i] = self.y1_zeros[i+self.size] = float(self.gcodeParsing("A",fulldata))
+            self.y1_zeros[i] = self.y1_zeros[i+self.size] = float(self.gcodeParsing("S",fulldata))
             self.y1_zeros[self.buffersize] = i = (i+1) % self.size
-            self.y1.append(self.gcodeParsing("A",fulldata))
+            self.y1.append(self.gcodeParsing("S",fulldata))
         except ValueError:
             print("Couldn't parse")
 
@@ -735,9 +735,9 @@ class Window(QWidget):
             self.y2.append(fulldata[2])
             """
             j = int(self.y2_zeros[self.buffersize])
-            self.y2_zeros[j] = self.y2_zeros[j+self.size] = float(self.gcodeParsing("S",fulldata))
+            self.y2_zeros[j] = self.y2_zeros[j+self.size] = float(self.gcodeParsing("A",fulldata))
             self.y2_zeros[self.buffersize] = j = (j+1) % self.size
-            self.y2.append(self.gcodeParsing("S",fulldata))
+            self.y2.append(self.gcodeParsing("A",fulldata))
         except ValueError:
             print("Couldn't parse")
 
