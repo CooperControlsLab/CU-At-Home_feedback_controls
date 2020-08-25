@@ -654,7 +654,7 @@ class Window(QWidget):
 
     #Creates csv data
     def createCSV(self):
-        self.header = ['time', 'response', 'pwm', 'setpoint']
+        self.header = ['time', 'response', 'setpoint', 'pwm']
         self.data_set = zip(self.time,self.y1,self.y2,self.y3)
 
     #Initilizes lists/arrays
