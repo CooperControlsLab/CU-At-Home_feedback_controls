@@ -60,14 +60,45 @@ class SerialComm:
         #current format of received data is b"T23533228,S0.00,A0.00,Q0.00,\0\r\n"
         arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
         return arduinoData        
-    
-    #def writeValues(self,P,I,D,Setpoint,LabType,SampleTime,Saturation):
-    def writeValues(self,P,I,D,Setpoint,LabType,Controller,SampleTime,Saturation):
+        
+    #S0 
+    def writePID(self,P,I,D):
+        values = f"S0,P{P},I{I},D{D},\0"
+        #self.ser.write(str.encode(values))
+        print("S0:", values)
+    #S1
+    def writeSetpoint(self,Setpoint):
+        values = f"S1,Z{Setpoint},\0"
+        #self.ser.write(str.encode(values))
+        print("S1:", values)
+    #S2
+    def writeLabType(self,LabType):
+        values = f"S2,Y{LabType},\0"
+        #self.ser.write(str.encode(values))
+        print("S2:", values)
+    #S3
+    def writeController(self,Controller):
+        values = f"S3,M{Controller},\0"
+        #self.ser.write(str.encode(values))
+        print("S3:", values)
+    #S4
+    def writeSampleTime(self,SampleTime):
+        values = f"S4,T{SampleTime},\0"
+        #self.ser.write(str.encode(values))
+        print("S4:", values)
+    #S5
+    def writeSaturation(self,Saturation):
         Saturation = Saturation.split(",") 
-        input2system = f"S0,P{P},I{I},D{D},S1,Z{Setpoint},S2,Y{LabType},S3,M{Controller},S4,T{SampleTime},S5,L{Saturation[0]},U{Saturation[1]},S6,OSOMETHING\0"
-        print(input2system)
-        #self.ser.write(str.encode(input2system))
-    
+        values = f"S5,L{Saturation[0]},U{Saturation[1]},\0"
+        #self.ser.write(str.encode(values))
+        print("S5:", values)
+    #S6
+    def writeOLPWM(self,OLPWM):
+        if OLPWM != None:
+            values = f"S6,O{OLPWM},\0"
+            #self.ser.write(str.encode(values))
+            print("S6:", values)
+
 
 class Dialog1(QDialog):
     def __init__(self, *args, **kwargs):
@@ -101,14 +132,12 @@ class Dialog1(QDialog):
         self.baudrate.addItems(["9600","14400"])
         
         self.timeout_label = QLabel("Timeout:",self)
-
         self.timeout = QLineEdit(self)
         self.timeout.setFixedWidth(100)
         self.timeout.setText("0.1")
         timeout_validator = QDoubleValidator(0.0000, 5.0000, 4, notation=QDoubleValidator.StandardNotation)
         self.timeout.setValidator(timeout_validator)
-        
-        
+         
         regex = QRegExp("([1-9]|[1-9][0-9]|[1-9][0-9][0-9]|1000)") #takes 1-1000 as input
         sampnum_buffernum_validator = QRegExpValidator(regex,self)
 
@@ -184,7 +213,6 @@ class Window(QWidget):
 
         self.setStyleSheet(qdarkstyle.load_stylesheet())
 
-
         self.horizontalLayout = QHBoxLayout()
         self.verticalLayout = QVBoxLayout()
         self.verticalLayout.setSizeConstraint(QLayout.SetDefaultConstraint)
@@ -201,8 +229,6 @@ class Window(QWidget):
         self.imageLabel.setMaximumSize(QSize(200, 130))
         self.imageLabel.setPixmap(QPixmap("./Arduino/logo/CUAtHomeLogo-Horz.png").scaled(200, 130, Qt.KeepAspectRatio, Qt.FastTransformation))
         self.verticalLayout.addWidget(self.imageLabel)
-
-
         
         self.LEDLabel = QLabel("Arduino Status",self)
         self.LEDLabel.setMinimumSize(QSize(100, 20))
@@ -215,8 +241,6 @@ class Window(QWidget):
         self._led.value = True
         self._led.setMinimumSize(QSize(20,20))
         self._led.setMaximumSize(QSize(20,20))        
-
-
 
         self.serialOpenButton = QPushButton("Open Serial",self)
         self.serialOpenButton.setCheckable(False)  
@@ -234,9 +258,6 @@ class Window(QWidget):
         self.serialCloseButton.setSizePolicy(sizePolicy)
         self.serialCloseButton.setMaximumSize(QSize(100, 20))
         self.gridLayout.addWidget(self.serialCloseButton, 1, 1, 1, 1)
-
-
-
 
         self.startbutton = QPushButton("Start Plot",self)
         self.startbutton.setCheckable(False)  
@@ -314,7 +335,6 @@ class Window(QWidget):
         self.checkBoxPlot1.stateChanged.connect(self.checkbox_logic) 
         self.checkBoxPlot2.stateChanged.connect(self.checkbox_logic)
 
-        
         self.LabLabel = QLabel("Lab Type")
         self.LabLabel.setMaximumSize(QSize(100, 20))
         self.gridLayout.addWidget(self.LabLabel, 7, 0, 1, 1)
@@ -328,7 +348,6 @@ class Window(QWidget):
         self.LabType.setMaximumSize(QSize(100, 20))
         self.LabType.activated.connect(self.onlyOpenLoop)
         self.gridLayout.addWidget(self.LabType, 7, 1, 1, 1)
-
 
         self.openLoopLabel = QLabel("OL PWM",self)
         self.openLoopLabel.setMinimumSize(QSize(100, 20))
@@ -346,7 +365,6 @@ class Window(QWidget):
         self.openLoopInput.setValidator(QRegExpValidator(QRegExp("^-?([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$")))
         self.openLoopInput.setEnabled(False)
         self.gridLayout.addWidget(self.openLoopInput, 8, 1, 1, 1)
-
 
         self.SetpointLabel = QLabel("Setpoint",self)
         self.SetpointLabel.setMinimumSize(QSize(100, 20))
@@ -558,14 +576,15 @@ class Window(QWidget):
         time.sleep(2)
         
         try:
-            self.serialInstance.writeValues(self.PIDInput()["P"],
-                                            self.PIDInput()["I"],
-                                            self.PIDInput()["D"],
-                                            self.getSetpointValue(),
-                                            self.getLabType(),
-                                            self.getControllerState(),
-                                            self.getSampleTimeValue(),
-                                            self.getSaturationValue()) 
+            self.serialInstance.writePID(self.PIDInput()["P"],
+                                         self.PIDInput()["I"],
+                                         self.PIDInput()["D"])
+            self.serialInstance.writeSetpoint(self.getSetpointValue())
+            self.serialInstance.writeLabType(self.getLabType())        
+            self.serialInstance.writeController(self.getControllerState())
+            self.serialInstance.writeSampleTime(self.getSampleTimeValue())
+            self.serialInstance.writeSaturation(self.getSaturationValue())
+            self.serialInstance.writeOLPWM(self.getOLPWMValue())
         except AttributeError:
             print("Some fields are empty. Recheck then try again")
 
@@ -748,41 +767,6 @@ class Window(QWidget):
         #self.settingsPopUp.exec()
         self.serial_values = self.settingsPopUp.getDialogValues()
 
-    #Changes axes labels depending on what lab is selected
-    def getLabTypeAxes(self):
-        inputType = str(self.LabType.currentText())
-        if inputType == "Position":
-            self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&theta; (°)</span>")
-            self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>")
-            self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
-            self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
-
-        elif inputType == "Speed":
-            self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (°/s)</span>")
-            self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>")
-            self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
-            self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
-    
-    #GCode format for Labtype (int)
-    def getLabType(self):
-        test1 = str(self.LabType.currentText())
-        if test1 == "Position":
-            return("0")
-        
-        elif test1 =="Speed":
-            return("1")
-
-        elif test1 =="OL":
-            return("2")
-
-    def onlyOpenLoop(self):
-        test1 = str(self.LabType.currentText())
-        if test1 == "OL":
-            self.openLoopInput.setEnabled(True)
-        else:
-            self.openLoopInput.setEnabled(False)
-
-
     def PCheckBoxLogic(self):
         test1 = self.sender()
         if test1.isChecked() == True:
@@ -834,21 +818,40 @@ class Window(QWidget):
                     
         return(SetpointValue)
 
-    #GCode format for Saturation (float?)
-    def getSaturationValue(self):
-        SaturationValue = self.SaturationInput.text()
-        if SaturationValue == "":
-            raise ValueError("Saturation Field is empty. Enter in a comma separated value")
-                    
-        return(SaturationValue)
+    #GCode format for Labtype (int)
+    def getLabType(self):
+        test1 = str(self.LabType.currentText())
+        if test1 == "Position":
+            return("0")
+        
+        elif test1 =="Speed":
+            return("1")
 
-    #GCode format for Sample Time
-    def getSampleTimeValue(self):
-        SampleTimeValue = self.SampleTimeInput.text()
-        if SampleTimeValue == "":
-            raise ValueError("Sample Time Field is empty. Enter in a a value")
+        elif test1 =="OL":
+            return("2")
 
-        return(SampleTimeValue)
+    #Changes axes labels depending on what lab is selected
+    def getLabTypeAxes(self):
+        inputType = str(self.LabType.currentText())
+        if inputType == "Position":
+            self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&theta; (°)</span>")
+            self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>")
+            self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
+            self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
+
+        elif inputType == "Speed":
+            self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (°/s)</span>")
+            self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>")
+            self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
+            self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
+
+    #This exists as if the LabType isn't PWM, the field should not be active
+    def onlyOpenLoop(self):
+        test1 = str(self.LabType.currentText())
+        if test1 == "OL":
+            self.openLoopInput.setEnabled(True)
+        else:
+            self.openLoopInput.setEnabled(False)
 
     def getControllerState(self):
         while self.serialInstance.serialIsOpen() == True:
@@ -867,6 +870,36 @@ class Window(QWidget):
             print("Controller On (Automatic)")
         elif test1.isChecked() == False:
             print("Controller Off (Manual)")
+
+    #GCode format for Sample Time
+    def getSampleTimeValue(self):
+        SampleTimeValue = self.SampleTimeInput.text()
+        if SampleTimeValue == "":
+            raise ValueError("Sample Time Field is empty. Enter in a value")
+
+        return(SampleTimeValue)
+
+    #GCode format for Saturation (float?)
+    def getSaturationValue(self):
+        SaturationValue = self.SaturationInput.text()
+        if SaturationValue == "":
+            raise ValueError("Saturation Field is empty. Enter in a comma separated value")
+                    
+        return(SaturationValue)
+
+    def getOLPWMValue(self):
+        #If Labtype isn't OL or Input Field is disabled, then returns None. 
+        #In SerialComm.writeOLPWM(), checks if input value is None. 
+        #If it is None, doesn't write anything, else it does
+
+        if self.openLoopInput.isEnabled() == True:
+            OLPWMValue = self.openLoopInput.text()
+            if OLPWMValue == "":
+                raise ValueError("OLPWM Field is empty. Enter in a value")
+            return(OLPWMValue)
+
+        elif self.openLoopInput.isEnabled() == False:
+            return None
 
     def updateParameters(self):
         #if self.serialInstance.serialIsOpen() == True:
