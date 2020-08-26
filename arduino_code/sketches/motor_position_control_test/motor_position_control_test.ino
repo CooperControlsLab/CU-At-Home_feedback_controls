@@ -21,10 +21,11 @@ int lowerOutputLimit = -255;  // Controller upper limit
 int upperOutputLimit = 255;   // Controller lower limit
 int sampleTime;
 
-double enc_count,enc_deg; // Enc ++ = CW, Enc -- = CCW
+volatile double enc_count, enc_deg; // Enc ++ = CW, Enc -- = CCW
 double motor_speed;
-double valA,valB, prev_pulse_time, pulse_interval;
-double stationary_thresh = 8000; //8000 us
+volatile int valA,valB;
+volatile unsigned long prev_pulse_time, pulse_interval;
+int stationary_thresh = 80000; //8000 us
 
 SerialComms com;
 
@@ -32,9 +33,9 @@ SerialComms com;
 PID motor_controller(&input, &motor_PWM, &setpoint, kp, ki, kd, DIRECT);  // Set up PID controller
 
 void setup() {
-  Serial.begin(9600);  // Begins Serial communication
+  Serial.begin(115200);  // Begins Serial communication
   
-  mode = 1; // Default controller mode to automatic
+  com.mode = 1; // Default controller mode to automatic
   motor_controller.SetOutputLimits(-255,255); // Default controller to use full range of PWM
   
   //Encoder Setup
@@ -86,6 +87,7 @@ void handle_command(){
       // Reset command buffer
       cmd_index = 0;
       memset(cmd,'\0',sizeof(cmd));
+      update_control_params();    //Update gains, update inputs based on labtype
     }
     else{cmd_index ++;}
   }
@@ -95,17 +97,23 @@ void update_control_params(){
   // Update input    
   if(com.labType == 0){  // Angle Control
     input = enc_deg;
+    motor_controller.SetControllerDirection(DIRECT);
+//    motor_controller = PID(&enc_deg, &motor_PWM, &setpoint, kp, ki, kd, DIRECT);  // Set up PID controller
+
   }
   else if(com.labType == 1){  // Speed Control
     calc_motor_speed();
     input = motor_speed;
+    motor_controller.SetControllerDirection(DIRECT);
+//    PID motor_controller(&motor_speed, &motor_PWM, &setpoint, kp, ki, kd, REVERSE);  // Set up PID controller
+
   }
   
   //Update Setpoint
   setpoint = com.setpoint;
   
   //Update Mode
-  if(com.mode == 0){motor_controller.SetMode(MANUAL);}  // M0 - Controller Off
+  if(com.mode == 0){motor_controller.SetMode(MANUAL); motor_PWM = 0;}  // M0 - Controller Off, set motor output to zero
   else if(com.mode == 1){motor_controller.SetMode(AUTOMATIC);}  // M1 - Controller On
   
   if(kp != com.kp || ki!= com.ki || kd!= com.kd){
@@ -130,7 +138,8 @@ double calc_motor_speed(){
     motor_speed = 0;
   }
   else{
-    motor_speed = double(1000000/(pulse_interval)/PPR_A/2*60.00);
+    motor_speed = double( float((360.0/232.8)/pulse_interval/1000000)); //)double(1000000/double(pulse_interval)/PPR_A/(2*60.00));
+    
   }
 }
 //*****************************************************//
@@ -145,7 +154,7 @@ void send_data(){
       Serial.print(enc_deg);
     }
     else if(com.labType == 1){
-      Serial.print(motor_speed);
+      Serial.print(int(motor_speed));
     }
     Serial.print(',');
     Serial.print('Q');Serial.print(motor_PWM);Serial.print(',');
@@ -178,7 +187,7 @@ void send_data(){
 //*****************************************************//
 //Encoder interrupts
 void pulseA() {
-  pulse_interval = prev_pulse_time - micros();
+  pulse_interval = micros() - prev_pulse_time;
   prev_pulse_time = micros();
   
   valA = digitalRead(ENC_A);
