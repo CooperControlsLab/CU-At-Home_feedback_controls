@@ -130,6 +130,7 @@ class Dialog1(QDialog):
         self.baudrate = QComboBox(self)
         self.baudrate.setFixedWidth(100)
         self.baudrate.addItems(["9600","115200"])
+        self.baudrate.setCurrentIndex(1)
         self.baudrate.SizeAdjustPolicy(1)
         
         self.timeout_label = QLabel("Timeout:",self)
@@ -428,7 +429,7 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.SampleTimeInput.sizePolicy().hasHeightForWidth())
         self.SampleTimeInput.setSizePolicy(sizePolicy)
         self.SampleTimeInput.setMaximumSize(QSize(100, 20))
-        self.SampleTimeInput.setText("25")
+        self.SampleTimeInput.setText("2")
         #0.0000 to  100.0000
         self.SampleTimeInput.setValidator(QRegExpValidator(QRegExp("^((((\d|[1-9]\d)(\.\d{0,4})?))|(100)(\.0{0,4})?)$"))) 
         groupParaGridLayout.addWidget(self.SampleTimeInput, 4, 1, 1, 1)
@@ -448,7 +449,7 @@ class Window(QWidget):
         self.PInput.setSizePolicy(sizePolicy)
         self.PInput.setMaximumSize(QSize(100, 20))
         self.PInput.setValidator(PID_validator)
-        self.PInput.setText("1")
+        self.PInput.setText("0.5")
         groupParaGridLayout.addWidget(self.PInput, 5, 1, 1, 1)
 
         self.ICheckBox = QCheckBox("I",self)
