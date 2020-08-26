@@ -11,6 +11,7 @@
 #define PWM_B 11 //Motor PWM
 #define BRK_B 8  //Motor Break Doesn't seem to work, avoid using
 #define SUPPLY_VOLTAGE 12 //12V power supply
+#define MOVING_AVERAGE_SIZE 100 // Size of moving average array
 
 //Global Variables
 char incoming_char;
@@ -21,9 +22,11 @@ int sampleTime, motor_direction;
 
 volatile double enc_count, enc_deg; // Enc ++ = CW, Enc -- = CCW
 double motor_speed;
+double motor_speed_array [MOVING_AVERAGE_SIZE];
+
 volatile int valA,valB;
 volatile unsigned long prev_pulse_time, pulse_interval;
-int stationary_thresh = 80000; //8000 us
+int stationary_thresh = 80000; //80000 us
 
 SerialComms com;
 
@@ -46,6 +49,8 @@ void setup() {
   pinMode(PWM_B, OUTPUT);
   pinMode(DIR_B, OUTPUT);
   digitalWrite(PWM_B,LOW);  // Breaks Motor
+  
+  for(int i=0;i<MOVING_AVERAGE_SIZE;i++){motor_speed_array[i] = 0;} //Initializing motor speed array
 }
 
 void loop() {
@@ -121,6 +126,7 @@ void update_control_params(){
     motor_controller.SetSampleTime(sampleTime);
   }
 }
+
 //*****************************************************//
 double calc_motor_speed(){
 //  Check if motor is stationary
@@ -128,9 +134,23 @@ double calc_motor_speed(){
     motor_speed = 0;
   }
   else{
-    motor_speed = motor_direction*double( float((360.0/PPR_A)/(pulse_interval/1000000)));
+    motor_speed = update_motor_speed_array(motor_direction*double(360.0/PPR_A)*float(1000000.0/pulse_interval));
   }
 }
+
+//*****************************************************//
+// Update moving average speed array
+double update_motor_speed_array(double newVal){
+  double sum = 0;
+  for(int i = 0;i<MOVING_AVERAGE_SIZE-1;i++){
+    motor_speed_array[i] = motor_speed_array[i+1];
+    sum += motor_speed_array[i];
+  }
+  motor_speed_array[MOVING_AVERAGE_SIZE-1] = newVal;
+  sum += newVal;
+  return double(sum / MOVING_AVERAGE_SIZE);
+}
+
 //*****************************************************//
 // Send data on request
 void send_data(){
