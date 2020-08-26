@@ -58,13 +58,13 @@ void loop() {
     }
     else{
       motor_controller.Compute();
-      int motor_PWM = volts_to_PWM(motor_PWM);
+      int motor_PWM = volts_to_PWM(motor_voltage);
 
       if(motor_PWM < 0){
-          digitalWrite(DIR_B,HIGH);
+          digitalWrite(DIR_B,LOW);
       }
       else{
-        digitalWrite(DIR_B,LOW);
+        digitalWrite(DIR_B,HIGH);
       }
       analogWrite(PWM_B,abs(motor_PWM));
     }
@@ -156,7 +156,7 @@ void send_data(){
 //*****************************************************//
 // Voltage and PWM duty cycle conversion
 int volts_to_PWM(double voltage){
-  return round(voltage/SUPPLY_VOLTAGE * 255);
+  return round((voltage/SUPPLY_VOLTAGE) * 255);
 }
 
 double PWM_to_volts(int PWM){
@@ -173,8 +173,8 @@ void pulseA() {
   valB = digitalRead(ENC_B);
   
   if(valA == HIGH){  // A Rise
-    if(valB == LOW){enc_count ++;motor_direction = 1;}  // CW
-    else{enc_count --;motor_direction = -1;}  // CCW
+    if(valB == LOW){enc_count++; motor_direction = 1;}  // CW
+    else{enc_count--; motor_direction = -1;}  // CCW
   } 
   else{  // A fall
     if(valB == HIGH){enc_count ++;motor_direction = 1;}  // CW
