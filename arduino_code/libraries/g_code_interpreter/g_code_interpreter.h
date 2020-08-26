@@ -18,7 +18,7 @@ public:
     double ki;
     double kd;
     int write_data;
-    int open_loop_PWM;
+    int open_loop_voltage;
 };
 
 

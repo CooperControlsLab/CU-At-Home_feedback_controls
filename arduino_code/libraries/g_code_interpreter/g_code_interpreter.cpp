@@ -13,7 +13,7 @@ SerialComms::SerialComms(){
     ki = 0;
     kd = 0;
     write_data = 0;
-    open_loop_PWM = 0;
+    open_loop_voltage = 0;
 }
 
 void SerialComms::process_command(char* cmd_string){
@@ -70,7 +70,7 @@ void SerialComms::process_command(char* cmd_string){
             break;
 
         case 6: //Openloop control
-            open_loop_PWM = int(parse_number(cmd_string,'O',0));
+            open_loop_voltage = int(parse_number(cmd_string,'O',0));
             break;
 
         default: break;

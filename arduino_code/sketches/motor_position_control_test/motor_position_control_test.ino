@@ -6,20 +6,18 @@
 #define ENC_A 2   //Encoder pulse A
 #define ENC_B 3   //Encoder pulse B
 #define PPR 464.64 //Encoder pulses per revolution 
-#define PPR_A 52.8 //Pulse A per r
+#define PPR_A 232.8 //Pulse A per r
 #define DIR_B 13 //Motor Direction HIGH = CCW, LOW = CW
 #define PWM_B 11 //Motor PWM
 #define BRK_B 8  //Motor Break Doesn't seem to work, avoid using
-
+#define SUPPLY_VOLTAGE 12 //12V power supply
 
 //Global Variables
 char incoming_char;
 char cmd [200];
 int cmd_index = 0;
-double input,motor_PWM,setpoint,kp,ki,kd; // Controller params
-int lowerOutputLimit = -255;  // Controller upper limit
-int upperOutputLimit = 255;   // Controller lower limit
-int sampleTime;
+double input,motor_voltage,lowerOutputLimit,upperOutputLimit,setpoint,kp,ki,kd; // Controller params
+int sampleTime, motor_direction;
 
 volatile double enc_count, enc_deg; // Enc ++ = CW, Enc -- = CCW
 double motor_speed;
@@ -30,7 +28,7 @@ int stationary_thresh = 80000; //8000 us
 SerialComms com;
 
 // Initialize PID motor controller
-PID motor_controller(&input, &motor_PWM, &setpoint, kp, ki, kd, DIRECT);  // Set up PID controller
+PID motor_controller(&input, &motor_voltage, &setpoint, kp, ki, kd, DIRECT);  // Set up PID controller
 
 void setup() {
   Serial.begin(115200);  // Begins Serial communication
@@ -56,11 +54,12 @@ void loop() {
     update_control_params();    //Update gains, update inputs based on labtype
 
     if(com.labType == 2){
-      motor_PWM = com.open_loop_PWM;
-      analogWrite(PWM_B,motor_PWM);
+      analogWrite(PWM_B,volts_to_PWM(com.open_loop_voltage));
     }
     else{
       motor_controller.Compute();
+      int motor_PWM = volts_to_PWM(motor_PWM);
+
       if(motor_PWM < 0){
           digitalWrite(DIR_B,HIGH);
       }
@@ -68,9 +67,6 @@ void loop() {
         digitalWrite(DIR_B,LOW);
       }
       analogWrite(PWM_B,abs(motor_PWM));
-//      Serial.print(setpoint);
-//      Serial.print(',');
-//      Serial.println(motor_PWM);
     }
   send_data();
 }
@@ -97,23 +93,17 @@ void update_control_params(){
   // Update input    
   if(com.labType == 0){  // Angle Control
     input = enc_deg;
-    motor_controller.SetControllerDirection(DIRECT);
-//    motor_controller = PID(&enc_deg, &motor_PWM, &setpoint, kp, ki, kd, DIRECT);  // Set up PID controller
-
   }
   else if(com.labType == 1){  // Speed Control
     calc_motor_speed();
     input = motor_speed;
-    motor_controller.SetControllerDirection(DIRECT);
-//    PID motor_controller(&motor_speed, &motor_PWM, &setpoint, kp, ki, kd, REVERSE);  // Set up PID controller
-
   }
   
   //Update Setpoint
   setpoint = com.setpoint;
   
   //Update Mode
-  if(com.mode == 0){motor_controller.SetMode(MANUAL); motor_PWM = 0;}  // M0 - Controller Off, set motor output to zero
+  if(com.mode == 0){motor_controller.SetMode(MANUAL); motor_voltage = 0;}  // M0 - Controller Off, set motor output to zero
   else if(com.mode == 1){motor_controller.SetMode(AUTOMATIC);}  // M1 - Controller On
   
   if(kp != com.kp || ki!= com.ki || kd!= com.kd){
@@ -138,8 +128,7 @@ double calc_motor_speed(){
     motor_speed = 0;
   }
   else{
-    motor_speed = double( float((360.0/232.8)/pulse_interval/1000000)); //)double(1000000/double(pulse_interval)/PPR_A/(2*60.00));
-    
+    motor_speed = motor_direction*double( float((360.0/PPR_A)/(pulse_interval/1000000)));
   }
 }
 //*****************************************************//
@@ -158,32 +147,21 @@ void send_data(){
     }
     
     Serial.print(',');
-    Serial.print('Q');Serial.print(motor_PWM);Serial.print(',');
-//    Serial.print(com.labType);Serial.print(',');
+    Serial.print('Q');Serial.print(motor_voltage);Serial.print(',');
     Serial.println('\0');
     com.write_data = 0; // Reset write data flag
   }
 }
 
-//void send_data(){
-//  // Check and if there is a request, send data
-//  if(com.write_data == 1){
-//    Serial.print(micros());Serial.print(',');
-//    if(com.labType == 0){ // Angle
-////      Serial.print('A');
-//      Serial.print(enc_deg);
-//    }
-//    else if(com.labType == 1){
-////      Serial.print('V');
-//      Serial.print(motor_speed);
-//    }
-//    Serial.print(',');
-//    Serial.print(motor_PWM);Serial.print(',');
-//    Serial.print(setpoint);Serial.print(',');
-//    Serial.println('\0');
-//    com.write_data = 0; // Reset write data flag
-//  }
-//}
+//*****************************************************//
+// Voltage and PWM duty cycle conversion
+int volts_to_PWM(double voltage){
+  return round(voltage/SUPPLY_VOLTAGE * 255);
+}
+
+double PWM_to_volts(int PWM){
+  return double(PWM/255) * SUPPLY_VOLTAGE;
+}
 
 //*****************************************************//
 //Encoder interrupts
@@ -195,12 +173,12 @@ void pulseA() {
   valB = digitalRead(ENC_B);
   
   if(valA == HIGH){  // A Rise
-    if(valB == LOW){enc_count ++;}  // CW
-    else{enc_count --;}  // CCW
+    if(valB == LOW){enc_count ++;motor_direction = 1;}  // CW
+    else{enc_count --;motor_direction = -1;}  // CCW
   } 
   else{  // A fall
-    if(valB == HIGH){enc_count ++;}  // CW
-    else{enc_count --;}  //CCW
+    if(valB == HIGH){enc_count ++;motor_direction = 1;}  // CW
+    else{enc_count --;motor_direction = -1;}  //CCW
   }
 }
 
