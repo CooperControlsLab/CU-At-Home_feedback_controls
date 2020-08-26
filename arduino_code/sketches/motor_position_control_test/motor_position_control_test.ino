@@ -5,7 +5,7 @@
 // Define hardware pins
 #define ENC_A 2   //Encoder pulse A
 #define ENC_B 3   //Encoder pulse B
-#define PPR 465 //Encoder pulses per revolution 
+#define PPR 464.64 //Encoder pulses per revolution 
 #define PPR_A 52.8 //Pulse A per r
 #define DIR_B 13 //Motor Direction HIGH = CCW, LOW = CW
 #define PWM_B 11 //Motor PWM
@@ -35,8 +35,8 @@ PID motor_controller(&input, &motor_PWM, &setpoint, kp, ki, kd, DIRECT);  // Set
 void setup() {
   Serial.begin(115200);  // Begins Serial communication
   
-  com.mode = 1; // Default controller mode to automatic
-  motor_controller.SetOutputLimits(-255,255); // Default controller to use full range of PWM
+//  com.mode = 1; // Default controller mode to automatic
+//  motor_controller.SetOutputLimits(-255,255); // Default controller to use full range of PWM
   
   //Encoder Setup
   pinMode(ENC_A, INPUT_PULLUP);
@@ -153,9 +153,10 @@ void send_data(){
     if(com.labType == 0){ // Angle
       Serial.print(enc_deg);
     }
-    else if(com.labType == 1){
-      Serial.print(int(motor_speed));
+    else if(com.labType == 1 || com.labType == 2){
+      Serial.print(motor_speed);
     }
+    
     Serial.print(',');
     Serial.print('Q');Serial.print(motor_PWM);Serial.print(',');
 //    Serial.print(com.labType);Serial.print(',');
@@ -196,7 +197,7 @@ void pulseA() {
   if(valA == HIGH){  // A Rise
     if(valB == LOW){enc_count ++;}  // CW
     else{enc_count --;}  // CCW
-  }
+  } 
   else{  // A fall
     if(valB == HIGH){enc_count ++;}  // CW
     else{enc_count --;}  //CCW

@@ -69,6 +69,10 @@ void SerialComms::process_command(char* cmd_string){
             upperOutputLimit = double(parse_number(cmd_string, 'U', -1));
             break;
 
+        case 6: //Openloop control
+            open_loop_PWM = int(parse_number(cmd_string,'O',0));
+            break;
+
         default: break;
     }
 }
