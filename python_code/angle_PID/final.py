@@ -263,8 +263,8 @@ class Window(QWidget):
         self.serialOpenButton.clicked.connect(self.serialOpenPushed)  
         #self.serialOpenButton.setMinimumSize(QSize(88, 21))       
         self.serialOpenButton.setMaximumSize(QSize(88, 21))
+        #print(self.serialOpenButton.sizeHint())
         mainGridLayout.addWidget(self.serialOpenButton, 1, 0, 1, 1)
-        print(self.serialOpenButton.sizeHint())
 
         self.serialCloseButton = QPushButton("Close Serial",self)
         self.serialCloseButton.setCheckable(False)  
@@ -275,7 +275,7 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.serialCloseButton.sizePolicy().hasHeightForWidth())
         self.serialCloseButton.setSizePolicy(sizePolicy)
         self.serialCloseButton.setMaximumSize(QSize(88, 21))
-        print(self.serialCloseButton.sizeHint())
+        #print(self.serialCloseButton.sizeHint())
         mainGridLayout.addWidget(self.serialCloseButton, 1, 1, 1, 1)
 
         self.startbutton = QPushButton("Start Plot",self)
@@ -538,6 +538,7 @@ class Window(QWidget):
         #Adds a legend after data starts to plot NOT before
         self.graphWidgetOutput.addLegend()
         self.graphWidgetInput.addLegend()
+        #self.legend.setParentItem(self.graphWidgetOutput)
 
         rightVerticalLayout.addWidget(self.graphWidgetOutput)
         rightVerticalLayout.addWidget(self.graphWidgetInput)
@@ -615,8 +616,6 @@ class Window(QWidget):
         self.updateButton.clicked.connect(self.updateParameters)
 
     def serialClosePushed(self):
-        print("Serial Close Pressed")
-
         if self.serialInstance.serialIsOpen() == True:
             self.serialInstance.serialClose()
             print("Serial was open. Now closed")   
@@ -650,14 +649,14 @@ class Window(QWidget):
     def clearbutton_pushed(self):
         self.graphWidgetOutput.clear()
         self.graphWidgetInput.clear()
-
+        #Come back to this
+        self.graphWidgetOutput.addLegend()
+        self.graphWidgetInput.addLegend()
         self.graphWidgetOutput.setYRange(-11, 11, padding=0)
         self.graphWidgetOutput.enableAutoRange()
         self.graphWidgetInput.setYRange(-11, 11, padding=0)
         self.graphWidgetInput.enableAutoRange()
         self.startbutton.clicked.connect(self.startbutton_pushed)
-        #self.legend.scene().removeItem(self.legend)
-
         print("Cleared All Graphs")
 
     #Dumps data into a csv file to a selected path
@@ -673,7 +672,7 @@ class Window(QWidget):
 
     #Creates csv data
     def createCSV(self):
-        self.header = ['time', 'response', 'setpoint', 'pwm']
+        self.header = ['time', 'setpoint', 'response', 'pwm']
         self.data_set = zip(self.time,self.y1,self.y2,self.y3)
 
     #Initilizes lists/arrays
@@ -701,8 +700,8 @@ class Window(QWidget):
         pen2 = pg.mkPen(color = (0, 255, 0), width=1)
         pen3 = pg.mkPen(color = (0, 0, 255), width=1)
 
-        self.data1 = self.graphWidgetOutput.plot(pen = pen1, name="Response") #Response
-        self.data2 = self.graphWidgetOutput.plot(pen = pen2, name="Setpoint") #Setpoint
+        self.data1 = self.graphWidgetOutput.plot(pen = pen1, name="Setpoint") #Response
+        self.data2 = self.graphWidgetOutput.plot(pen = pen2, name="Response") #Setpoint
         self.data3 = self.graphWidgetInput.plot(pen = pen3, name="PWM Actuation") #PWM Actuation Signal
 
     #Connected to timer to update plot. Incoming data is in the form of timestamp,data1,data2...    
@@ -716,6 +715,25 @@ class Window(QWidget):
         is in the form b"T23533228,S0.00,A0.00,Q0.00,\0\r\n", this parsing searches for specific starting letter,
         converts from list to string as the list is length 1, then removes the starting character. 
         #result = [item for item in example if item.startswith('T')][0][1:]
+        """
+
+        """
+        Serial command protocol
+        H0 - Handshake
+        R0 - Request data dependent on lab type
+        S0,P#,I#,D# - Set PID gains on arduino
+        S1,Z# - Set the setpoint of the controller
+        S2,Y# - Lab type 0-angle, 1-ang_velocity, 2-openloop
+        S3,M# - Turn controller on/off
+        S4,T# - Set sample time
+        S5,L#,U# - Set lower and upper controller output limits
+        S6,O# - Open loop PWM
+        
+        Data to python protocol
+        T# - time in micros
+        S# - setpoint
+        A# - value, angle or ang_speed dependent on labtype
+        Q# - PMW
         """
 
         try:
@@ -740,9 +758,9 @@ class Window(QWidget):
             self.y1.append(fulldata[1])
             """
             i = int(self.y1_zeros[self.buffersize])
-            self.y1_zeros[i] = self.y1_zeros[i+self.size] = float(self.gcodeParsing("A",fulldata))
+            self.y1_zeros[i] = self.y1_zeros[i+self.size] = float(self.gcodeParsing("S",fulldata))
             self.y1_zeros[self.buffersize] = i = (i+1) % self.size
-            self.y1.append(self.gcodeParsing("A",fulldata))
+            self.y1.append(self.gcodeParsing("S",fulldata))
         except ValueError:
             print("Couldn't parse")
 
@@ -754,9 +772,9 @@ class Window(QWidget):
             self.y2.append(fulldata[2])
             """
             j = int(self.y2_zeros[self.buffersize])
-            self.y2_zeros[j] = self.y2_zeros[j+self.size] = float(self.gcodeParsing("S",fulldata))
+            self.y2_zeros[j] = self.y2_zeros[j+self.size] = float(self.gcodeParsing("A",fulldata))
             self.y2_zeros[self.buffersize] = j = (j+1) % self.size
-            self.y2.append(self.gcodeParsing("S",fulldata))
+            self.y2.append(self.gcodeParsing("A",fulldata))
         except ValueError:
             print("Couldn't parse")
 
