@@ -189,10 +189,11 @@ class Dialog1(QDialog):
             self.timeout_value = float(self.timeout.text())
             self.samplenum_value = int(self.samplenum.text())
             #self.buffernum_value = int(self.buffernum.text())
+            print("Settings Menu Saved!")
             return([self.com_value, self.baudrate_value, self.timeout_value, self.samplenum_value])#, self.buffernum_value])
             
         else:
-            print("Settings Menu Closed")
+            print("Settings Menu Closed. No options were saved!")
     
 
 class Window(QWidget):
@@ -269,7 +270,7 @@ class Window(QWidget):
 
         self.serialCloseButton = QPushButton("Close Serial",self)
         self.serialCloseButton.setCheckable(False)  
-        self.serialCloseButton.clicked.connect(self.serialClosePushed)
+        #self.serialCloseButton.clicked.connect(self.serialClosePushed)
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -281,13 +282,13 @@ class Window(QWidget):
 
         self.startbutton = QPushButton("Start Plot",self)
         self.startbutton.setCheckable(False)  
-        self.startbutton.clicked.connect(self.startbutton_pushed)        
+        #self.startbutton.clicked.connect(self.startbuttonPushed)        
         self.startbutton.setMaximumSize(QSize(88, 21))
         mainGridLayout.addWidget(self.startbutton, 2, 0, 1, 1)
 
         self.stopbutton = QPushButton("Stop Plot",self)
         self.stopbutton.setCheckable(False)  
-        self.stopbutton.clicked.connect(self.stopbutton_pushed)
+        self.stopbutton.clicked.connect(self.stopbuttonPushed)
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -298,13 +299,13 @@ class Window(QWidget):
     
         self.clearbutton = QPushButton("Clear Plot",self)
         self.clearbutton.setCheckable(False)
-        self.clearbutton.clicked.connect(self.clearbutton_pushed)
+        self.clearbutton.clicked.connect(self.clearbuttonPushed)
         self.clearbutton.setMaximumSize(QSize(88, 21))
         mainGridLayout.addWidget(self.clearbutton, 3, 0, 1, 1)
 
         self.savebutton = QPushButton("Save Plot",self)
         self.savebutton.setCheckable(False)
-        self.savebutton.clicked.connect(self.savebutton_pushed)
+        self.savebutton.clicked.connect(self.savebuttonPushed)
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -548,13 +549,13 @@ class Window(QWidget):
 
         #Plot time update settings
         self.timer = QTimer()
-        self.timer.setInterval(50) #Changes the plot speed. Defaulted to 50. Can be placed in startbutton_pushed() method
+        self.timer.setInterval(50) #Changes the plot speed. Defaulted to 50. Can be placed in startbuttonPushed() method
         self.initialState()
         time.sleep(2)
         try:
             self.timer.timeout.connect(self.updatePlot)
-        except:
-            raise Exception("Not Connected")
+        except AttributeError:
+            print("Something went wrong")
         #self.show()
 
     #Checkbox logic
@@ -583,17 +584,24 @@ class Window(QWidget):
                 self.checkBoxHideAll.setChecked(False)
                 self.checkBoxPlot1.setChecked(False)
 
+    #Setup for Serial Open and Serial Close is that only 1 button can be active at a time
     def serialOpenPushed(self):
-        #Try/except statement is to check whether settings menu was opened/changed
+        #Try/except/else/finally statement is to check whether settings menu was opened/changed
         try:
             self.size = self.serial_values[3] #Value from settings. Windows data
             self.serialInstance = SerialComm(self.serial_values[0],self.serial_values[1],self.serial_values[2])
-            self.serialInstance.serialOpen()    
+            self.serialInstance.serialOpen()
+            time.sleep(2)
+            print("Serial successfully open!")
+
+            if self.serialInstance.serialIsOpen() == True:
+                self._led.onColour = QLed.Green   
         except AttributeError:
             print("Settings menu was never opened")
+        except TypeError:
+            print("Settings menu was opened, however OK was not pressed to save values")
+
         #self.serialInstance.handshake()
-        
-        time.sleep(2)
         
         try:
             self.serialInstance.writePID(self.PIDInput()["P"],
@@ -607,14 +615,11 @@ class Window(QWidget):
             self.serialInstance.writeOLPWM(self.getOLPWMValue())
         except AttributeError:
             print("Some fields are empty. Recheck then try again")
-
-        print("Serial open")   
-        self.serialOpenButton.clicked.disconnect(self.serialOpenPushed)
-
-        if self.serialInstance.serialIsOpen() == True:
-            self._led.onColour = QLed.Green
-        
-        self.updateButton.clicked.connect(self.updateParameters)
+        else: 
+            self.serialOpenButton.clicked.disconnect(self.serialOpenPushed)
+            self.updateButton.clicked.connect(self.updateParameters)
+            self.serialCloseButton.clicked.connect(self.serialClosePushed)
+            self.startbutton.clicked.connect(self.startbuttonPushed)
 
     def serialClosePushed(self):
         if self.serialInstance.serialIsOpen() == True:
@@ -633,21 +638,23 @@ class Window(QWidget):
             print("Update Button already disconnected")
         self._led.onColour = QLed.Red
 
+        self.serialCloseButton.clicked.disconnect(self.serialClosePushed)
+
     #Resets data arrays and starts plotting. Disables itself after clicking
-    def startbutton_pushed(self):
+    def startbuttonPushed(self):
         self.initialState() #Reinitializes arrays in case you have to retake data
         print("Recording Data")
         self.timer.start()
         self.curve()
-        self.startbutton.clicked.disconnect(self.startbutton_pushed)
+        self.startbutton.clicked.disconnect(self.startbuttonPushed)
 
     #Stops timer and ends plotting
-    def stopbutton_pushed(self):
+    def stopbuttonPushed(self):
         self.timer.stop()
         print("Stopping Data Recording")
 
     #Resets both plotting windows and reenables Start Button
-    def clearbutton_pushed(self):
+    def clearbuttonPushed(self):
         self.graphWidgetOutput.clear()
         self.graphWidgetInput.clear()
         #Come back to this
@@ -657,11 +664,11 @@ class Window(QWidget):
         self.graphWidgetOutput.enableAutoRange()
         self.graphWidgetInput.setYRange(-11, 11, padding=0)
         self.graphWidgetInput.enableAutoRange()
-        self.startbutton.clicked.connect(self.startbutton_pushed)
+        self.startbutton.clicked.connect(self.startbuttonPushed)
         print("Cleared All Graphs")
 
     #Dumps data into a csv file to a selected path
-    def savebutton_pushed(self):
+    def savebuttonPushed(self):
         self.createCSV()
         path = QFileDialog.getSaveFileName(self, 'Save CSV', os.getenv('HOME'), 'CSV(*.csv)')
         if path[0] != '':
@@ -701,15 +708,17 @@ class Window(QWidget):
         pen2 = pg.mkPen(color = (0, 255, 0), width=1)
         pen3 = pg.mkPen(color = (0, 0, 255), width=1)
 
-        self.data1 = self.graphWidgetOutput.plot(pen = pen1, name="Setpoint") #Response
-        self.data2 = self.graphWidgetOutput.plot(pen = pen2, name="Response") #Setpoint
+        self.data1 = self.graphWidgetOutput.plot(pen = pen1, name="Setpoint") #Setpoint
+        self.data2 = self.graphWidgetOutput.plot(pen = pen2, name="Response") #Response
         self.data3 = self.graphWidgetInput.plot(pen = pen3, name="PWM Actuation") #PWM Actuation Signal
 
     #Connected to timer to update plot. Incoming data is in the form of timestamp,data1,data2...    
     def updatePlot(self):
         #fulldata = self.readValues()
         #print(fulldata)
+        
         fulldata = self.serialInstance.readValues()
+
         self.step = self.step + 1
         """
         New data format reading. Based off of GCode. Since incoming serial data
@@ -749,7 +758,9 @@ class Window(QWidget):
             self.time_zeros[self.buffersize] = time_index = (time_index+1) % self.size
             self.time.append(self.gcodeParsing("T",fulldata))            
         except ValueError:
-            print("Couldn't parse")
+            print("Couldn't parse value")
+        except IndexError:
+            print("Couldn't parse index. Skipping point")
 
         try:
             """
@@ -764,6 +775,8 @@ class Window(QWidget):
             self.y1.append(self.gcodeParsing("S",fulldata))
         except ValueError:
             print("Couldn't parse")
+        except IndexError:
+            print("Couldn't parse index. Skipping point")
 
         try:
             """
@@ -778,7 +791,9 @@ class Window(QWidget):
             self.y2.append(self.gcodeParsing("A",fulldata))
         except ValueError:
             print("Couldn't parse")
-
+        except IndexError:
+            print("Couldn't parse index. Skipping point")
+        
         try:
             """
             k = int(self.y3_zeros[self.buffersize])
@@ -792,6 +807,8 @@ class Window(QWidget):
             self.y3.append(self.gcodeParsing("Q",fulldata))
         except ValueError:
             print("Couldn't parse")
+        except IndexError:
+            print("Couldn't parse index. Skipping point")
 
         self.data1.setData(self.time_zeros[time_index:time_index+self.size],self.y1_zeros[i:i+self.size])
         self.data1.setPos(self.step,0)
@@ -914,14 +931,14 @@ class Window(QWidget):
             self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>")
             self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
-            self.graphWidgetOutput.setTitle("Velocity Control", color="w", size="12pt")
+            self.graphWidgetOutput.setTitle("Speed Control", color="w", size="12pt")
             self.graphWidgetInput.setTitle("PWM Actuation Signal", color="w", size="12pt")
         elif inputType == "OL":
             self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (°/s)</span>")
             self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>")
             self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
-            self.graphWidgetOutput.setTitle("Speed Control", color="w", size="12pt")
+            self.graphWidgetOutput.setTitle("Open Loop Speed Control", color="w", size="12pt")
             self.graphWidgetInput.setTitle("PWM Actuation Signal", color="w", size="12pt")
     #This exists as if the LabType isn't PWM, the field should not be active
     def onlyOpenLoop(self):
@@ -995,7 +1012,6 @@ class Window(QWidget):
 
 def main():
     app = QApplication(sys.argv)
-    #app.setStyle("Fusion")
     main = Window()
     main.show()
     sys.exit(app.exec_())
