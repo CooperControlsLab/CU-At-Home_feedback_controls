@@ -7,11 +7,11 @@
 #define ENC_B 3   //Encoder pulse B
 #define PPR 464.64 //Encoder pulses per revolution 
 #define PPR_A 232.8 //Pulse A per r
-#define DIR_B 13 //Motor Direction HIGH = CCW, LOW = CW
+#define DIR_B 13 //Motor Direction HIGH = CW, LOW = CCW
 #define PWM_B 11 //Motor PWM
 #define BRK_B 8  //Motor Break Doesn't seem to work, avoid using
 #define SUPPLY_VOLTAGE 12 //12V power supply
-#define MOVING_AVERAGE_SIZE 100 // Size of moving average array
+#define MOVING_AVERAGE_SIZE 50 // Size of moving average array
 
 //Global Variables
 char incoming_char;
@@ -27,6 +27,7 @@ double motor_speed_array [MOVING_AVERAGE_SIZE];
 volatile int valA,valB;
 volatile unsigned long prev_pulse_time, pulse_interval;
 int stationary_thresh = 80000; //80000 us
+double prev_motor_voltage;
 
 SerialComms com;
 
@@ -54,25 +55,10 @@ void setup() {
 }
 
 void loop() {
-    handle_command();  //Process incoming command
-    enc_deg = double(enc_count/PPR*360);
-    update_control_params();    //Update gains, update inputs based on labtype
-
-    if(com.labType == 2){
-      analogWrite(PWM_B,volts_to_PWM(com.open_loop_voltage));
-    }
-    else{
-      motor_controller.Compute();
-      int motor_PWM = volts_to_PWM(motor_voltage);
-
-      if(motor_PWM < 0){
-          digitalWrite(DIR_B,LOW);
-      }
-      else{
-        digitalWrite(DIR_B,HIGH);
-      }
-      analogWrite(PWM_B,abs(motor_PWM));
-    }
+  handle_command();  //Process incoming command
+  enc_deg = double(enc_count/PPR*360);
+  update_control_params();    //Update gains, update inputs based on labtype
+  compute_motor_voltage(com.labType); // Compute motor voltage and write to motor
   send_data();
 }
 
@@ -128,6 +114,36 @@ void update_control_params(){
 }
 
 //*****************************************************//
+// Computes motor voltage based on appropriate labtypes
+// Returns motor_voltage
+void compute_motor_voltage(int labtype){
+  switch (labtype){
+  case 0: // Angle Control
+    motor_controller.Compute();
+    if(motor_voltage < 0){digitalWrite(DIR_B,LOW);} // CCW
+    else{digitalWrite(DIR_B,HIGH);} // CW
+    analogWrite(PWM_B,volts_to_PWM(abs(motor_voltage)));
+    break;
+
+  case 1: // Speed Control
+    prev_motor_voltage = motor_voltage;
+    motor_controller.Compute();
+    motor_voltage += prev_motor_voltage;
+    analogWrite(PWM_B,volts_to_PWM(motor_voltage));
+    break;
+
+  case 2: // Open Loop Speed Control
+    motor_speed = calc_motor_speed();
+    if(com.mode == 1){motor_voltage = volts_to_PWM(com.open_loop_voltage);}
+    else if(com.mode == 0){motor_voltage = 0;}
+    analogWrite(PWM_B,volts_to_PWM(motor_voltage));
+    break;
+
+  default: break; // Null default
+  }
+}
+
+//*****************************************************//
 double calc_motor_speed(){
 //  Check if motor is stationary
   if(micros() -  prev_pulse_time > stationary_thresh){
@@ -168,6 +184,7 @@ void send_data(){
     
     Serial.print(',');
     Serial.print('Q');Serial.print(motor_voltage);Serial.print(',');
+    // Serial.print('Q');Serial.print(volts_to_PWM(motor_voltage));Serial.print(',');
     Serial.println('\0');
     com.write_data = 0; // Reset write data flag
   }
@@ -176,7 +193,7 @@ void send_data(){
 //*****************************************************//
 // Voltage and PWM duty cycle conversion
 int volts_to_PWM(double voltage){
-  return round((voltage/SUPPLY_VOLTAGE) * 255);
+  return constrain(round((voltage/SUPPLY_VOLTAGE) * 255),-255,255);
 }
 
 double PWM_to_volts(int PWM){
