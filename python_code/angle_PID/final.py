@@ -391,11 +391,10 @@ class Window(QWidget):
         self.ffInput.setSizePolicy(sizePolicy)
         self.ffInput.setMaximumSize(QSize(100, 20))
         self.ffInput.setText("0,0,0")
-        #-12.0000 to 12.0000
-        #self.ffInput.setValidator()
+        #triplet of comma separated values
+        self.ffInput.setValidator(QRegExpValidator(QRegExp("^(-?\d)*(\.\d{0,6})?,(-?\d)*(\.\d{0,6})?,(-?\d)*(\.\d{0,6})?$")))
         self.ffInput.setEnabled(False)
         groupParaGridLayout.addWidget(self.ffInput, 1, 1, 1, 1)
-
 
         self.openLoopLabel = QLabel("OL Voltage (V)",self)
         self.openLoopLabel.setMinimumSize(QSize(100, 20))
@@ -556,7 +555,7 @@ class Window(QWidget):
         #self.graphWidget.setYRange(0, 4, padding=0)
         self.graphWidgetOutput.setYRange(-11, 11, padding=0)
         #self.graphWidgetOutput.enableAutoRange()
-        self.graphWidgetInput.setYRange(-11, 11, padding=0)
+        self.graphWidgetInput.setYRange(-13, 13, padding=0)
         #self.graphWidgetInput.enableAutoRange()
         
         #Changes background color of graph
