@@ -98,6 +98,13 @@ class SerialComm:
             values = f"S6,O{OLPWM},\0"
             self.ser.write(str.encode(values))
             print("S6:", values)
+    #S7 A is coefficient to x^2, B is coefficient to x, C is coefficient to x^0 (constant)
+    def writeFF(self,FF):
+        if FF != None:
+            FF = FF.split(",")
+            values = f"S7,A{FF[0]},B{FF[1]},C{FF[2]},\0"
+            self.ser.write(str.encode(values))
+            print("S7:", values)
 
 
 class Dialog1(QDialog):
@@ -369,12 +376,31 @@ class Window(QWidget):
         self.LabType.setSizePolicy(sizePolicy)
         self.LabType.setMaximumSize(QSize(100, 20))
         self.LabType.activated.connect(self.onlyOpenLoop)
+        self.LabType.activated.connect(self.onlySpeedControl)
         groupParaGridLayout.addWidget(self.LabType, 0, 1, 1, 1)
+
+        self.ffLabel = QLabel("Feedforward",self)
+        self.ffLabel.setMinimumSize(QSize(100, 20))
+        self.ffLabel.setMaximumSize(QSize(100, 20))
+        groupParaGridLayout.addWidget(self.ffLabel, 1, 0, 1, 1)
+        self.ffInput = QLineEdit("",self)
+        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.ffInput.sizePolicy().hasHeightForWidth())
+        self.ffInput.setSizePolicy(sizePolicy)
+        self.ffInput.setMaximumSize(QSize(100, 20))
+        self.ffInput.setText("0,0,0")
+        #-12.0000 to 12.0000
+        #self.ffInput.setValidator()
+        self.ffInput.setEnabled(False)
+        groupParaGridLayout.addWidget(self.ffInput, 1, 1, 1, 1)
+
 
         self.openLoopLabel = QLabel("OL Voltage (V)",self)
         self.openLoopLabel.setMinimumSize(QSize(100, 20))
         self.openLoopLabel.setMaximumSize(QSize(100, 20))
-        groupParaGridLayout.addWidget(self.openLoopLabel, 1, 0, 1, 1)
+        groupParaGridLayout.addWidget(self.openLoopLabel, 2, 0, 1, 1)
         self.openLoopInput = QLineEdit("",self)
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -386,12 +412,12 @@ class Window(QWidget):
         #-12.0000 to 12.0000
         self.openLoopInput.setValidator(QRegExpValidator(QRegExp("^(((-?([0-9]|1[0-1])(\.\d{0,4})?))|-?(12)(\.0{0,4})?)$")))
         self.openLoopInput.setEnabled(False)
-        groupParaGridLayout.addWidget(self.openLoopInput, 1, 1, 1, 1)
+        groupParaGridLayout.addWidget(self.openLoopInput, 2, 1, 1, 1)
 
         self.SetpointLabel = QLabel("Setpoint",self)
         self.SetpointLabel.setMinimumSize(QSize(100, 20))
         self.SetpointLabel.setMaximumSize(QSize(100, 20))
-        groupParaGridLayout.addWidget(self.SetpointLabel, 2, 0, 1, 1)
+        groupParaGridLayout.addWidget(self.SetpointLabel, 3, 0, 1, 1)
         self.SetpointInput = QLineEdit("",self)
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -401,12 +427,12 @@ class Window(QWidget):
         self.SetpointInput.setMaximumSize(QSize(100, 20))
         self.SetpointInput.setValidator(QDoubleValidator())
         self.SetpointInput.setText("100")
-        groupParaGridLayout.addWidget(self.SetpointInput, 2, 1, 1, 1)
+        groupParaGridLayout.addWidget(self.SetpointInput, 3, 1, 1, 1)
 
         self.SaturationLabel = QLabel("Saturation (V)",self)
         self.SaturationLabel.setMinimumSize(QSize(100, 20))
         self.SaturationLabel.setMaximumSize(QSize(100, 20))
-        groupParaGridLayout.addWidget(self.SaturationLabel, 3, 0, 1, 1)
+        groupParaGridLayout.addWidget(self.SaturationLabel, 4, 0, 1, 1)
         self.SaturationInput = QLineEdit("",self)
         self.SaturationInput.setText("-12,12")
         #pair of comma separated numbers, each from -12.0000 to 12.0000
@@ -417,12 +443,12 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.SaturationInput.sizePolicy().hasHeightForWidth())
         self.SaturationInput.setSizePolicy(sizePolicy)
         self.SaturationInput.setMaximumSize(QSize(100, 20))
-        groupParaGridLayout.addWidget(self.SaturationInput, 3, 1, 1, 1)
+        groupParaGridLayout.addWidget(self.SaturationInput, 4, 1, 1, 1)
 
         self.SampleTimeLabel = QLabel("PID Sample Time (ms)",self)
         self.SampleTimeLabel.setMinimumSize(QSize(110, 20))
         self.SampleTimeLabel.setMaximumSize(QSize(110, 20))
-        groupParaGridLayout.addWidget(self.SampleTimeLabel, 4, 0, 1, 1)
+        groupParaGridLayout.addWidget(self.SampleTimeLabel, 5, 0, 1, 1)
         self.SampleTimeInput = QLineEdit("",self)
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -433,7 +459,7 @@ class Window(QWidget):
         self.SampleTimeInput.setText("2")
         #0.0000 to  100.0000
         self.SampleTimeInput.setValidator(QRegExpValidator(QRegExp("^((((\d|[1-9]\d)(\.\d{0,4})?))|(100)(\.0{0,4})?)$"))) 
-        groupParaGridLayout.addWidget(self.SampleTimeInput, 4, 1, 1, 1)
+        groupParaGridLayout.addWidget(self.SampleTimeInput, 5, 1, 1, 1)
 
         PID_validator = QRegExpValidator(QRegExp("^((((\d|[1-9]\d)(\.\d{0,4})?))|(100)(\.0{0,4})?)$"))
 
@@ -441,7 +467,7 @@ class Window(QWidget):
         self.PCheckBox.setMaximumSize(QSize(100, 20))
         self.PCheckBox.setChecked(True)
         self.PCheckBox.toggled.connect(self.PCheckBoxLogic)
-        groupParaGridLayout.addWidget(self.PCheckBox, 5, 0, 1, 1)
+        groupParaGridLayout.addWidget(self.PCheckBox, 6, 0, 1, 1)
         self.PInput = QLineEdit("",self)
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -451,13 +477,13 @@ class Window(QWidget):
         self.PInput.setMaximumSize(QSize(100, 20))
         self.PInput.setValidator(PID_validator)
         self.PInput.setText("0.5")
-        groupParaGridLayout.addWidget(self.PInput, 5, 1, 1, 1)
+        groupParaGridLayout.addWidget(self.PInput, 6, 1, 1, 1)
 
         self.ICheckBox = QCheckBox("I",self)
         self.ICheckBox.setMaximumSize(QSize(100, 20))
         self.ICheckBox.setChecked(True)
         self.ICheckBox.toggled.connect(self.ICheckBoxLogic)
-        groupParaGridLayout.addWidget(self.ICheckBox, 6, 0, 1, 1)
+        groupParaGridLayout.addWidget(self.ICheckBox, 7, 0, 1, 1)
         self.IInput = QLineEdit("",self)    
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -467,13 +493,13 @@ class Window(QWidget):
         self.IInput.setMaximumSize(QSize(100, 20))
         self.IInput.setValidator(PID_validator)
         self.IInput.setText("0")
-        groupParaGridLayout.addWidget(self.IInput, 6, 1, 1, 1)
+        groupParaGridLayout.addWidget(self.IInput, 7, 1, 1, 1)
 
         self.DCheckBox = QCheckBox("D",self)
         self.DCheckBox.setMaximumSize(QSize(100, 20))
         self.DCheckBox.setChecked(True)
         self.DCheckBox.toggled.connect(self.DCheckBoxLogic)
-        groupParaGridLayout.addWidget(self.DCheckBox, 7, 0, 1, 1)
+        groupParaGridLayout.addWidget(self.DCheckBox, 8, 0, 1, 1)
         self.DInput = QLineEdit("",self)
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -483,12 +509,12 @@ class Window(QWidget):
         self.DInput.setMaximumSize(QSize(100, 20))
         self.DInput.setValidator(PID_validator)
         self.DInput.setText("0")
-        groupParaGridLayout.addWidget(self.DInput, 7, 1, 1, 1)
+        groupParaGridLayout.addWidget(self.DInput, 8, 1, 1, 1)
 
         self.ControllerLabel = QLabel("Controller Off/On",self)
         self.ControllerLabel.setMinimumSize(QSize(100, 20))
         self.ControllerLabel.setMaximumSize(QSize(100, 20))
-        groupParaGridLayout.addWidget(self.ControllerLabel, 8, 0, 1, 1)
+        groupParaGridLayout.addWidget(self.ControllerLabel, 9, 0, 1, 1)
         self.ControllerSwitch = Switch(thumb_radius=11, track_radius=8)
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -497,14 +523,14 @@ class Window(QWidget):
         self.ControllerSwitch.setSizePolicy(sizePolicy)
         #self.ControllerSwitch.setMaximumSize(QSize(100, 20))
         self.ControllerSwitch.clicked.connect(self.controllerToggle)
-        groupParaGridLayout.addWidget(self.ControllerSwitch, 8, 1, 1, 1)
+        groupParaGridLayout.addWidget(self.ControllerSwitch, 9, 1, 1, 1)
 
         self.updateButton = QPushButton("Update Parameters",self)
         #Below line is commented as this button should on be live when
         #serial communication is open
         #self.updateButton.clicked.connect(self.updateParameters)
         self.updateButton.setMaximumSize(QSize(300, 20))
-        groupParaGridLayout.addWidget(self.updateButton, 9, 0, 1, 2)
+        groupParaGridLayout.addWidget(self.updateButton, 10, 0, 1, 2)
 
         leftVerticalLayout.addLayout(mainGridLayout)
         leftVerticalLayout.addWidget(groupBoxParameters)
@@ -529,9 +555,9 @@ class Window(QWidget):
 
         #self.graphWidget.setYRange(0, 4, padding=0)
         self.graphWidgetOutput.setYRange(-11, 11, padding=0)
-        self.graphWidgetOutput.enableAutoRange()
+        #self.graphWidgetOutput.enableAutoRange()
         self.graphWidgetInput.setYRange(-11, 11, padding=0)
-        self.graphWidgetInput.enableAutoRange()
+        #self.graphWidgetInput.enableAutoRange()
         
         #Changes background color of graph
         self.graphWidgetOutput.setBackground((0,0,0))
@@ -613,6 +639,8 @@ class Window(QWidget):
             self.serialInstance.writeSampleTime(self.getSampleTimeValue())
             self.serialInstance.writeSaturation(self.getSaturationValue())
             self.serialInstance.writeOLPWM(self.getOLPWMValue())
+            self.serialInstance.writeFF(self.getFFValue())
+
         except AttributeError:
             print("Some fields are empty. Recheck then try again")
         else: 
@@ -661,9 +689,9 @@ class Window(QWidget):
         self.graphWidgetOutput.addLegend()
         self.graphWidgetInput.addLegend()
         self.graphWidgetOutput.setYRange(-11, 11, padding=0)
-        self.graphWidgetOutput.enableAutoRange()
+        #self.graphWidgetOutput.enableAutoRange()
         self.graphWidgetInput.setYRange(-11, 11, padding=0)
-        self.graphWidgetInput.enableAutoRange()
+        #self.graphWidgetInput.enableAutoRange()
         self.startbutton.clicked.connect(self.startbuttonPushed)
         print("Cleared All Graphs")
 
@@ -941,12 +969,23 @@ class Window(QWidget):
             self.graphWidgetOutput.setTitle("Open Loop Speed Control", color="w", size="12pt")
             self.graphWidgetInput.setTitle("Input Voltage", color="w", size="12pt")
     #This exists as if the LabType isn't PWM, the field should not be active
+
+    def onlySpeedControl(self):
+        test1 = str(self.LabType.currentText())
+        if test1 == "Speed":
+            self.ffInput.setEnabled(True)
+        else:
+            self.ffInput.setEnabled(False)
+
+
     def onlyOpenLoop(self):
         test1 = str(self.LabType.currentText())
         if test1 == "OL":
             self.openLoopInput.setEnabled(True)
         else:
             self.openLoopInput.setEnabled(False)
+
+
 
     #This method will only be activated once serial is starting up
     def getControllerState(self):
@@ -996,6 +1035,17 @@ class Window(QWidget):
         elif self.openLoopInput.isEnabled() == False:
             return None
 
+    def getFFValue(self):
+        #If Labtype isn't Speed Control or Input Field is disabled, then returns None.
+        #In SerialComm.writeFF(), checks if input value is None.
+        #If it is None, doesn't write anything, else it does
+
+        if self.ffInput.isEnabled() == True:
+            ffValue = self.ffInput.text()
+            if ffValue == "":
+                raise ValueError("Feedforward Field is empty. Enter in a triplet of comma separated values")
+            return(ffValue)
+
     def updateParameters(self):
         #if self.serialInstance.serialIsOpen() == True:
         try:
@@ -1007,6 +1057,8 @@ class Window(QWidget):
             self.serialInstance.writeSampleTime(self.getSampleTimeValue())
             self.serialInstance.writeSaturation(self.getSaturationValue())
             self.serialInstance.writeOLPWM(self.getOLPWMValue())
+            self.serialInstance.writeFF(self.getFFValue())
+
         except AttributeError:
             print("Some fields are empty when trying to update values. Recheck then try again")
 
