@@ -337,12 +337,12 @@ class Window(QWidget):
         self.checkBoxHideAll.setMaximumSize(QSize(88, 21))
         mainGridLayout.addWidget(self.checkBoxHideAll, 5, 1, 1, 1)
 
-        self.checkBoxPlot1 = QCheckBox("Plot 1", self)
+        self.checkBoxPlot1 = QCheckBox("Setpoint", self)
         self.checkBoxPlot1.toggled.connect(self.visibility1)
         self.checkBoxPlot1.setMaximumSize(QSize(88, 21))
         mainGridLayout.addWidget(self.checkBoxPlot1, 6, 0, 1, 1)
 
-        self.checkBoxPlot2 = QCheckBox("Plot 2", self)
+        self.checkBoxPlot2 = QCheckBox("Response", self)
         self.checkBoxPlot2.toggled.connect(self.visibility2)
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
