@@ -224,7 +224,7 @@ class Window(QWidget):
         mainGridLayout = QGridLayout()
         rightVerticalLayout = QVBoxLayout()
         horizontalLayout.addLayout(rightVerticalLayout)
-        groupBoxParameters =  QGroupBox("Parameters")
+        groupBoxParameters =  QGroupBox("Controller Parameters")
 
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -371,7 +371,7 @@ class Window(QWidget):
         self.LabType.activated.connect(self.onlyOpenLoop)
         groupParaGridLayout.addWidget(self.LabType, 0, 1, 1, 1)
 
-        self.openLoopLabel = QLabel("OL PWM",self)
+        self.openLoopLabel = QLabel("OL Voltage (V)",self)
         self.openLoopLabel.setMinimumSize(QSize(100, 20))
         self.openLoopLabel.setMaximumSize(QSize(100, 20))
         groupParaGridLayout.addWidget(self.openLoopLabel, 1, 0, 1, 1)
@@ -403,7 +403,7 @@ class Window(QWidget):
         self.SetpointInput.setText("100")
         groupParaGridLayout.addWidget(self.SetpointInput, 2, 1, 1, 1)
 
-        self.SaturationLabel = QLabel("Saturation",self)
+        self.SaturationLabel = QLabel("Saturation (V)",self)
         self.SaturationLabel.setMinimumSize(QSize(100, 20))
         self.SaturationLabel.setMaximumSize(QSize(100, 20))
         groupParaGridLayout.addWidget(self.SaturationLabel, 3, 0, 1, 1)
@@ -419,9 +419,9 @@ class Window(QWidget):
         self.SaturationInput.setMaximumSize(QSize(100, 20))
         groupParaGridLayout.addWidget(self.SaturationInput, 3, 1, 1, 1)
 
-        self.SampleTimeLabel = QLabel("PID Sample Time",self)
-        self.SampleTimeLabel.setMinimumSize(QSize(100, 20))
-        self.SampleTimeLabel.setMaximumSize(QSize(100, 20))
+        self.SampleTimeLabel = QLabel("PID Sample Time (ms)",self)
+        self.SampleTimeLabel.setMinimumSize(QSize(110, 20))
+        self.SampleTimeLabel.setMaximumSize(QSize(110, 20))
         groupParaGridLayout.addWidget(self.SampleTimeLabel, 4, 0, 1, 1)
         self.SampleTimeInput = QLineEdit("",self)
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
@@ -925,21 +925,21 @@ class Window(QWidget):
             self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetOutput.setTitle("Position Control", color="w", size="12pt")
-            self.graphWidgetInput.setTitle("PWM Actuation Signal", color="w", size="12pt")
+            self.graphWidgetInput.setTitle("Input Voltage", color="w", size="12pt")
         elif inputType == "Speed":
             self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (°/s)</span>")
             self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>")
             self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetOutput.setTitle("Speed Control", color="w", size="12pt")
-            self.graphWidgetInput.setTitle("PWM Actuation Signal", color="w", size="12pt")
+            self.graphWidgetInput.setTitle("Input Voltage", color="w", size="12pt")
         elif inputType == "OL":
             self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (°/s)</span>")
             self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>")
             self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetOutput.setTitle("Open Loop Speed Control", color="w", size="12pt")
-            self.graphWidgetInput.setTitle("PWM Actuation Signal", color="w", size="12pt")
+            self.graphWidgetInput.setTitle("Input Voltage", color="w", size="12pt")
     #This exists as if the LabType isn't PWM, the field should not be active
     def onlyOpenLoop(self):
         test1 = str(self.LabType.currentText())
