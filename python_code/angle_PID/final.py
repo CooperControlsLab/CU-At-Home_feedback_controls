@@ -706,11 +706,11 @@ class Window(QWidget):
     def curve(self):
         pen1 = pg.mkPen(color = (255, 0, 0), width=1)
         pen2 = pg.mkPen(color = (0, 255, 0), width=1)
-        pen3 = pg.mkPen(color = (0, 0, 255), width=1)
+        pen3 = pg.mkPen(color = (0, 255, 255), width=1)
 
         self.data1 = self.graphWidgetOutput.plot(pen = pen1, name="Setpoint") #Setpoint
         self.data2 = self.graphWidgetOutput.plot(pen = pen2, name="Response") #Response
-        self.data3 = self.graphWidgetInput.plot(pen = pen3, name="PWM Actuation") #PWM Actuation Signal
+        self.data3 = self.graphWidgetInput.plot(pen = pen3, name="Input Voltage") #8 bit number to Voltage
 
     #Connected to timer to update plot. Incoming data is in the form of timestamp,data1,data2...    
     def updatePlot(self):
