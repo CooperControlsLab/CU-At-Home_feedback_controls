@@ -12,34 +12,37 @@
 #define BRK_B 8  //Motor Break Doesn't seem to work, avoid using
 #define SUPPLY_VOLTAGE 12 //12V power supply
 #define MOVING_AVERAGE_SIZE 50 // Size of moving average array
-unsigned long DELTA_T = 10000;
+unsigned long DELTA_T = 50000; //delta T in us between calculating velocity
 
 //Global Variables
-char incoming_char;
-char cmd [200];
-int cmd_index = 0;
+char incoming_char; //Serial incoming character for "parallel processing" of serial data
+char cmd [200]; //Input command from serial
+int cmd_index = 0; //Current index in cmd[] 
 double input, motor_voltage, lowerOutputLimit, upperOutputLimit, setpoint, kp, ki, kd; // Controller params
 int sampleTime, motor_direction;
 
-volatile double enc_count, enc_deg; // Enc ++ = CW, Enc -- = CCW
-double motor_speed;
-double motor_speed_array [MOVING_AVERAGE_SIZE];
-double prev_pos;
+volatile int enc_count;  //Encoder "ticks" counted, Enc ++ = CW, Enc -- = CCW
+volatile double enc_deg; // Encoder position in degrees
+double motor_speed; //Angular velocity of the motor
+double motor_speed_array [MOVING_AVERAGE_SIZE]; //Array to allow averaging of motor speed to buffer motor_speed calculations
+double prev_pos; //Previous encoder position for angular velocity calculation
 
 volatile int valA, valB;
 volatile unsigned long prev_pulse_time, pulse_interval, prev_millis, current_millis;
-int stationary_thresh = 80000; //80000 us
+int stationary_thresh = 80000; //80000 us threshold to set angular velocity to 0 if reached
 double prev_motor_voltage;
 
 
 
-SerialComms com;
+SerialComms com;  //Serial Communications class instantiation
 
 // Initialize PID motor controller
 PID motor_controller(&input, &motor_voltage, &setpoint, kp, ki, kd, DIRECT);  // Set up PID controller
 
+
+//***********************************************************************************
 void setup() {
-  Serial.begin(250000);  // Begins Serial communication
+  Serial.begin(500000);  // Begins Serial communication
 
   //  com.mode = 1; // Default controller mode to automatic
   //  motor_controller.SetOutputLimits(-255,255); // Default controller to use full range of PWM
@@ -65,9 +68,12 @@ void setup() {
   prev_pos = 0;
 }
 
+//***********************************************************************************
+
 void loop() {
+  update_controller_input();
   handle_command();  //Process incoming command
-  enc_deg = double(enc_count / PPR * 360);
+  enc_deg = double((enc_count / PPR) * 360);
   update_control_params();    //Update gains, update inputs based on labtype
   compute_motor_voltage(com.labType); // Compute motor voltage and write to motor
   send_data();
@@ -85,23 +91,37 @@ void handle_command() {
       // Reset command buffer
       cmd_index = 0;
       memset(cmd, '\0', sizeof(cmd));
-      update_control_params();    //Update gains, update inputs based on labtype
+      update_control_params();   //Update gains, update inputs based on labtype
+      
     }
     else {
       cmd_index ++;
     }
   }
 }
-//*****************************************************//
-void update_control_params() {
-  // Update input
-  if (com.labType == 0) { // Angle Control
+
+//Update controller inputs
+void update_controller_input()
+{
+    if (com.labType == 0) { // Angle Control
     input = enc_deg;
   }
   else if (com.labType == 1) { // Speed Control
     calc_motor_speed();
     input = motor_speed;
   }
+}
+
+//*****************************************************//
+void update_control_params() {
+  // Update input
+//  if (com.labType == 0) { // Angle Control
+//    input = enc_deg;
+//  }
+//  else if (com.labType == 1) { // Speed Control
+//    calc_motor_speed();
+//    input = motor_speed;
+//  }
 
   //Update Setpoint
   setpoint = com.setpoint;
@@ -148,9 +168,8 @@ void compute_motor_voltage(int labtype) {
       break;
 
     case 1: // Speed Control
-      //    prev_motor_voltage = motor_voltage;
       motor_controller.Compute();
-      analogWrite(PWM_B, volts_to_PWM(constrain(((0.0018 * com.setpoint) + motor_voltage), com.lowerOutputLimit, com.upperOutputLimit)));
+      analogWrite(PWM_B, volts_to_PWM(((0.0018 * com.setpoint) + motor_voltage)));
       break;
 
     case 2: // Open Loop Speed Control
@@ -182,9 +201,9 @@ void calc_motor_speed() {
   if ( dt > DELTA_T)
   {
     //Calculate velocity
-    motor_speed = update_motor_speed_array(double(360.0 / PPR_A) * (enc_count - prev_pos) * float(1000000.0 / dt));
+    motor_speed = (enc_deg - prev_pos) * double(1000000.0 / dt);
     prev_millis = current_millis;
-    prev_pos = enc_count;
+    prev_pos = enc_deg;
   }
   //   Serial.println(motor_speed);
 }

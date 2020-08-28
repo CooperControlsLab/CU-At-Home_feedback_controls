@@ -158,7 +158,7 @@ class Dialog1(QDialog):
         self.baudrate_label = QLabel("Baud Rate:",self)
         self.baudrate = QComboBox(self)
         self.baudrate.setFixedWidth(100)
-        self.baudrate.addItems(["9600","115200","250000"])
+        self.baudrate.addItems(["9600","115200","250000", "500000"])
         self.baudrate.setCurrentIndex(1)
         self.baudrate.SizeAdjustPolicy(1)
         
@@ -596,7 +596,7 @@ class Window(QWidget):
 
         #Plot time update settings
         self.timer = QTimer()
-        self.timer.setInterval(50) #Changes the plot speed. Defaulted to 50. Can be placed in startbuttonPushed() method
+        self.timer.setInterval(1) #Changes the plot speed. Defaulted to 50. Can be placed in startbuttonPushed() method
         self.initialState()
         time.sleep(2)
         try:
