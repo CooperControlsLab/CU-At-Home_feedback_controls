@@ -13,6 +13,7 @@ import serial
 import serial.tools.list_ports
 import numpy as np
 import csv
+from itertools import zip_longest
 import qdarkstyle
 from QLed import QLed
 from QSwitch import Switch
@@ -55,6 +56,9 @@ class SerialComm:
             print("Handshake failed")
             self.handshake()
 
+    def flushInput(self):
+        self.ser.flushInput()
+
     def readValues(self):
         self.ser.write(b"R0,\0") #used to call for the next line (Request)
         #current format of received data is b"T23533228,S0.00,A0.00,Q0.00,\0\r\n"
@@ -88,10 +92,21 @@ class SerialComm:
         print("S4:", values)
     #S5
     def writeSaturation(self,Saturation):
-        Saturation = Saturation.split(",") 
+        Saturation = [item for item in Saturation.split(",") if item != ""]
         values = f"S5,L{Saturation[0]},U{Saturation[1]},\0"
         self.ser.write(str.encode(values))
         print("S5:", values)
+        
+        """
+        if len(Saturation) != 2:
+            raise ValueError("Saturation field is not inputted properly! Make sure it is a comma separated pair!")
+        elif Saturation[0] >= Saturation[1]:
+            raise ValueError("Second value should always be GREATER than the first")
+        else:
+            values = f"S5,L{Saturation[0]},U{Saturation[1]},\0"
+            self.ser.write(str.encode(values))
+            print("S5:", values)
+        """     
     #S6
     def writeOLPWM(self,OLPWM):
         if OLPWM != None:
@@ -101,11 +116,18 @@ class SerialComm:
     #S7 A is coefficient to x^2, B is coefficient to x, C is coefficient to x^0 (constant)
     def writeFF(self,FF):
         if FF != None:
-            FF = FF.split(",")
+            FF = [item for item in FF.split(",") if item != ""]
             values = f"S7,A{FF[0]},B{FF[1]},C{FF[2]},\0"
             self.ser.write(str.encode(values))
             print("S7:", values)
-
+            """
+            if len(FF) != 3:
+                raise ValueError("Feedforward field is not inputted properly! Make sure it is a comma separated triple!")
+            else:
+                values = f"S7,A{FF[0]},B{FF[1]},C{FF[2]},\0"
+                self.ser.write(str.encode(values))
+                print("S7:", values)                
+            """
 
 class Dialog1(QDialog):
     def __init__(self, *args, **kwargs):
@@ -368,7 +390,7 @@ class Window(QWidget):
         self.LabLabel.setMaximumSize(QSize(100, 20))
         groupParaGridLayout.addWidget(self.LabLabel, 0, 0, 1, 1)
         self.LabType = QComboBox()
-        self.LabType.addItems(["Position","Speed","OL"])
+        self.LabType.addItems(["Position","Speed","Open-Loop"])
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -627,7 +649,7 @@ class Window(QWidget):
             print("Settings menu was opened, however OK was not pressed to save values")
 
         #self.serialInstance.handshake()
-        
+        #self.serialInstance.flushInput()
         try:
             self.serialInstance.writePID(self.PIDInput()["P"],
                                          self.PIDInput()["I"],
@@ -707,13 +729,26 @@ class Window(QWidget):
 
     #Creates csv data
     def createCSV(self):
-        self.header = ['time', 'setpoint', 'response', 'pwm']
-        self.data_set = zip(self.time,self.y1,self.y2,self.y3)
+        self.header = ['time', 'setpoint', 'response', 'pwm', '', 'Parameters']
+        self.parameters_label = ["Labtype", "Feedforward", "OL Voltage", "Setpoint", "Saturation", "PID Sample Time", "P", "I", "D", "Controller State"]
+        self.data_set = zip_longest(*[self.time,self.y1,self.y2,self.y3,[],self.parameters_label,self.parameters], fillvalue="")
 
-    #Initilizes lists/arrays
+    #Initilizes lists/arrays and initial values for the .csv
     def initialState(self):
         self.buffersize = 500 #np array size that is used to plot data
         self.step = 0 #Used for repositioning data in plot window to the left
+        self.parameters = [ self.LabType.currentText(),
+                            self.getFFValue(),
+                            self.openLoopInput.text(),
+                            self.getSetpointValue(),
+                            self.getSaturationValue(),
+                            self.getSampleTimeValue(),
+                            self.PIDInput()["P"],
+                            self.PIDInput()["I"],
+                            self.PIDInput()["D"],     
+                            self.getControllerState()
+                            ]
+
 
         #Data buffers. What is being plotted in the 2 windows
         self.time_zeros = np.zeros(self.buffersize+1, float)
@@ -940,7 +975,7 @@ class Window(QWidget):
         elif test1 =="Speed":
             return("1")
 
-        elif test1 =="OL":
+        elif test1 =="Open-Loop":
             return("2")
 
     #Changes axes labels depending on what lab is selected
@@ -960,7 +995,7 @@ class Window(QWidget):
             self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetOutput.setTitle("Speed Control", color="w", size="12pt")
             self.graphWidgetInput.setTitle("Input Voltage", color="w", size="12pt")
-        elif inputType == "OL":
+        elif inputType == "Open-Loop":
             self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (°/s)</span>")
             self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>")
             self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
@@ -976,15 +1011,12 @@ class Window(QWidget):
         else:
             self.ffInput.setEnabled(False)
 
-
     def onlyOpenLoop(self):
         test1 = str(self.LabType.currentText())
-        if test1 == "OL":
+        if test1 == "Open-Loop":
             self.openLoopInput.setEnabled(True)
         else:
             self.openLoopInput.setEnabled(False)
-
-
 
     #This method will only be activated once serial is starting up
     def getControllerState(self):
