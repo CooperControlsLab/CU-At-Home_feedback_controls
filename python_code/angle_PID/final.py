@@ -129,7 +129,7 @@ class Dialog1(QDialog):
         self.baudrate_label = QLabel("Baud Rate:",self)
         self.baudrate = QComboBox(self)
         self.baudrate.setFixedWidth(100)
-        self.baudrate.addItems(["9600","115200"])
+        self.baudrate.addItems(["9600","115200","250000"])
         self.baudrate.setCurrentIndex(1)
         self.baudrate.SizeAdjustPolicy(1)
         
