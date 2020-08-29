@@ -1,11 +1,11 @@
 import sys 
 import os
 import time
-from PyQt5.QtGui import QRegExpValidator, QDoubleValidator, QPixmap
+from PyQt5.QtGui import QDoubleValidator, QKeySequence, QPixmap, QRegExpValidator
 from PyQt5.QtWidgets import (QApplication, QPushButton, QWidget, QComboBox, 
 QHBoxLayout, QVBoxLayout, QFormLayout, QCheckBox, QGridLayout, QDialog, 
 QLabel, QLineEdit, QDialogButtonBox, QFileDialog, QSizePolicy, QLayout,
-QSpacerItem, QGroupBox)
+QSpacerItem, QGroupBox, QShortcut)
 from PyQt5.QtCore import Qt, QTimer, QRegExp, QCoreApplication, QSize
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
@@ -158,8 +158,8 @@ class Dialog1(QDialog):
         self.baudrate_label = QLabel("Baud Rate:",self)
         self.baudrate = QComboBox(self)
         self.baudrate.setFixedWidth(100)
-        self.baudrate.addItems(["9600","115200","250000", "500000"])
-        self.baudrate.setCurrentIndex(1)
+        self.baudrate.addItems(["9600","115200","250000","500000"])
+        self.baudrate.setCurrentIndex(3)
         self.baudrate.SizeAdjustPolicy(1)
         
         self.timeout_label = QLabel("Timeout:",self)
@@ -399,6 +399,7 @@ class Window(QWidget):
         self.LabType.setMaximumSize(QSize(100, 20))
         self.LabType.activated.connect(self.onlyOpenLoop)
         self.LabType.activated.connect(self.onlySpeedControl)
+        self.LabType.activated.connect(self.getLabTypeAxes)
         groupParaGridLayout.addWidget(self.LabType, 0, 1, 1, 1)
 
         self.ffLabel = QLabel("Feedforward",self)
@@ -571,22 +572,17 @@ class Window(QWidget):
         self.graphWidgetOutput.showGrid(x = True, y = True, alpha=None)
         self.graphWidgetInput.showGrid(x = True, y = True, alpha=None)
 
-        #self.graphWidget.setXRange(0, 100, padding=0) #Doesn't move with the plot. Can drag around
-        #self.graphWidget.setLimits(xMin=0, xMax=100)#, yMin=c, yMax=d) #Doesn't move with the plot. Cannot drag around
-
-        #self.graphWidget.setYRange(0, 4, padding=0)
-        self.graphWidgetOutput.setYRange(-11, 11, padding=0)
-        #self.graphWidgetOutput.enableAutoRange()
-        self.graphWidgetInput.setYRange(-13, 13, padding=0)
-        #self.graphWidgetInput.enableAutoRange()
+        #Changes viewboxes of each plot window
+        self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,100], padding=None, update=True, disableAutoRange=True)
+        self.graphWidgetInput.setRange(rect=None, xRange=None, yRange=[-13,13], padding=None, update=True, disableAutoRange=True)
         
         #Changes background color of graph
         self.graphWidgetOutput.setBackground((0,0,0))
         self.graphWidgetInput.setBackground((0,0,0))
 
         #Adds a legend after data starts to plot NOT before
-        self.graphWidgetOutput.addLegend()
-        self.graphWidgetInput.addLegend()
+        self.legendOutput = self.graphWidgetOutput.addLegend()
+        self.legendInput = self.graphWidgetInput.addLegend()
         #self.legend.setParentItem(self.graphWidgetOutput)
 
         rightVerticalLayout.addWidget(self.graphWidgetOutput)
@@ -669,6 +665,8 @@ class Window(QWidget):
             self.updateButton.clicked.connect(self.updateParameters)
             self.serialCloseButton.clicked.connect(self.serialClosePushed)
             self.startbutton.clicked.connect(self.startbuttonPushed)
+            self.sc = QShortcut(QKeySequence("Return"), self)
+            self.sc.activated.connect(self.updateParameters)
 
     def serialClosePushed(self):
         if self.serialInstance.serialIsOpen() == True:
@@ -683,6 +681,7 @@ class Window(QWidget):
             print("Serial Open button already connected")
         try:
             self.updateButton.clicked.disconnect(self.updateParameters)
+            self.sc.activated.connect(self.updateParameters)
         except:
             print("Update Button already disconnected")
         self._led.onColour = QLed.Red
@@ -694,6 +693,8 @@ class Window(QWidget):
         self.initialState() #Reinitializes arrays in case you have to retake data
         print("Recording Data")
         self.timer.start()
+        #self.graphWidgetOutput.clear()
+        #self.graphWidgetInput.clear()
         self.curve()
         self.startbutton.clicked.disconnect(self.startbuttonPushed)
 
@@ -739,7 +740,7 @@ class Window(QWidget):
         self.step = 0 #Used for repositioning data in plot window to the left
         self.parameters = [ self.LabType.currentText(),
                             self.getFFValue(),
-                            self.openLoopInput.text(),
+                            self.getOLPWMValue(),
                             self.getSetpointValue(),
                             self.getSaturationValue(),
                             self.getSampleTimeValue(),
@@ -762,6 +763,8 @@ class Window(QWidget):
         self.y2 = list()
         self.y3 = list()
 
+        #only here for when the start button is pressed, and user didn't change 
+        #labtype from default (position)
         self.getLabTypeAxes()
 
     #Initializes data# to have specific attributes
