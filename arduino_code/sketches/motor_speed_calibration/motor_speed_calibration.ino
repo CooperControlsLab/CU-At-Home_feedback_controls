@@ -66,12 +66,28 @@ void setup() {
 }
 
 //***********************************************************************************
+//Loop to test motor speed at different input voltage levels
 void loop() {
-   handle_command();  //Process incoming command
-   update_control_params();    //Update gains, update inputs based on labtype
-   compute_motor_voltage(com.labType); // Update controller input, compute motor voltage and write to motor
-   send_data();
+  for(int i = 6;i<52;i++){
+    digitalWrite(BRK_B,LOW);
+    for(double j = 0;j<20000;j++){
+      analogWrite(PWM_B,5*i);
+      calc_motor_speed();
+      if(Serial.read() == 'B'){
+        Serial.print(5*i);
+        Serial.print(',');
+        Serial.println(motor_speed);
+      }
+    }
+    
+    analogWrite(PWM_B,0);
+    digitalWrite(BRK_B,HIGH);
+    delay(2000);
+  }
+  Serial.print("End");
+  delay(50000);
 }
+
 
 //*****************************************************//
 // Arduino command handler
@@ -140,7 +156,6 @@ void update_control_params() {
 void compute_motor_voltage(int labtype) {
   switch (labtype) {
     case 0: // Angle Control
-      enc_rad = count_to_rad(enc_count); // Retrieve Current Position in Radians
       input = enc_rad;
       motor_controller.Compute();
       if (motor_voltage < 0) {

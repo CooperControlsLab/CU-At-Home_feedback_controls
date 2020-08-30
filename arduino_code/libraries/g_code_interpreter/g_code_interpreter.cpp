@@ -14,6 +14,9 @@ SerialComms::SerialComms(){
     kd = 0;
     write_data = 0;
     open_loop_voltage = 0;
+    FF_A = 0;
+    FF_B = 0;
+    FF_C = 0;
 }
 
 void SerialComms::process_command(char* cmd_string){
@@ -71,6 +74,12 @@ void SerialComms::process_command(char* cmd_string){
 
         case 6: //Openloop control
             open_loop_voltage = int(parse_number(cmd_string,'O',0));
+            break;
+
+        case 7: //Feed Foward Voltage
+            FF_A = double(parse_number(cmd_string,'A',0));
+            FF_B = double(parse_number(cmd_string,'B',0));
+            FF_C = double(parse_number(cmd_string,'C',0));
             break;
 
         default: break;

@@ -19,6 +19,10 @@ public:
     double kd;
     int write_data;
     int open_loop_voltage;
+    double feed_forward_voltage;
+    double FF_A;
+    double FF_B;
+    double FF_C;
 };
 
 
@@ -33,6 +37,7 @@ S3,M# - Turn controller on/off
 S4,T# - Set sample time
 S5,L#,U# - Set lower and upper controller output limits
 S6,O# - Open loop PWM
+S7,F# - Feedforward gain in volts
 
 Data to python protocol
 T# - time in micros
