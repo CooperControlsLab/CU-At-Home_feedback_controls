@@ -13,24 +13,21 @@
 #define SUPPLY_VOLTAGE 12 //12V power supply
 #define MOVING_AVERAGE_SIZE 50 // Size of moving average array
 unsigned long DELTA_T = 50000; //delta T in us between calculating velocity
+// unsigned int stationary_thresh = 80000; //80000 us threshold to set angular velocity to 0 if reached
 
 //Global Variables
 char incoming_char; //Serial incoming character for "parallel processing" of serial data
 char cmd [200]; //Input command from serial
 int cmd_index = 0; //Current index in cmd[] 
-double input, motor_voltage, lowerOutputLimit, upperOutputLimit, setpoint, kp, ki, kd; // Controller params
-int sampleTime, motor_direction;
+double input, setpoint, motor_voltage, kp, ki, kd, lowerOutputLimit, upperOutputLimit, sampleTime; // Controller params
 
 volatile double enc_count;  //Encoder "ticks" counted, Enc ++ = CW, Enc -- = CCW
-volatile double enc_rad; // Encoder position in degrees
+double enc_rad; // Encoder position in degrees
 double motor_speed; //Angular velocity of the motor
-double motor_speed_array [MOVING_AVERAGE_SIZE]; //Array to allow averaging of motor speed to buffer motor_speed calculations
 double prev_pos; //Previous encoder position for angular velocity calculation
 
 volatile int valA, valB;
-volatile unsigned long prev_pulse_time, pulse_interval, prev_millis, current_millis;
-int stationary_thresh = 80000; //80000 us threshold to set angular velocity to 0 if reached
-double feed_forward_voltage;
+volatile unsigned long prev_micros, current_micros;
 
 SerialComms com;  //Serial Communications class instantiation
 
@@ -41,9 +38,6 @@ PID motor_controller(&input, &motor_voltage, &setpoint, kp, ki, kd, DIRECT);  //
 void setup() {
   Serial.begin(500000);  // Begins Serial communication
 
-  //  com.mode = 1; // Default controller mode to automatic
-  //  motor_controller.SetOutputLimits(-255,255); // Default controller to use full range of PWM
-
   //Encoder Setup
   pinMode(ENC_A, INPUT_PULLUP);
   pinMode(ENC_B, INPUT_PULLUP);
@@ -53,15 +47,11 @@ void setup() {
   //Motor Setup
   pinMode(PWM_B, OUTPUT);
   pinMode(DIR_B, OUTPUT);
-  digitalWrite(PWM_B, LOW); // Breaks Motor
-
-  for (int i = 0; i < MOVING_AVERAGE_SIZE; i++) {
-    motor_speed_array[i] = 0; //Initializing motor speed array
-  }
+  digitalWrite(PWM_B, LOW); // Stop Motor on Start Up
 
   //Initialize variables
-  current_millis = millis();
-  prev_millis = current_millis;
+  current_micros = micros();
+  prev_micros = current_micros;
   prev_pos = 0;
 }
 
@@ -69,7 +59,7 @@ void setup() {
 void loop() {
    handle_command();  //Process incoming command
    update_control_params();    //Update gains, update inputs based on labtype
-   compute_motor_voltage(com.labType); // Update controller input, compute motor voltage and write to motor
+   compute_motor_voltage(); // Update controller input, compute motor voltage and write to motor
    send_data();
 }
 
@@ -135,17 +125,19 @@ void update_control_params() {
 }
 
 //*****************************************************//
-// Computes motor voltage based on appropriate labtypes
-// Returns motor_vcaoltage
-void compute_motor_voltage(int labtype) {
-  switch (labtype) {
+// Computes and executes motor voltage based on appropriate labtypes
+void compute_motor_voltage() {
+  switch (com.labType) {
     case 0: // Angle Control
       enc_rad = count_to_rad(enc_count); // Retrieve Current Position in Radians
       input = enc_rad;
       motor_controller.Compute();
+
       if (motor_voltage < 0) {
         digitalWrite(DIR_B, LOW); // CCW
+        } 
       }
+        } 
       else {
         digitalWrite(DIR_B, HIGH); // CW
       }
@@ -175,36 +167,16 @@ void compute_motor_voltage(int labtype) {
 
 //*****************************************************//
 void calc_motor_speed() {
-  //  Check if motor is stationary
-  //  if(micros() -  prev_pulse_time > stationary_thresh){
-  //    motor_speed = 0;
-  //  }
-  //  else{
-  //    motor_speed = update_motor_speed_array(motor_direction*double(360.0/PPR_A)*float(1000000.0/pulse_interval));
-  //  }
   enc_rad = count_to_rad(enc_count); // Retrieve Current Position in Radians
-  current_millis = micros();
-  unsigned long dt = current_millis - prev_millis;
+  current_micros = micros();
+  unsigned long dt = current_micros - prev_micros;
   if ( dt > DELTA_T)
   {
     //Calculate velocity in rad/s
     motor_speed = (enc_rad - prev_pos) / double(dt / 1000000.0);
-    prev_millis = current_millis;
+    prev_micros = current_micros;
     prev_pos = enc_rad;
   }
-}
-
-//*****************************************************//
-// Update moving average speed array
-double update_motor_speed_array(double newVal) {
-  double sum = 0;
-  for (int i = 0; i < MOVING_AVERAGE_SIZE - 1; i++) {
-    motor_speed_array[i] = motor_speed_array[i + 1];
-    sum += motor_speed_array[i];
-  }
-  motor_speed_array[MOVING_AVERAGE_SIZE - 1] = newVal;
-  sum += newVal;
-  return double(sum / MOVING_AVERAGE_SIZE);
 }
 
 //*****************************************************//
@@ -224,7 +196,6 @@ void send_data() {
 
     Serial.print(',');
     Serial.print('Q'); Serial.print(motor_voltage); Serial.print(',');
-    // Serial.print('Q');Serial.print(volts_to_PWM(motor_voltage));Serial.print(',');
     Serial.println('\0');
     com.write_data = 0; // Reset write data flag
   }
@@ -249,30 +220,23 @@ double count_to_rad(double count){
 
 //Encoder interrupts
 void pulseA() {
-  //  pulse_interval = micros() - prev_pulse_time;
-  //  prev_pulse_time = micros();
-
   valA = digitalRead(ENC_A);
   valB = digitalRead(ENC_B);
 
   if (valA == HIGH) { // A Rise
     if (valB == LOW) {
       enc_count++;  // CW
-      motor_direction = 1;
     }
     else {
       enc_count--;  // CCW
-      motor_direction = -1;
     }
   }
   else { // A fall
     if (valB == HIGH) {
       enc_count ++;  // CW
-      motor_direction = 1;
     }
     else {
       enc_count --;  //CCW
-      motor_direction = -1;
     }
   }
 }
