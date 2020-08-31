@@ -710,10 +710,8 @@ class Window(QWidget):
         #Come back to this
         self.graphWidgetOutput.addLegend()
         self.graphWidgetInput.addLegend()
-        self.graphWidgetOutput.setYRange(-11, 11, padding=0)
-        #self.graphWidgetOutput.enableAutoRange()
-        self.graphWidgetInput.setYRange(-11, 11, padding=0)
-        #self.graphWidgetInput.enableAutoRange()
+        self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,100], padding=None, update=True, disableAutoRange=True)
+        self.graphWidgetInput.setRange(rect=None, xRange=None, yRange=[-13,13], padding=None, update=True, disableAutoRange=True)
         self.startbutton.clicked.connect(self.startbuttonPushed)
         print("Cleared All Graphs")
 
