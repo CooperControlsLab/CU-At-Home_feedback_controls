@@ -22,7 +22,7 @@ int cmd_index = 0; //Current index in cmd[]
 double input, setpoint, motor_voltage, kp, ki, kd, lowerOutputLimit, upperOutputLimit, sampleTime; // Controller params
 
 volatile double enc_count;  //Encoder "ticks" counted, Enc ++ = CW, Enc -- = CCW
-double enc_rad; // Encoder position in degrees
+double enc_deg; // Encoder position in degrees
 double motor_speed; //Angular velocity of the motor
 double prev_pos; //Previous encoder position for angular velocity calculation
 
@@ -129,8 +129,8 @@ void update_control_params() {
 void compute_motor_voltage() {
   switch (com.labType) {
     case 0: // Angle Control
-      enc_rad = count_to_rad(enc_count); // Retrieve Current Position in Radians
-      input = enc_rad;
+      enc_deg = count_to_deg(enc_count); // Retrieve Current Position in Radians
+      input = enc_deg;
       motor_controller.Compute();
 
       if (motor_voltage < 0) {
@@ -165,15 +165,15 @@ void compute_motor_voltage() {
 
 //*****************************************************//
 void calc_motor_speed() {
-  enc_rad = count_to_rad(enc_count); // Retrieve Current Position in Radians
+  enc_deg = count_to_deg(enc_count); // Retrieve Current Position in Radians
   current_micros = micros();
   unsigned long dt = current_micros - prev_micros;
   if ( dt > DELTA_T)
   {
-    //Calculate velocity in rad/s
-    motor_speed = (enc_rad - prev_pos) / double(dt / 1000000.0);
+    //Calculate velocity in rpm
+    motor_speed = ((enc_deg - prev_pos) /(dt/(1000000.0 * 60.0)))/360; // rpm = deg/min / (360 deg/rev)
     prev_micros = current_micros;
-    prev_pos = enc_rad;
+    prev_pos = enc_deg;
   }
 }
 
@@ -186,7 +186,7 @@ void send_data() {
     Serial.print('S'); Serial.print(setpoint); Serial.print(',');
     Serial.print('A');
     if (com.labType == 0) { // Angle
-      Serial.print(enc_rad);
+      Serial.print(enc_deg);
     }
     else if (com.labType == 1 || com.labType == 2) {
       Serial.print(motor_speed);
@@ -212,8 +212,8 @@ double PWM_to_volts(int PWM) {
 //*****************************************************//
 
 //Encoder Count to Radians
-double count_to_rad(double count){
-  return (double(count / PPR) * 6.28318530718);  // rad = (count / pulse/rev) * 2pi rad/rev
+double count_to_deg(double count){
+  return (double(count / PPR) * 360);  // rad = (count / pulse/rev) * 360 deg/rev
 }
 
 //Encoder interrupts
