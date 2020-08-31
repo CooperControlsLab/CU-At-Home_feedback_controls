@@ -136,8 +136,7 @@ void compute_motor_voltage() {
       if (motor_voltage < 0) {
         digitalWrite(DIR_B, LOW); // CCW
         } 
-      }
-        } 
+        
       else {
         digitalWrite(DIR_B, HIGH); // CW
       }
@@ -160,7 +159,6 @@ void compute_motor_voltage() {
       // }
       analogWrite(PWM_B, volts_to_PWM(motor_voltage));
       break;
-
     default: break; // Null default
   }
 }
@@ -219,7 +217,7 @@ double count_to_rad(double count){
 }
 
 //Encoder interrupts
-void pulseA() {
+void pulseA(){
   valA = digitalRead(ENC_A);
   valB = digitalRead(ENC_B);
 
@@ -241,7 +239,7 @@ void pulseA() {
   }
 }
 
-void pulseB() {
+void pulseB(){
   valA = digitalRead(ENC_A);
   valB = digitalRead(ENC_B);
 
