@@ -8,6 +8,19 @@ public:
     float parse_number(char*, char, int);
     // SerialComms(int*, double*, pwmAngle, pwmVelocity, time);
     SerialComms();
+
+    void handle_command();
+    void send_data(double, double, double);
+
+    //-------
+    //Serial communication buffer params
+    char cmd [200]; //Input command from serial
+    int cmd_index; //Current index in cmd[] 
+    char incoming_char; //Serial incoming character for "parallel processing" of serial data
+
+
+    //--------------------------
+    //Local variables to hold data from serial stream
     int labType;
     double setpoint;
     int mode;

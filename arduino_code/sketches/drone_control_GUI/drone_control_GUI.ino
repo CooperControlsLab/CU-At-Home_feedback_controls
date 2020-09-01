@@ -1,19 +1,8 @@
 #include "g_code_interpreter.h"
 //#include <string.h>
 #include <PID_v1.h>
+#include <drone_control_hardware_config.h>
 
-// Define hardware pins
-#define ENC_A 18   //Encoder pulse A
-#define ENC_B 19   //Encoder pulse B
-#define PPR 1200.0 //Encoder pulses per revolution 
-#define PPR_A 232.8 //Pulse A per r
-#define DIR_A 12
-#define DIR_B 13 //Motor Direction HIGH = CW, LOW = CCW
-#define PWM_A 3
-#define PWM_B 11 //Motor PWM
-#define BRK_B 8  //Motor Break Doesn't seem to work, avoid using
-#define SUPPLY_VOLTAGE 18 //12V power supply
-#define MOVING_AVERAGE_SIZE 50 // Size of moving average array
 unsigned long DELTA_T = 50000; //delta T in us between calculating velocity
 
 //Global Variables
@@ -30,7 +19,7 @@ double motor_speed; //Angular velocity of the motor
 double motor_speed_array [MOVING_AVERAGE_SIZE]; //Array to allow averaging of motor speed to buffer motor_speed calculations
 double prev_pos; //Previous encoder position for angular velocity calculation
 
-volatile int valA, valB;
+//volatile int valA, valB;
 volatile unsigned long prev_pulse_time, pulse_interval, prev_millis, current_millis;
 int stationary_thresh = 80000; //80000 us threshold to set angular velocity to 0 if reached
 double prev_motor_voltage;
@@ -270,8 +259,8 @@ void pulseA() {
   //  pulse_interval = micros() - prev_pulse_time;
   //  prev_pulse_time = micros();
 
-  valA = digitalRead(ENC_A);
-  valB = digitalRead(ENC_B);
+  int valA = digitalRead(ENC_A);
+  int valB = digitalRead(ENC_B);
 
   if (valA == HIGH) { // A Rise
     if (valB == LOW) {
@@ -296,8 +285,8 @@ void pulseA() {
 }
 
 void pulseB() {
-  valA = digitalRead(ENC_A);
-  valB = digitalRead(ENC_B);
+  int valA = digitalRead(ENC_A);
+  int valB = digitalRead(ENC_B);
 
   if (valB == HIGH) { // B rise
     if (valA == HIGH) {
