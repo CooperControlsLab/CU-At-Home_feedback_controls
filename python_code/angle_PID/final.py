@@ -129,9 +129,9 @@ class SerialComm:
                 print("S7:", values)                
             """
 
-class Dialog1(QDialog):
+class SettingsClass(QDialog):
     def __init__(self, *args, **kwargs):
-        super(Dialog1, self).__init__(*args, **kwargs)
+        super(SettingsClass, self).__init__(*args, **kwargs)
         
         self.title = "Settings"
         self.setWindowTitle(self.title)        
@@ -159,7 +159,7 @@ class Dialog1(QDialog):
         self.baudrate = QComboBox(self)
         self.baudrate.setFixedWidth(100)
         self.baudrate.addItems(["9600","115200","250000","500000"])
-        self.baudrate.setCurrentIndex(3)
+        self.baudrate.setCurrentIndex(0)
         self.baudrate.SizeAdjustPolicy(1)
         
         self.timeout_label = QLabel("Timeout:",self)
@@ -200,8 +200,7 @@ class Dialog1(QDialog):
 
         self.setLayout(mainLayout)
 
-
-    def list_port(self): #currently only works with genuine Arduinos due to parsing method
+    def list_port(self): 
         arduino_ports = [
             p.device
             for p in serial.tools.list_ports.comports()
@@ -275,7 +274,7 @@ class Window(QWidget):
         rel_path = r"logo\CUAtHomeLogo-Horz.png"
         abs_file_path = os.path.join(script_dir, rel_path)
         self.imageLabel.setPixmap(QPixmap(abs_file_path).scaled(200, 130, Qt.KeepAspectRatio, Qt.FastTransformation))
-        leftVerticalLayout.addWidget(self.imageLabel)
+        leftVerticalLayout.addWidget(self.imageLabel,alignment=Qt.AlignCenter)
         
         self.LEDLabel = QLabel("Arduino Status",self)
         self.LEDLabel.setMinimumSize(QSize(88, 21))
@@ -284,7 +283,7 @@ class Window(QWidget):
 
         self._led = QLed(self, onColour=QLed.Red, shape=QLed.Circle)
         self._led.clickable = False
-        mainGridLayout.addWidget(self._led, 0, 1, 1, 1)
+        mainGridLayout.addWidget(self._led, 0, 1, 1, 1, alignment=Qt.AlignCenter)
         self._led.value = True
         self._led.setMinimumSize(QSize(20,20))
         self._led.setMaximumSize(QSize(20,20))        
@@ -545,7 +544,7 @@ class Window(QWidget):
         self.ControllerSwitch.setSizePolicy(sizePolicy)
         #self.ControllerSwitch.setMaximumSize(QSize(100, 20))
         self.ControllerSwitch.clicked.connect(self.controllerToggle)
-        groupParaGridLayout.addWidget(self.ControllerSwitch, 9, 1, 1, 1)
+        groupParaGridLayout.addWidget(self.ControllerSwitch, 9, 1, 1, 1, alignment=Qt.AlignCenter)
 
         self.updateButton = QPushButton("Update Parameters",self)
         #Below line is commented as this button should on be live when
@@ -690,11 +689,8 @@ class Window(QWidget):
 
     #Resets data arrays and starts plotting. Disables itself after clicking
     def startbuttonPushed(self):
-        self.initialState() #Reinitializes arrays in case you have to retake data
         print("Recording Data")
         self.timer.start()
-        #self.graphWidgetOutput.clear()
-        #self.graphWidgetInput.clear()
         self.curve()
         self.startbutton.clicked.disconnect(self.startbuttonPushed)
 
@@ -713,6 +709,7 @@ class Window(QWidget):
         self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,100], padding=None, update=True, disableAutoRange=True)
         self.graphWidgetInput.setRange(rect=None, xRange=None, yRange=[-13,13], padding=None, update=True, disableAutoRange=True)
         self.startbutton.clicked.connect(self.startbuttonPushed)
+        self.initialState() #Reinitializes arrays in case you have to retake data
         print("Cleared All Graphs")
 
     #Dumps data into a csv file to a selected path
@@ -747,7 +744,6 @@ class Window(QWidget):
                             self.PIDInput()["D"],     
                             self.getControllerState()
                             ]
-
 
         #Data buffers. What is being plotted in the 2 windows
         self.time_zeros = np.zeros(self.buffersize+1, float)
@@ -911,7 +907,7 @@ class Window(QWidget):
 
     #Class instance of settings menu. Creates a dialog (popup)
     def settingsMenu(self):
-        self.settingsPopUp = Dialog1()
+        self.settingsPopUp = SettingsClass()
         self.settingsPopUp.show()
         #self.settingsPopUp.exec()
         self.serial_values = self.settingsPopUp.getDialogValues()
@@ -983,28 +979,32 @@ class Window(QWidget):
     def getLabTypeAxes(self):
         inputType = str(self.LabType.currentText())
         if inputType == "Position":
-            self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&theta; (rad)</span>")
+            self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&theta; (°)</span>")
             self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>")
             self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetOutput.setTitle("Position Control", color="w", size="12pt")
             self.graphWidgetInput.setTitle("Input Voltage", color="w", size="12pt")
+            self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,100], padding=None, update=True, disableAutoRange=True)
         elif inputType == "Speed":
-            self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (rad/s)</span>")
+            self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (RPM)</span>")
             self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>")
             self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetOutput.setTitle("Speed Control", color="w", size="12pt")
             self.graphWidgetInput.setTitle("Input Voltage", color="w", size="12pt")
+            self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,550], padding=None, update=True, disableAutoRange=True)
+
         elif inputType == "Open-Loop":
-            self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (rad/s)</span>")
+            self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (RPM)</span>")
             self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>")
             self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetOutput.setTitle("Open Loop Speed Control", color="w", size="12pt")
             self.graphWidgetInput.setTitle("Input Voltage", color="w", size="12pt")
-    #This exists as if the LabType isn't PWM, the field should not be active
+            self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,550], padding=None, update=True, disableAutoRange=True)
 
+    #Enables/disables field for the feedforward regression
     def onlySpeedControl(self):
         test1 = str(self.LabType.currentText())
         if test1 == "Speed":
@@ -1012,6 +1012,7 @@ class Window(QWidget):
         else:
             self.ffInput.setEnabled(False)
 
+    #Enables/disables field for the open loop voltage
     def onlyOpenLoop(self):
         test1 = str(self.LabType.currentText())
         if test1 == "Open-Loop":
