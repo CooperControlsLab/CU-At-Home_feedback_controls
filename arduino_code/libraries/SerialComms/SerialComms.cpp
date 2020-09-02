@@ -1,11 +1,14 @@
-#include <g_code_interpreter.h>
+#include <SerialComms.h>
 #include <string.h>
 #include <Arduino.h>
 
 SerialComms::SerialComms(){
+    //Initialize Serial buffer params
+    cmd_index=0;
+
     setpoint = 0;
     labType = 0;
-    mode = 1;
+    mode = 0;
     lowerOutputLimit = -125;
     upperOutputLimit = 125;
     sampleTime = 0;
@@ -118,4 +121,42 @@ float SerialComms::parse_number(char* cmd_string, char key, int def){
     
     // Serial.print("test string: "); Serial.println(substring);
     return atof(substring); //return the substring in float format
+}
+
+void SerialComms::handle_command(){
+// Arduino command handler
+  if (Serial.available() != 0) {
+    incoming_char = Serial.read();
+    cmd[cmd_index] = incoming_char;
+    if (incoming_char == '\0' || incoming_char == '%') {
+      //      Serial.println("End of line, processing commands!");
+      process_command(cmd);
+      // Reset command buffer
+      cmd_index = 0;
+      memset(cmd, '\0', sizeof(cmd));
+    }
+    else {
+      cmd_index ++;
+    }
+  }
+}
+
+void SerialComms::send_data(double enc_deg, double motor_speed, double motor_voltage) {
+  // Check and if there is a request, send data
+  if (write_data == 1) {
+    Serial.print("T"); Serial.print(micros()); Serial.print(',');
+    Serial.print('S'); Serial.print(setpoint); Serial.print(',');
+    Serial.print('A');
+    if (labType == 0) { // Angle
+      Serial.print(enc_deg);
+    }
+    else if (labType == 1 || labType == 2) {
+      Serial.print(motor_speed);
+    }
+
+    Serial.print(',');
+    Serial.print('Q'); Serial.print(motor_voltage); Serial.print(',');
+    Serial.println('\0');
+    write_data = 0; // Reset write data flag
+  }
 }

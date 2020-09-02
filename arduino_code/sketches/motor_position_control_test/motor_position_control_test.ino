@@ -1,24 +1,11 @@
-#include "g_code_interpreter.h"
-//#include <string.h>
+#include "SerialComms.h"
 #include <PID_v1.h>
+#include <motor_control_hardware_config.h>
 
-// Define hardware pins
-#define ENC_A 2   //Encoder pulse A
-#define ENC_B 3   //Encoder pulse B
-#define PPR 464.64 //Encoder pulses per revolution 
-#define PPR_A 232.8 //Pulse A per r
-#define DIR_B 13 //Motor Direction HIGH = CW, LOW = CCW
-#define PWM_B 11 //Motor PWM
-#define BRK_B 8  //Motor Break Doesn't seem to work, avoid using
-#define SUPPLY_VOLTAGE 12 //12V power supply
-#define MOVING_AVERAGE_SIZE 50 // Size of moving average array
-unsigned long DELTA_T = 50000; //delta T in us between calculating velocity
+unsigned long DELTA_T = 2000; //delta T in us between calculating velocity
 // unsigned int stationary_thresh = 80000; //80000 us threshold to set angular velocity to 0 if reached
 
 //Global Variables
-char incoming_char; //Serial incoming character for "parallel processing" of serial data
-char cmd [200]; //Input command from serial
-int cmd_index = 0; //Current index in cmd[] 
 double input, setpoint, motor_voltage, kp, ki, kd, lowerOutputLimit, upperOutputLimit, sampleTime; // Controller params
 
 volatile double enc_count;  //Encoder "ticks" counted, Enc ++ = CW, Enc -- = CCW
@@ -26,7 +13,6 @@ double enc_deg; // Encoder position in degrees
 double motor_speed; //Angular velocity of the motor
 double prev_pos; //Previous encoder position for angular velocity calculation
 
-volatile int valA, valB;
 volatile unsigned long prev_micros, current_micros;
 
 SerialComms com;  //Serial Communications class instantiation
@@ -57,30 +43,10 @@ void setup() {
 
 //***********************************************************************************
 void loop() {
-   handle_command();  //Process incoming command
+   com.handle_command();  //Process incoming command
    update_control_params();    //Update gains, update inputs based on labtype
    compute_motor_voltage(); // Update controller input, compute motor voltage and write to motor
-   send_data();
-}
-
-//*****************************************************//
-// Arduino command handler
-void handle_command() {
-  if (Serial.available() != 0) {
-    incoming_char = Serial.read();
-    cmd[cmd_index] = incoming_char;
-    if (incoming_char == '\0' || incoming_char == '%') {
-      //      Serial.println("End of line, processing commands!");
-      com.process_command(cmd);
-      // Reset command buffer
-      cmd_index = 0;
-      memset(cmd, '\0', sizeof(cmd));
-      update_control_params();   //Update gains, update inputs based on labtype
-    }
-    else {
-      cmd_index ++;
-    }
-  }
+   com.send_data(enc_deg, motor_speed, motor_voltage);
 }
 
 //*****************************************************//
@@ -165,7 +131,7 @@ void compute_motor_voltage() {
 
 //*****************************************************//
 void calc_motor_speed() {
-  enc_deg = count_to_deg(enc_count); // Retrieve Current Position in Radians
+  enc_deg = count_to_deg(enc_count); // Retrieve Current Position in Degrees
   current_micros = micros();
   unsigned long dt = current_micros - prev_micros;
   if ( dt > DELTA_T)
@@ -174,28 +140,6 @@ void calc_motor_speed() {
     motor_speed = ((enc_deg - prev_pos) /(dt/(1000000.0 * 60.0)))/360; // rpm = deg/min / (360 deg/rev)
     prev_micros = current_micros;
     prev_pos = enc_deg;
-  }
-}
-
-//*****************************************************//
-// Send data on request
-void send_data() {
-  // Check and if there is a request, send data
-  if (com.write_data == 1) {
-    Serial.print("T"); Serial.print(micros()); Serial.print(',');
-    Serial.print('S'); Serial.print(setpoint); Serial.print(',');
-    Serial.print('A');
-    if (com.labType == 0) { // Angle
-      Serial.print(enc_deg);
-    }
-    else if (com.labType == 1 || com.labType == 2) {
-      Serial.print(motor_speed);
-    }
-
-    Serial.print(',');
-    Serial.print('Q'); Serial.print(motor_voltage); Serial.print(',');
-    Serial.println('\0');
-    com.write_data = 0; // Reset write data flag
   }
 }
 
@@ -218,8 +162,8 @@ double count_to_deg(double count){
 
 //Encoder interrupts
 void pulseA(){
-  valA = digitalRead(ENC_A);
-  valB = digitalRead(ENC_B);
+  int valA = digitalRead(ENC_A);
+  int valB = digitalRead(ENC_B);
 
   if (valA == HIGH) { // A Rise
     if (valB == LOW) {
@@ -240,8 +184,8 @@ void pulseA(){
 }
 
 void pulseB(){
-  valA = digitalRead(ENC_A);
-  valB = digitalRead(ENC_B);
+  int valA = digitalRead(ENC_A);
+  int valB = digitalRead(ENC_B);
 
   if (valB == HIGH) { // B rise
     if (valA == HIGH) {
