@@ -1,7 +1,7 @@
 import sys 
 import os
 import time
-from PyQt5.QtGui import QDoubleValidator, QKeySequence, QPixmap, QRegExpValidator
+from PyQt5.QtGui import QDoubleValidator, QKeySequence, QPixmap, QRegExpValidator, QIcon
 from PyQt5.QtWidgets import (QApplication, QPushButton, QWidget, QComboBox, 
 QHBoxLayout, QVBoxLayout, QFormLayout, QCheckBox, QGridLayout, QDialog, 
 QLabel, QLineEdit, QDialogButtonBox, QFileDialog, QSizePolicy, QLayout,
@@ -23,7 +23,9 @@ from QSwitch import Switch
 #Fixes Scaling for high resolution monitors
 if hasattr(Qt, 'AA_EnableHighDpiScaling'):
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-    QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+
+if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
+    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 
 class SerialComm:
     def __init__(self, port, baudrate, timeout):
@@ -128,7 +130,14 @@ class SerialComm:
                 self.ser.write(str.encode(values))
                 print("S7:", values)                
             """
-
+    #S8?????
+    def writeCalibration(self,Calibration):
+        """
+        values = f"S8,M{Calibration},\0"
+        self.ser.write(str.encode(values))
+        print("S8:", values)
+        """
+        pass
 class SettingsClass(QDialog):
     def __init__(self, *args, **kwargs):
         super(SettingsClass, self).__init__(*args, **kwargs)
@@ -159,7 +168,7 @@ class SettingsClass(QDialog):
         self.baudrate = QComboBox(self)
         self.baudrate.setFixedWidth(100)
         self.baudrate.addItems(["9600","115200","250000","500000"])
-        self.baudrate.setCurrentIndex(0)
+        self.baudrate.setCurrentIndex(4)
         self.baudrate.SizeAdjustPolicy(1)
         
         self.timeout_label = QLabel("Timeout:",self)
@@ -285,8 +294,8 @@ class Window(QWidget):
         self._led.clickable = False
         mainGridLayout.addWidget(self._led, 0, 1, 1, 1, alignment=Qt.AlignCenter)
         self._led.value = True
-        self._led.setMinimumSize(QSize(20,20))
-        self._led.setMaximumSize(QSize(20,20))        
+        self._led.setMinimumSize(QSize(15,15))
+        self._led.setMaximumSize(QSize(15,15))        
 
         self.serialOpenButton = QPushButton("Open Serial",self)
         self.serialOpenButton.setCheckable(False)  
@@ -546,12 +555,26 @@ class Window(QWidget):
         self.ControllerSwitch.clicked.connect(self.controllerToggle)
         groupParaGridLayout.addWidget(self.ControllerSwitch, 9, 1, 1, 1, alignment=Qt.AlignCenter)
 
+        self.CalibrationLabel = QLabel("Calibration Off/On",self)
+        self.CalibrationLabel.setMinimumSize(QSize(100, 20))
+        self.CalibrationLabel.setMaximumSize(QSize(100, 20))
+        groupParaGridLayout.addWidget(self.CalibrationLabel, 10, 0, 1, 1)
+        self.CalibrationSwitch = Switch(thumb_radius=11, track_radius=8)
+        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.CalibrationSwitch.sizePolicy().hasHeightForWidth())
+        self.CalibrationSwitch.setSizePolicy(sizePolicy)
+        #self.CalibrationSwitch.setMaximumSize(QSize(100, 20))
+        self.CalibrationSwitch.clicked.connect(self.calibrationToggle)
+        groupParaGridLayout.addWidget(self.CalibrationSwitch, 10, 1, 1, 1, alignment=Qt.AlignCenter)
+
         self.updateButton = QPushButton("Update Parameters",self)
         #Below line is commented as this button should on be live when
         #serial communication is open
         #self.updateButton.clicked.connect(self.updateParameters)
         self.updateButton.setMaximumSize(QSize(300, 20))
-        groupParaGridLayout.addWidget(self.updateButton, 10, 0, 1, 2)
+        groupParaGridLayout.addWidget(self.updateButton, 11, 0, 1, 2)
 
         leftVerticalLayout.addLayout(mainGridLayout)
         leftVerticalLayout.addWidget(groupBoxParameters)
@@ -656,6 +679,7 @@ class Window(QWidget):
             self.serialInstance.writeSaturation(self.getSaturationValue())
             self.serialInstance.writeOLPWM(self.getOLPWMValue())
             self.serialInstance.writeFF(self.getFFValue())
+            self.serialInstance.writeCalibration(self.getCalibrationState())
 
         except AttributeError:
             print("Some fields are empty. Recheck then try again")
@@ -742,7 +766,8 @@ class Window(QWidget):
                             self.PIDInput()["P"],
                             self.PIDInput()["I"],
                             self.PIDInput()["D"],     
-                            self.getControllerState()
+                            self.getControllerState(),
+                            self.getCalibrationState()
                             ]
 
         #Data buffers. What is being plotted in the 2 windows
@@ -1027,6 +1052,13 @@ class Window(QWidget):
         elif self.ControllerSwitch.isChecked() == True:
             return("1")
 
+    #This method will only be activated once serial is starting up
+    def getCalibrationState(self):
+        if self.CalibrationSwitch.isChecked() == False:
+            return("0")
+        elif self.CalibrationSwitch.isChecked() == True:
+            return("1")
+
     #This method can be activated as many times as long as Led is Green.
     # which is when serial communication is open. Otherwise it will do nothing
     def controllerToggle(self):
@@ -1037,6 +1069,16 @@ class Window(QWidget):
 
             elif test1.isChecked() == True:
                 self.serialInstance.writeController("1")
+
+    def calibrationToggle(self):
+        test1 = self.sender()
+        if self._led.onColour == QLed.Green:
+            if test1.isChecked() == False:
+                self.serialInstance.writeCalibration("0")
+            
+            elif test1.isChecked() == True:
+                self.serialInstance.writeCalibration("1")
+
 
     #GCode format for Sample Time
     def getSampleTimeValue(self):
