@@ -7,7 +7,7 @@ QHBoxLayout, QVBoxLayout, QFormLayout, QCheckBox, QGridLayout, QDialog,
 QLabel, QLineEdit, QDialogButtonBox, QFileDialog, QSizePolicy, QLayout,
 QSpacerItem, QGroupBox, QShortcut)
 from PyQt5.QtCore import Qt, QTimer, QRegExp, QCoreApplication, QSize
-from pyqtgraph import PlotWidget, plot
+from pyqtgraph import PlotWidget, plot, ScatterPlotItem
 import pyqtgraph as pg
 import serial
 import serial.tools.list_ports
@@ -132,14 +132,7 @@ class SerialComm:
                 self.ser.write(str.encode(values))
                 print("S7:", values)                
             """
-    #S8?????
-    def writeCalibration(self,Calibration):
-        """
-        values = f"S8,M{Calibration},\0"
-        self.ser.write(str.encode(values))
-        print("S8:", values)
-        """
-        pass
+
 class SettingsClass(QDialog):
     def __init__(self, *args, **kwargs):
         super(SettingsClass, self).__init__(*args, **kwargs)
@@ -170,7 +163,7 @@ class SettingsClass(QDialog):
         self.baudrate = QComboBox(self)
         self.baudrate.setFixedWidth(100)
         self.baudrate.addItems(["9600","115200","250000","500000"])
-        self.baudrate.setCurrentIndex(4)
+        self.baudrate.setCurrentIndex(3)
         self.baudrate.SizeAdjustPolicy(1)
         
         self.timeout_label = QLabel("Timeout:",self)
@@ -281,7 +274,7 @@ class Window(QWidget):
         self.LEDLabel = QLabel("Arduino Status",self)
         self.LEDLabel.setMinimumSize(QSize(88, 21))
         self.LEDLabel.setMaximumSize(QSize(88, 21))
-        mainGridLayout.addWidget(self.LEDLabel, 0, 0, 1, 1)
+        mainGridLayout.addWidget(self.LEDLabel, 0, 0, 1, 1, alignment=Qt.AlignCenter)
 
         self._led = QLed(self, onColour=QLed.Red, shape=QLed.Circle)
         self._led.clickable = False
@@ -548,20 +541,6 @@ class Window(QWidget):
         self.ControllerSwitch.clicked.connect(self.controllerToggle)
         groupParaGridLayout.addWidget(self.ControllerSwitch, 9, 1, 1, 1, alignment=Qt.AlignCenter)
 
-        self.CalibrationLabel = QLabel("Calibration Off/On",self)
-        self.CalibrationLabel.setMinimumSize(QSize(100, 20))
-        self.CalibrationLabel.setMaximumSize(QSize(100, 20))
-        groupParaGridLayout.addWidget(self.CalibrationLabel, 10, 0, 1, 1)
-        self.CalibrationSwitch = Switch(thumb_radius=11, track_radius=8)
-        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.CalibrationSwitch.sizePolicy().hasHeightForWidth())
-        self.CalibrationSwitch.setSizePolicy(sizePolicy)
-        #self.CalibrationSwitch.setMaximumSize(QSize(100, 20))
-        self.CalibrationSwitch.clicked.connect(self.calibrationToggle)
-        groupParaGridLayout.addWidget(self.CalibrationSwitch, 10, 1, 1, 1, alignment=Qt.AlignCenter)
-
         self.updateButton = QPushButton("Update Parameters",self)
         #Below line is commented as this button should on be live when
         #serial communication is open
@@ -600,6 +579,10 @@ class Window(QWidget):
         self.legendInput = self.graphWidgetInput.addLegend()
         #self.legend.setParentItem(self.graphWidgetOutput)
 
+        self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>")
+        self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
+        self.graphWidgetInput.setTitle("Input Voltage", color="w", size="12pt")
+
         rightVerticalLayout.addWidget(self.graphWidgetOutput)
         rightVerticalLayout.addWidget(self.graphWidgetInput)
 
@@ -607,7 +590,7 @@ class Window(QWidget):
 
         #Plot time update settings
         self.timer = QTimer()
-        self.timer.setInterval(1) #Changes the plot speed. Defaulted to 50. Can be placed in startbuttonPushed() method
+        self.timer.setInterval(50) #Changes the plot speed. Defaulted to 50. Can be placed in startbuttonPushed() method
         self.initialState()
         time.sleep(2)
         try:
@@ -672,7 +655,6 @@ class Window(QWidget):
             self.serialInstance.writeSaturation(self.getSaturationValue())
             self.serialInstance.writeOLPWM(self.getOLPWMValue())
             self.serialInstance.writeFF(self.getFFValue())
-            self.serialInstance.writeCalibration(self.getCalibrationState())
 
         except AttributeError:
             print("Some fields are empty. Recheck then try again")
@@ -759,8 +741,7 @@ class Window(QWidget):
                             self.PIDInput()["P"],
                             self.PIDInput()["I"],
                             self.PIDInput()["D"],     
-                            self.getControllerState(),
-                            self.getCalibrationState()
+                            self.getControllerState()
                             ]
 
         #Data buffers. What is being plotted in the 2 windows
@@ -998,28 +979,18 @@ class Window(QWidget):
         inputType = str(self.LabType.currentText())
         if inputType == "Position":
             self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&theta; (°)</span>")
-            self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>")
             self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
-            self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetOutput.setTitle("Position Control", color="w", size="12pt")
-            self.graphWidgetInput.setTitle("Input Voltage", color="w", size="12pt")
             self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,100], padding=None, update=True, disableAutoRange=True)
         elif inputType == "Speed":
             self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (RPM)</span>")
-            self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>")
             self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
-            self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetOutput.setTitle("Speed Control", color="w", size="12pt")
-            self.graphWidgetInput.setTitle("Input Voltage", color="w", size="12pt")
             self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,550], padding=None, update=True, disableAutoRange=True)
-
         elif inputType == "Open-Loop":
             self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (RPM)</span>")
-            self.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage</span>")
             self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
-            self.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetOutput.setTitle("Open Loop Speed Control", color="w", size="12pt")
-            self.graphWidgetInput.setTitle("Input Voltage", color="w", size="12pt")
             self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,550], padding=None, update=True, disableAutoRange=True)
 
     #Enables/disables field for the feedforward regression
@@ -1045,12 +1016,6 @@ class Window(QWidget):
         elif self.ControllerSwitch.isChecked() == True:
             return("1")
 
-    #This method will only be activated once serial is starting up
-    def getCalibrationState(self):
-        if self.CalibrationSwitch.isChecked() == False:
-            return("0")
-        elif self.CalibrationSwitch.isChecked() == True:
-            return("1")
 
     #This method can be activated as many times as long as Led is Green.
     # which is when serial communication is open. Otherwise it will do nothing
@@ -1062,15 +1027,6 @@ class Window(QWidget):
 
             elif test1.isChecked() == True:
                 self.serialInstance.writeController("1")
-
-    def calibrationToggle(self):
-        test1 = self.sender()
-        if self._led.onColour == QLed.Green:
-            if test1.isChecked() == False:
-                self.serialInstance.writeCalibration("0")
-            
-            elif test1.isChecked() == True:
-                self.serialInstance.writeCalibration("1")
 
 
     #GCode format for Sample Time
