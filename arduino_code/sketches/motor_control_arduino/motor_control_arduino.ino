@@ -66,7 +66,7 @@ void update_control_params() {
     //Create large array to store data
 
     double t0 = int(millis());
-    unsigned long prev_time = micros();
+    unsigned long prev_time = millis();
     
     //Set motor open loop voltage
     motor_voltage=9;
@@ -77,15 +77,13 @@ void update_control_params() {
 
     while(1)
     {
-      Serial.println("WHILE LOOOOOP");
       calc_motor_speed(); //Also updates enc_deg values
 
 
-      if(micros() >= (prev_time+2500)){
-        prev_time = micros();
+      if(millis() >= (prev_time+3)){
+        prev_time = millis();
         //append data to large array
-        time[i] = micros();
-//        position[i] = enc_deg;
+        time[i] = prev_time;
         velocity[i] = motor_speed;
   
         if(i>=(storage_length-1)){com.open_loop_analysis_start = false; break;}
@@ -94,17 +92,17 @@ void update_control_params() {
 
       
     }
-    Serial.println("outside whilte");
-    
+  
     //Send long serial data to python
     for(int j = 0; j < storage_length; j++)
     {
-      Serial.print(time[j]);
-      Serial.print(',');
-      Serial.println(velocity[j]);
-//      Serial.print(',');
-//      Serial.println(position[j]);
+      Serial.print("D0"); Serial.print(',');
+      Serial.print('T'); Serial.print(time[j]); Serial.print(',');
+      Serial.print('P'); Serial.print(0); Serial.print(',');
+      Serial.print('V'); Serial.print(velocity[j]); Serial.print(',');
+      Serial.print('I'); Serial.print(motor_voltage); Serial.print('$'); 
     }
+    Serial.print('\n');
   }
   
   //Update Setpoint

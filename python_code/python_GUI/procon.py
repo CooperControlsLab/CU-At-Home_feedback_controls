@@ -82,7 +82,9 @@ class SerialComm:
         V is velocity
         I is input voltage
         """
-        arduinoData = self.ser.read().decode().replace('\r\n','').split("$")
+        print('here')
+        arduinoData = self.ser.readline().decode().split("$")#.replace('\r\n','')
+        print(len(arduinoData))
         return arduinoData
 
     #S0 
@@ -1127,7 +1129,7 @@ class Window(QWidget):
         self.timer.stop()
         self.graphWidgetOutput.clear()
         self.graphWidgetInput.clear()
-        self.serialInstance.writeOLCharacterization():
+        self.serialInstance.writeOLCharacterization()
         fulldata = self.serialInstance.readValuesOL()
         d = list()
         time = list()
@@ -1140,6 +1142,12 @@ class Window(QWidget):
         position = self.gcodeParsingOL("P",fulldata,position)
         velocity = self.gcodeParsingOL("V",fulldata,velocity)
         voltage = self.gcodeParsingOL("I",fulldata,voltage)
+        
+        #Make time referential
+        for index, t in enumerate(time):
+            if index == len(time)-1:
+                break
+            time[index+1] = time[index+1] - time[index]
         
         pen1 = pg.mkPen(color = (0, 255, 0), width=1)
         pen2 = pg.mkPen(color = (0, 255, 255), width=1)
