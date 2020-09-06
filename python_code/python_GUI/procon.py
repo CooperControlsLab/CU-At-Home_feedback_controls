@@ -68,7 +68,23 @@ class SerialComm:
         #current format of received data is b"T23533228,S0.00,A0.00,Q0.00,\0\r\n"
         arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
         return arduinoData        
-        
+
+
+    def readValuesOL(self):
+        """
+        Note: this will ONLY be for Open-Loop Speed Control
+        Arduino will send over ONE really long byte, so use read()
+        $ will be used to separate each point, which is in the format of
+        D1,T1,P1,V1,I1$D2,T2,P2,V2,I2$\0 
+        D is index
+        T is microseconds
+        P is position
+        V is velocity
+        I is input voltage
+        """
+        arduinoData = self.ser.read().decode().replace('\r\n','').split("$")
+        return arduinoData
+
     #S0 
     def writePID(self,P,I,D):
         values = f"S0,P{P},I{I},D{D},\0"
@@ -132,6 +148,13 @@ class SerialComm:
                 self.ser.write(str.encode(values))
                 print("S7:", values)                
             """
+    #S8 T is binary (1 is activated, 0 is not)
+    def writeOLCharacterization(self,OLC):
+        if OLC == 1:
+            values = f"S8,T{OLC}"
+            self.ser.write(str.encode(values))
+            print("S8:", values)
+    
 
 class SettingsClass(QDialog):
     def __init__(self, *args, **kwargs):
@@ -394,6 +417,7 @@ class Window(QWidget):
         self.LabType.activated.connect(self.onlyOpenLoop)
         self.LabType.activated.connect(self.onlySpeedControl)
         self.LabType.activated.connect(self.getLabTypeAxes)
+        self.LabType.activated.connect(self.OLCState)
         groupParaGridLayout.addWidget(self.LabType, 0, 1, 1, 1)
 
         self.ffLabel = QLabel("Feedforward",self)
@@ -541,6 +565,13 @@ class Window(QWidget):
         self.ControllerSwitch.clicked.connect(self.controllerToggle)
         groupParaGridLayout.addWidget(self.ControllerSwitch, 9, 1, 1, 1, alignment=Qt.AlignCenter)
 
+        self.OLCButton = QPushButton("OL Characterization",self)
+        #Below line is commented as this button should on be live when
+        #serial communication is open
+        self.OLCButton.setMaximumSize(QSize(300, 20))
+        groupParaGridLayout.addWidget(self.OLCButton, 10, 0, 1, 2)
+
+
         self.updateButton = QPushButton("Update Parameters",self)
         #Below line is commented as this button should on be live when
         #serial communication is open
@@ -661,6 +692,7 @@ class Window(QWidget):
         else: 
             self.serialOpenButton.clicked.disconnect(self.serialOpenPushed)
             self.updateButton.clicked.connect(self.updateParameters)
+            #self.OLCButton.clicked.connect(self.OLCState)
             self.serialCloseButton.clicked.connect(self.serialClosePushed)
             self.startbutton.clicked.connect(self.startbuttonPushed)
             self.sc = QShortcut(QKeySequence("Return"), self)
@@ -879,6 +911,17 @@ class Window(QWidget):
         result = [_ for _ in input_list if _.startswith(letter)][0][1:]
         return(result)
 
+
+    def gcodeParsingOL(self,letter,input_list,output_list):
+        for i in input_list:
+            i = i.split(",")
+            for j in i:
+                if j.startswith(letter):
+                    output_list.append(float(j[1:]))    
+        return(output_list)
+
+
+
     #Below 4 change visibility of data# in the curves() method
     def visibilityAll(self):
         showall = self.sender()
@@ -1069,6 +1112,40 @@ class Window(QWidget):
             if ffValue == "":
                 raise ValueError("Feedforward Field is empty. Enter in a triplet of comma separated values")
             return(ffValue)
+
+    def OLCState(self):
+        inputType = str(self.LabType.currentText())
+        if inputType == "Open-Loop":
+            self.OLCButton.clicked.connect(self.OLGraph)
+        else:
+            try:
+                self.OLCButton.clicked.disconnect(self.OLGraph)
+            except:
+                pass
+
+
+    def OLGraph(self):
+        self.timer.stop()
+        self.graphWidgetOutput.clear()
+        self.graphWidgetInput.clear()
+        fulldata = self.serialInstance.readValuesOL()
+        d = list()
+        time = list()
+        position = list()
+        velocity = list()
+        voltage - list()
+        
+        d = self.gcodeParsing("D",fulldata,d)
+        time = self.gcodeParsing("T",fulldata,time)
+        position = self.gcodeParsing("P",fulldata,position)
+        velocity = self.gcodeParsing("V",fulldata,velocity)
+        voltage = self.gcodeParsing("I",fulldata,voltage)
+        
+        pen1 = pg.mkPen(color = (0, 255, 0), width=1)
+        pen2 = pg.mkPen(color = (0, 255, 255), width=1)
+        self.graphWidgetOutput.plot(time, velocity, pen=pen1, name="Response")
+        self.graphWidgetInput.plot(time, voltage, pen=pen2, name="Voltage")
+
 
     def updateParameters(self):
         #if self.serialInstance.serialIsOpen() == True:
