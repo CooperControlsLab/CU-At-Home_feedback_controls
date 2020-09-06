@@ -149,11 +149,10 @@ class SerialComm:
                 print("S7:", values)                
             """
     #S8 T is binary (1 is activated, 0 is not)
-    def writeOLCharacterization(self,OLC):
-        if OLC == 1:
-            values = f"S8,T{OLC}"
-            self.ser.write(str.encode(values))
-            print("S8:", values)
+    def writeOLCharacterization(self):
+        values = f"S8,T1,\0"
+        self.ser.write(str.encode(values))
+        print("S8:", values)
     
 
 class SettingsClass(QDialog):
@@ -1128,18 +1127,19 @@ class Window(QWidget):
         self.timer.stop()
         self.graphWidgetOutput.clear()
         self.graphWidgetInput.clear()
+        self.serialInstance.writeOLCharacterization():
         fulldata = self.serialInstance.readValuesOL()
         d = list()
         time = list()
         position = list()
         velocity = list()
-        voltage - list()
+        voltage = list()
         
-        d = self.gcodeParsing("D",fulldata,d)
-        time = self.gcodeParsing("T",fulldata,time)
-        position = self.gcodeParsing("P",fulldata,position)
-        velocity = self.gcodeParsing("V",fulldata,velocity)
-        voltage = self.gcodeParsing("I",fulldata,voltage)
+        d = self.gcodeParsingOL("D",fulldata,d)
+        time = self.gcodeParsingOL("T",fulldata,time)
+        position = self.gcodeParsingOL("P",fulldata,position)
+        velocity = self.gcodeParsingOL("V",fulldata,velocity)
+        voltage = self.gcodeParsingOL("I",fulldata,voltage)
         
         pen1 = pg.mkPen(color = (0, 255, 0), width=1)
         pen2 = pg.mkPen(color = (0, 255, 255), width=1)
