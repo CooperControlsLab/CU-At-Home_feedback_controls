@@ -1144,10 +1144,10 @@ class Window(QWidget):
         voltage = self.gcodeParsingOL("I",fulldata,voltage)
         
         #Make time referential
-        for index, t in enumerate(time):
-            if index == len(time)-1:
-                break
-            time[index+1] = time[index+1] - time[index]
+        # for index, t in enumerate(time):
+        #     if index == len(time)-1:
+        #         break
+        #     time[index+1] = time[index+1] - time[index]
         
         pen1 = pg.mkPen(color = (0, 255, 0), width=1)
         pen2 = pg.mkPen(color = (0, 255, 255), width=1)
