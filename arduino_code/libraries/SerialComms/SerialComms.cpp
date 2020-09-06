@@ -84,6 +84,11 @@ void SerialComms::process_command(char* cmd_string){
             FF_B = double(parse_number(cmd_string,'B',0));
             FF_C = double(parse_number(cmd_string,'C',0));
             break;
+        
+        case 8: //Open Loop Step Resonse Analysis
+            open_loop_analysis_start = true;
+            open_loop_analysis_time = double(parse_number(cmd_string, 'T', -1));
+            break;
 
         default: break;
     }

@@ -36,6 +36,8 @@ public:
     double FF_A;
     double FF_B;
     double FF_C;
+    bool open_loop_analysis_start;
+    double open_loop_analysis_time;
 };
 
 
@@ -51,10 +53,12 @@ S4,T# - Set sample time
 S5,L#,U# - Set lower and upper controller output limits
 S6,O# - Open loop PWM
 S7,F# - Feedforward gain in volts
+S8, T#(seconds to run)  - Start Open Loop Charactization Analysis
 
 Data to python protocol
 T# - time in micros
 S# - setpoint
 A# - value, angle or ang_speed dependent on labtype
 Q# - PMW
+D#(index),T#(us),P#,V#,I#$D1, etc... \0
 */

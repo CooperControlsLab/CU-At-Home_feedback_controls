@@ -2,7 +2,16 @@
 #include <PID_v1.h>
 #include <motor_control_hardware_config.h>
 
-unsigned long DELTA_T = 2000; //delta T in us between calculating velocity
+const int storage_length = 300;
+//AnalysisData dataArray[storage_length];
+int time[storage_length];
+//int index[storage_length];
+int velocity[storage_length];
+//int position[storage_length];
+//int inputData[storage_length];
+
+
+unsigned long DELTA_T = 5000; //delta T in us between calculating velocity
 // unsigned int stationary_thresh = 80000; //80000 us threshold to set angular velocity to 0 if reached
 
 //Global Variables
@@ -51,6 +60,53 @@ void loop() {
 
 //*****************************************************//
 void update_control_params() {
+  //Check for OpenLoop Analysis and run
+  if(com.open_loop_analysis_start)
+  {
+    //Create large array to store data
+
+    double t0 = int(millis());
+    unsigned long prev_time = micros();
+    
+    //Set motor open loop voltage
+    motor_voltage=9;
+    analogWrite(PWM_B, volts_to_PWM(motor_voltage));
+
+    //initialize index variable
+    int i = 0;
+
+    while(1)
+    {
+      Serial.println("WHILE LOOOOOP");
+      calc_motor_speed(); //Also updates enc_deg values
+
+
+      if(micros() >= (prev_time+2500)){
+        prev_time = micros();
+        //append data to large array
+        time[i] = micros();
+//        position[i] = enc_deg;
+        velocity[i] = motor_speed;
+  
+        if(i>=(storage_length-1)){com.open_loop_analysis_start = false; break;}
+        i++;
+      }
+
+      
+    }
+    Serial.println("outside whilte");
+    
+    //Send long serial data to python
+    for(int j = 0; j < storage_length; j++)
+    {
+      Serial.print(time[j]);
+      Serial.print(',');
+      Serial.println(velocity[j]);
+//      Serial.print(',');
+//      Serial.println(position[j]);
+    }
+  }
+  
   //Update Setpoint
   setpoint = com.setpoint;
 
