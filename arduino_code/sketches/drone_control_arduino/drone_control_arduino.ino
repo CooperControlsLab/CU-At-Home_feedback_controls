@@ -1,4 +1,4 @@
-#include "g_code_interpreter.h"
+#include "SerialComms.h"
 //#include <string.h>
 #include <PID_v1.h>
 #include <drone_control_hardware_config.h>
@@ -43,7 +43,7 @@ void setup() {
   pinMode(ENC_A, INPUT_PULLUP);
   pinMode(ENC_B, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(ENC_A), pulseA, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(ENC_B), pulseB, CHANGE);
+//  attachInterrupt(digitalPinToInterrupt(ENC_B), pulseB, CHANGE);
 
   //Motor Setup
   pinMode(PWM_A, OUTPUT);
@@ -109,14 +109,29 @@ void update_controller_input()
 
 //*****************************************************//
 void update_control_params() {
-  // Update input
-//  if (com.labType == 0) { // Angle Control
-//    input = enc_deg;
-//  }
-//  else if (com.labType == 1) { // Speed Control
-//    calc_motor_speed();
-//    input = motor_speed;
-//  }
+//Check for Calibrate start
+  if(com.calibration_start)
+  {
+    //Turn 1 motor on for x seconds until we feel confident the system is holding at the end stop
+    //Set enc_count to the count it should be if we want 0 to be perfectly level
+
+    //Set
+    analogWrite(PWM_A, volts_to_PWM(0));
+    analogWrite(PWM_B, volts_to_PWM(SUPPLY_VOLTAGE/2));
+
+    //Hold motor for 5 seconds
+    delay(5000);
+
+    //Set enc_count to 94deg/2 
+    enc_count = (PPR/360.0) * (94/2);
+
+    //Shut off motors
+    analogWrite(PWM_A, volts_to_PWM(0));
+    analogWrite(PWM_B, volts_to_PWM(0));
+
+    //Reset calibration flag to false
+    com.calibration_start = false;
+  }
 
   //Update Setpoint
   setpoint = com.setpoint;

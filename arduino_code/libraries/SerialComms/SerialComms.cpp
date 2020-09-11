@@ -20,6 +20,8 @@ SerialComms::SerialComms(){
     FF_A = 0;
     FF_B = 0;
     FF_C = 0;
+
+    calibration_start = false;
 }
 
 void SerialComms::process_command(char* cmd_string){
@@ -88,6 +90,10 @@ void SerialComms::process_command(char* cmd_string){
         case 8: //Open Loop Step Resonse Analysis
             open_loop_analysis_start = true;
             open_loop_analysis_time = double(parse_number(cmd_string, 'T', -1));
+            break;
+
+        case 9:
+            calibration_start = true;
             break;
 
         default: break;

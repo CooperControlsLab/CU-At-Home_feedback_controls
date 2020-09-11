@@ -746,7 +746,7 @@ class Window(QWidget):
 
     #Dumps data into a csv file to a selected path
     def savebuttonPushed(self):
-        self.createCSV()
+        self.createCSV2()
         path = QFileDialog.getSaveFileName(self, 'Save CSV', os.getenv('HOME'), 'CSV(*.csv)')
         if path[0] != '':
             with open(path[0], 'w', newline = '') as csvfile:
@@ -760,6 +760,10 @@ class Window(QWidget):
         self.header = ['time', 'setpoint', 'response', 'pwm', '', 'Parameters']
         self.parameters_label = ["Labtype", "Feedforward", "OL Voltage", "Setpoint", "Saturation", "PID Sample Time", "P", "I", "D", "Controller State"]
         self.data_set = zip_longest(*[self.time,self.y1,self.y2,self.y3,[],self.parameters_label,self.parameters], fillvalue="")
+
+    def createCSV2(self):
+        self.header = ['time', 'position']
+        self.data_set = zip_longest(*[self.time, self.velocity], fillvalue="")
 
     #Initilizes lists/arrays and initial values for the .csv
     def initialState(self):
@@ -1132,27 +1136,25 @@ class Window(QWidget):
         self.serialInstance.writeOLCharacterization()
         fulldata = self.serialInstance.readValuesOL()
         d = list()
-        time = list()
+        self.time = list()
         position = list()
-        velocity = list()
+        self.velocity = list()
         voltage = list()
         
         d = self.gcodeParsingOL("D",fulldata,d)
-        time = self.gcodeParsingOL("T",fulldata,time)
+        self.time = self.gcodeParsingOL("T",fulldata,self.time)
         position = self.gcodeParsingOL("P",fulldata,position)
-        velocity = self.gcodeParsingOL("V",fulldata,velocity)
+        self.velocity = self.gcodeParsingOL("V",fulldata,self.velocity)
         voltage = self.gcodeParsingOL("I",fulldata,voltage)
         
-        #Make time referential
-        # for index, t in enumerate(time):
-        #     if index == len(time)-1:
-        #         break
-        #     time[index+1] = time[index+1] - time[index]
+        #Save data for testing
+        
+        
         
         pen1 = pg.mkPen(color = (0, 255, 0), width=1)
         pen2 = pg.mkPen(color = (0, 255, 255), width=1)
-        self.graphWidgetOutput.plot(time, velocity, pen=pen1, name="Response")
-        self.graphWidgetInput.plot(time, voltage, pen=pen2, name="Voltage")
+        self.graphWidgetOutput.plot(self.time, self.velocity, pen=pen1, name="Response")
+        self.graphWidgetInput.plot(self.time, voltage, pen=pen2, name="Voltage")
 
 
     def updateParameters(self):

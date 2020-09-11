@@ -134,12 +134,12 @@ class SerialComm:
             """
     #S8?????
     def writeCalibration(self,Calibration):
-        """
-        values = f"S8,M{Calibration},\0"
+        
+        values = "S9\0"
         self.ser.write(str.encode(values))
-        print("S8:", values)
-        """
+        print("S9:", values)
         pass
+    
 class SettingsClass(QDialog):
     def __init__(self, *args, **kwargs):
         super(SettingsClass, self).__init__(*args, **kwargs)
@@ -658,7 +658,7 @@ class Window(QWidget):
 
         #Plot time update settings
         self.timer = QTimer()
-        self.timer.setInterval(50) #Changes the plot speed. Defaulted to 50. Can be placed in startbuttonPushed() method
+        self.timer.setInterval(10) #Changes the plot speed. Defaulted to 50. Can be placed in startbuttonPushed() method
         self.initialState()
         time.sleep(2)
         try:

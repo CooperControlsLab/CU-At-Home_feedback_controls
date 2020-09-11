@@ -4,7 +4,7 @@
 
 const int storage_length = 200;
 //AnalysisData dataArray[storage_length];
-unsigned long time[storage_length];
+int time[storage_length];
 //int index[storage_length];
 int velocity[storage_length];
 //int position[storage_length];
@@ -85,7 +85,7 @@ void update_control_params() {
         prev_time = millis();
         //append data to large array
         time[i] = prev_time - init_time;
-        velocity[i] = motor_speed;
+        velocity[i] = enc_deg;
   
         if(i>=(storage_length-1)){com.open_loop_analysis_start = false; break;}
         i++;

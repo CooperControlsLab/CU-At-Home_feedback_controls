@@ -8,5 +8,5 @@
 #define PWM_A 3
 #define PWM_B 11 //Motor PWM
 #define BRK_B 8  //Motor Break Doesn't seem to work, avoid using
-#define SUPPLY_VOLTAGE 18 //12V power supply
+#define SUPPLY_VOLTAGE 9 //12V power supply
 #define MOVING_AVERAGE_SIZE 50 // Size of moving average array

@@ -38,6 +38,7 @@ public:
     double FF_C;
     bool open_loop_analysis_start;
     double open_loop_analysis_time;
+    bool calibration_start;
 };
 
 
