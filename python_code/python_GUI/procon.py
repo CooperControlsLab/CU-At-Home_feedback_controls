@@ -746,7 +746,10 @@ class Window(QWidget):
 
     #Dumps data into a csv file to a selected path
     def savebuttonPushed(self):
-        self.createCSV2()
+        if str(self.LabType.currentText()) != "Open-Loop":
+            self.createCSV()
+        else: 
+            self.createCSVOL()
         path = QFileDialog.getSaveFileName(self, 'Save CSV', os.getenv('HOME'), 'CSV(*.csv)')
         if path[0] != '':
             with open(path[0], 'w', newline = '') as csvfile:
@@ -757,13 +760,15 @@ class Window(QWidget):
 
     #Creates csv data
     def createCSV(self):
-        self.header = ['time', 'setpoint', 'response', 'pwm', '', 'Parameters']
+        self.header = ['time', 'setpoint', 'response', 'voltage', '', 'Parameters']
         self.parameters_label = ["Labtype", "Feedforward", "OL Voltage", "Setpoint", "Saturation", "PID Sample Time", "P", "I", "D", "Controller State"]
         self.data_set = zip_longest(*[self.time,self.y1,self.y2,self.y3,[],self.parameters_label,self.parameters], fillvalue="")
 
-    def createCSV2(self):
-        self.header = ['time', 'position']
-        self.data_set = zip_longest(*[self.time, self.velocity], fillvalue="")
+    def createCSVOL(self):
+        self.header = ["index", "time (μs)", "position", "velocity", "voltage", '', "Parameters"]
+        #self.parameters_label = ["Labtype", "Feedforward", "OL Voltage", "Setpoint", "Saturation", "PID Sample Time", "P", "I", "D", "Controller State"]
+        self.data_set = zip_longest(*[self.d,self.time,self.position,self.velocity,self.voltage], fillvalue="")#[],self.parameters_label,self.parameters], fillvalue="")
+
 
     #Initilizes lists/arrays and initial values for the .csv
     def initialState(self):
@@ -842,12 +847,6 @@ class Window(QWidget):
         """
 
         try:
-            """
-            time_index = int(self.time_zeros[self.buffersize])
-            self.time_zeros[time_index] = self.time_zeros[time_index+self.size] = float(fulldata[0])
-            self.time_zeros[self.buffersize] = time_index = (time_index+1) % self.size
-            self.time.append(fulldata[0])
-            """
             time_index = int(self.time_zeros[self.buffersize])
             self.time_zeros[time_index] = self.time_zeros[time_index+self.size] = float(self.gcodeParsing("T",fulldata))
             self.time_zeros[self.buffersize] = time_index = (time_index+1) % self.size
@@ -858,12 +857,6 @@ class Window(QWidget):
             print("Couldn't parse index. Skipping point")
 
         try:
-            """
-            i = int(self.y1_zeros[self.buffersize])
-            self.y1_zeros[i] = self.y1_zeros[i+self.size] = float(fulldata[1])
-            self.y1_zeros[self.buffersize] = i = (i+1) % self.size
-            self.y1.append(fulldata[1])
-            """
             i = int(self.y1_zeros[self.buffersize])
             self.y1_zeros[i] = self.y1_zeros[i+self.size] = float(self.gcodeParsing("S",fulldata))
             self.y1_zeros[self.buffersize] = i = (i+1) % self.size
@@ -874,12 +867,6 @@ class Window(QWidget):
             print("Couldn't parse index. Skipping point")
 
         try:
-            """
-            j = int(self.y2_zeros[self.buffersize])
-            self.y2_zeros[j] = self.y2_zeros[j+self.size] = float(fulldata[2])
-            self.y2_zeros[self.buffersize] = j = (j+1) % self.size
-            self.y2.append(fulldata[2])
-            """
             j = int(self.y2_zeros[self.buffersize])
             self.y2_zeros[j] = self.y2_zeros[j+self.size] = float(self.gcodeParsing("A",fulldata))
             self.y2_zeros[self.buffersize] = j = (j+1) % self.size
@@ -890,12 +877,6 @@ class Window(QWidget):
             print("Couldn't parse index. Skipping point")
         
         try:
-            """
-            k = int(self.y3_zeros[self.buffersize])
-            self.y3_zeros[k] = self.y3_zeros[k+self.size] = float(fulldata[3])
-            self.y3_zeros[self.buffersize] = k = (k+1) % self.size
-            self.y3.append(fulldata[3])
-            """
             k = int(self.y3_zeros[self.buffersize])
             self.y3_zeros[k] = self.y3_zeros[k+self.size] = float(self.gcodeParsing("Q",fulldata))
             self.y3_zeros[self.buffersize] = k = (k+1) % self.size
@@ -924,8 +905,6 @@ class Window(QWidget):
                 if j.startswith(letter):
                     output_list.append(float(j[1:]))    
         return(output_list)
-
-
 
     #Below 4 change visibility of data# in the curves() method
     def visibilityAll(self):
@@ -1037,7 +1016,7 @@ class Window(QWidget):
             self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,550], padding=None, update=True, disableAutoRange=True)
         elif inputType == "Open-Loop":
             self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (RPM)</span>")
-            self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
+            self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (μs)</span>")
             self.graphWidgetOutput.setTitle("Open Loop Speed Control", color="w", size="12pt")
             self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,550], padding=None, update=True, disableAutoRange=True)
 
@@ -1134,18 +1113,20 @@ class Window(QWidget):
         self.graphWidgetOutput.clear()
         self.graphWidgetInput.clear()
         self.serialInstance.writeOLCharacterization()
-        fulldata = self.serialInstance.readValuesOL()
-        d = list()
-        self.time = list()
-        position = list()
-        self.velocity = list()
-        voltage = list()
         
-        d = self.gcodeParsingOL("D",fulldata,d)
-        self.time = self.gcodeParsingOL("T",fulldata,self.time)
-        position = self.gcodeParsingOL("P",fulldata,position)
+        fulldata = self.serialInstance.readValuesOL()
+        
+        self.d = list()
+        self.time = list()
+        self.position = list()
+        self.velocity = list()
+        self.voltage = list()
+        
+        self.d = self.gcodeParsingOL("D",fulldata,d)
+        self.time = self.gcodeParsingOL("T",fulldata,time)
+        self.position = self.gcodeParsingOL("P",fulldata,self.position)
         self.velocity = self.gcodeParsingOL("V",fulldata,self.velocity)
-        voltage = self.gcodeParsingOL("I",fulldata,voltage)
+        self.voltage = self.gcodeParsingOL("I",fulldata,self.voltage)
         
         #Save data for testing
         
@@ -1153,8 +1134,8 @@ class Window(QWidget):
         
         pen1 = pg.mkPen(color = (0, 255, 0), width=1)
         pen2 = pg.mkPen(color = (0, 255, 255), width=1)
-        self.graphWidgetOutput.plot(self.time, self.velocity, pen=pen1, name="Response")
-        self.graphWidgetInput.plot(self.time, voltage, pen=pen2, name="Voltage")
+        self.graphWidgetOutput.plot(time, self.velocity, pen=pen1, name="Response")
+        self.graphWidgetInput.plot(time, self.voltage, pen=pen2, name="Voltage")
 
 
     def updateParameters(self):
