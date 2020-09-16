@@ -1,0 +1,27 @@
+
+class PIDControl{
+
+public:
+    //Construtors
+    PIDControl(double, double, double, double, double, double, bool);
+
+    //class variables
+    double kp; //Proportional gain
+    double ki; //Integral gain
+    double kd; //Derivative gain
+    double limit; //Output saturates at this limit
+    double sigma; //dirty derivative bandwidth = 1/sigma
+    double Ts; //sample rate
+    double beta; //(2.0*sigma-Ts)/(2.0*sigma+Ts)
+    bool flag; //NB: add comment describing this variable
+    double y_dot; //estimated derivative of y
+    double y_d1; //signal y delayed by one sample
+    double error_dot; //estimated derivative of error
+    double error_d1; //error delayed by one sample
+    double integrator; //integrator value
+
+    //class methods
+    double PID(double,double);
+    double PD(double, double);
+    double saturate(double);
+};

@@ -754,7 +754,7 @@ class Window(QWidget):
         if path[0] != '':
             with open(path[0], 'w', newline = '') as csvfile:
                 csvwriter = csv.writer(csvfile)
-                csvwriter.writerow(self.header)
+                #csvwriter.writerow(self.header)
                 csvwriter.writerows(self.data_set)
         print("Saved All Data")
 
@@ -1122,8 +1122,8 @@ class Window(QWidget):
         self.velocity = list()
         self.voltage = list()
         
-        self.d = self.gcodeParsingOL("D",fulldata,d)
-        self.time = self.gcodeParsingOL("T",fulldata,time)
+        self.d = self.gcodeParsingOL("D",fulldata,self.d)
+        self.time = self.gcodeParsingOL("T",fulldata,self.time)
         self.position = self.gcodeParsingOL("P",fulldata,self.position)
         self.velocity = self.gcodeParsingOL("V",fulldata,self.velocity)
         self.voltage = self.gcodeParsingOL("I",fulldata,self.voltage)
@@ -1134,8 +1134,8 @@ class Window(QWidget):
         
         pen1 = pg.mkPen(color = (0, 255, 0), width=1)
         pen2 = pg.mkPen(color = (0, 255, 255), width=1)
-        self.graphWidgetOutput.plot(time, self.velocity, pen=pen1, name="Response")
-        self.graphWidgetInput.plot(time, self.voltage, pen=pen2, name="Voltage")
+        self.graphWidgetOutput.plot(self.time, self.velocity, pen=pen1, name="Response")
+        self.graphWidgetInput.plot(self.time, self.voltage, pen=pen2, name="Voltage")
 
 
     def updateParameters(self):

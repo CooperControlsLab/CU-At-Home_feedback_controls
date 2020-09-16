@@ -1,7 +1,7 @@
 import csv
 import os
 dirname = os.path.dirname(__file__)
-filename = os.path.join(dirname, 'oltest2.csv')
+filename = os.path.join(dirname, 'oltest-8V.csv')
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal
@@ -26,7 +26,7 @@ lpf = signal.butter(1, 0.1, btype='lowpass', analog=False, output='sos', fs=1)
 filtered = signal.sosfilt(lpf, vel)
 vel_pre_filtered = np.gradient(filtered, timepos[:,0], axis=0)
 # plt.plot(vel_pre_filtered, color='green',  linewidth=1)#[:,0], vel[:,1])
-plt.plot(timepos[:,0], vel, color='red', linewidth=1)
-plt.plot(timepos[:,0], filtered, color = 'blue', linewidth=1)
-# plt.plot(timepos[:,0], timepos[:,1], color='blue')
+# plt.plot(timepos[:,0], vel, color='red', linewidth=1)
+# plt.plot(timepos[:,0], filtered, color = 'blue', linewidth=1)
+plt.plot(timepos[:,0], np.mod(timepos[:,1], 360), color='blue')
 plt.show()
