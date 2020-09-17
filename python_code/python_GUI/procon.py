@@ -898,13 +898,14 @@ class Window(QWidget):
         return(result)
 
 
-    def gcodeParsingOL(self,letter,input_list,output_list):
+    def gcodeParsingOL(self,letter,input_list):
+        empty_list = list()
         for i in input_list:
             i = i.split(",")
             for j in i:
                 if j.startswith(letter):
-                    output_list.append(float(j[1:]))    
-        return(output_list)
+                    empty_list.append(float(j[1:]))    
+        return(empty_list)
 
     #Below 4 change visibility of data# in the curves() method
     def visibilityAll(self):
@@ -1116,22 +1117,13 @@ class Window(QWidget):
         
         fulldata = self.serialInstance.readValuesOL()
         
-        self.d = list()
-        self.time = list()
-        self.position = list()
-        self.velocity = list()
-        self.voltage = list()
-        
-        self.d = self.gcodeParsingOL("D",fulldata,self.d)
-        self.time = self.gcodeParsingOL("T",fulldata,self.time)
-        self.position = self.gcodeParsingOL("P",fulldata,self.position)
-        self.velocity = self.gcodeParsingOL("V",fulldata,self.velocity)
-        self.voltage = self.gcodeParsingOL("I",fulldata,self.voltage)
+        self.d = self.gcodeParsingOL("D",fulldata)
+        self.time = self.gcodeParsingOL("T",fulldata)
+        self.position = self.gcodeParsingOL("P",fulldata)
+        self.velocity = self.gcodeParsingOL("V",fulldata)
+        self.voltage = self.gcodeParsingOL("I",fulldata)
         
         #Save data for testing
-        
-        
-        
         pen1 = pg.mkPen(color = (0, 255, 0), width=1)
         pen2 = pg.mkPen(color = (0, 255, 255), width=1)
         self.graphWidgetOutput.plot(self.time, self.velocity, pen=pen1, name="Response")
