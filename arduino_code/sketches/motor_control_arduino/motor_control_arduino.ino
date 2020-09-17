@@ -92,7 +92,7 @@ void update_control_params() {
       Serial.print('T'); Serial.print(time[j]); Serial.print(',');
       Serial.print('P'); Serial.print(0); Serial.print(',');
       Serial.print('V'); Serial.print(velocity[j]); Serial.print(',');
-      Serial.print('I'); Serial.print(motor_voltage); Serial.print('$'); 
+      Serial.print('I'); Serial.print(PWM_to_volts(volts_to_PWM(motor_voltage))); Serial.print('$'); 
     }
     Serial.print('\n');
   }
