@@ -166,7 +166,7 @@ void SerialComms::send_data(double enc_deg, double motor_speed, double motor_vol
     }
 
     Serial.print(',');
-    Serial.print('Q'); Serial.print(PWM_to_volts(volts_to_PWM(motor_voltage))); Serial.print(',');
+    Serial.print('Q'); Serial.print(motor_voltage); Serial.print(',');
     Serial.println('\0');
     write_data = 0; // Reset write data flag
   }
