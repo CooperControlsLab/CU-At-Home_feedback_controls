@@ -1,7 +1,7 @@
 import csv
 import os
 dirname = os.path.dirname(__file__)
-filename = os.path.join(dirname, 'oltest-8V.csv')
+filename = os.path.join(dirname, 'oltest.csv')
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal
@@ -13,8 +13,8 @@ if __name__ == "__main__":
     with open(filename) as csvDataFile:
         csvReader = csv.reader(csvDataFile)
         for row in csvReader:
-            time.append(row[0])
-            pos.append(row[1])
+            time.append(row[1])
+            pos.append(row[3])
 
 
 timepos = np.column_stack((time[1:],pos[1:])).astype(np.float)

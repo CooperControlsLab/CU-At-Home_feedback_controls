@@ -1,35 +1,18 @@
-#include <PID_beard.h>
+#include <Differentiator.h>
 #include <motor_control_hardware_config.h>
-#include <math.h>
 
-//instantiate PID controller
-double kp = 0.5;
-double ki = 0;
-double kd = 0;
-double limit = 12;
-double sigma = 0.1;
-double sample_period = 0.005; //sample period in s
-bool flag = true;
+unsigned long prev_micros = 0;
+unsigned long current_micros;
 
-PIDControl controller(kp, ki, kd, limit, sigma, sample_period, flag);
-
-//Other variables
 volatile double enc_count;  //Encoder "ticks" counted, Enc ++ = CW, Enc -- = CCW
 double enc_deg; // Encoder position in degrees
-double motor_speed; //Angular velocity of the motor
-double prev_pos; //Previous encoder position for angular velocity calculation
+double prev_deg = 0;
 
-//"fixed" sampling rate variables
-unsigned long prev_millis;
-
-volatile unsigned long prev_micros, current_micros;
-
-double reference = 100;
-double pid_output;
+double sigma = 0.1; //1/sigma = dirty derivative bandwidth (NB: why when this value is really small get lots of jumping)
+double sample_period = 0.005; //in sec
+Differentiator diff(sigma, sample_period);
 
 void setup() {
-
-  //Begin serial for debugging
   Serial.begin(500000);
   
   //Encoder Setup
@@ -37,27 +20,24 @@ void setup() {
   pinMode(ENC_B, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(ENC_A), pulseA, CHANGE);
   attachInterrupt(digitalPinToInterrupt(ENC_B), pulseB, CHANGE);
+  
+  digitalWrite(DIR_B, LOW); // CCW
+  analogWrite(PWM_B, 150);
 }
 
 void loop() {
-  //Update variables
   enc_deg = count_to_deg(enc_count);
-
-  Serial.println(millis() - prev_millis);
-  //Check if enough time has passed based on the sample_period (1/sample_period) = delta_t per sample
-  if((sample_period*1000) <= millis() - prev_millis){
-    //If time has passed, run controller algorithm
-    pid_output = controller.PID(reference, enc_deg);  
-    //Reset prev_millis
-    prev_millis = millis();
+  current_micros = micros();
+  
+  if(((current_micros - prev_micros)) >= (diff.Ts * 1000000.0)){
+    Serial.print("d/dt: "); Serial.print(diff.differentiate(enc_deg*2*3.14159/360));
+    Serial.print(" | delta_deg: "); Serial.print(enc_deg - prev_deg);
+    Serial.print(" | time: "); Serial.println(current_micros - prev_micros);
+    prev_micros = current_micros;
+    prev_deg = enc_deg;
   }
 
 
-  //Update motor control values
-  update_motor_voltage(pid_output);
-
-  //Serial print for debugging
-//  Serial.println(pid_output);
 }
 
 //Encoder interrupts

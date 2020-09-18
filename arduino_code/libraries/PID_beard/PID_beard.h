@@ -11,9 +11,9 @@ public:
     double kd; //Derivative gain
     double limit; //Output saturates at this limit
     double sigma; //dirty derivative bandwidth = 1/sigma
-    double Ts; //sample rate
+    double Ts; //sample period in seconds
     double beta; //(2.0*sigma-Ts)/(2.0*sigma+Ts)
-    bool flag; //NB: add comment describing this variable
+    bool flag; //derivative on error_dot(true) or y_dot(false)
     double y_dot; //estimated derivative of y
     double y_d1; //signal y delayed by one sample
     double error_dot; //estimated derivative of error
