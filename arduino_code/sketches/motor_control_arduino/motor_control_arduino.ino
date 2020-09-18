@@ -4,7 +4,7 @@
 
 const int storage_length = 200;
 //AnalysisData dataArray[storage_length];
-int time[storage_length];
+double time[storage_length];
 //int index[storage_length];
 int velocity[storage_length];
 //int position[storage_length];
@@ -64,36 +64,27 @@ void update_control_params() {
   if(com.open_loop_analysis_start)
   {
     //Create large array to store data
-
-    double t0 = int(millis());
-    unsigned long init_time = millis();
-    unsigned long prev_time = init_time;
-    
+//    double t0 = int(micros());
+    unsigned long init_time = micros();
+    unsigned long prev_time = init_time;   
     //Set motor open loop voltage
     motor_voltage=com.open_loop_voltage;
     analogWrite(PWM_B, volts_to_PWM(motor_voltage));
-
     //initialize index variable
     int i = 0;
-
     while(1)
     {
       calc_motor_speed(); //Also updates enc_deg values
-
-
-      if(millis() >= (prev_time+3)){
-        prev_time = millis();
+      if(micros() >= (prev_time+3000)){
+        prev_time = micros();
         //append data to large array
-        time[i] = prev_time - init_time;
+        time[i] = (prev_time - init_time)/1000;
         velocity[i] = enc_deg;
   
         if(i>=(storage_length-1)){com.open_loop_analysis_start = false; break;}
         i++;
       }
-
-      
     }
-  
     //Send long serial data to python
     for(int j = 0; j < storage_length; j++)
     {
