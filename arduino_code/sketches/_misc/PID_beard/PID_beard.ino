@@ -1,11 +1,11 @@
 #include <PID_beard.h>
 #include <motor_control_hardware_config.h>
-#include <math.h>
+#define DEG_TO_RAD 2*3.14159/360
 
 //instantiate PID controller
-double kp = 0.5;
+double kp = 10;
 double ki = 0;
-double kd = 0;
+double kd = 1;
 double limit = 12;
 double sigma = 0.1;
 double sample_period = 0.005; //sample period in s
@@ -16,15 +16,12 @@ PIDControl controller(kp, ki, kd, limit, sigma, sample_period, flag);
 //Other variables
 volatile double enc_count;  //Encoder "ticks" counted, Enc ++ = CW, Enc -- = CCW
 double enc_deg; // Encoder position in degrees
-double motor_speed; //Angular velocity of the motor
-double prev_pos; //Previous encoder position for angular velocity calculation
+double angular_velocity; //Angular velocity of the motor
+double prev_deg; //Previous encoder position for angular velocity calculation
 
-//"fixed" sampling rate variables
-unsigned long prev_millis;
+unsigned long prev_micros, current_micros;
 
-volatile unsigned long prev_micros, current_micros;
-
-double reference = 100;
+double setpoint = 100;
 double pid_output;
 
 void setup() {
@@ -42,15 +39,27 @@ void setup() {
 void loop() {
   //Update variables
   enc_deg = count_to_deg(enc_count);
-
-  Serial.println(millis() - prev_millis);
-  //Check if enough time has passed based on the sample_period (1/sample_period) = delta_t per sample
-  if((sample_period*1000) <= millis() - prev_millis){
-    //If time has passed, run controller algorithm
-    pid_output = controller.PID(reference, enc_deg);  
-    //Reset prev_millis
-    prev_millis = millis();
+  current_micros = micros(); //Get current microseconds
+  
+  if(((current_micros - prev_micros)) >= (controller.Ts * 1000000.0))
+  {          
+    //Calculate PID output
+    pid_output = controller.PID(setpoint*DEG_TO_RAD, enc_deg*DEG_TO_RAD);
+    Serial.print("setpoint: "); Serial.print(setpoint);
+    Serial.print(" | encdeg: "); Serial.print(enc_deg);
+    Serial.print(" | Ts: "); Serial.print(controller.Ts, 10);
+    Serial.print(" | kp: "); Serial.print(controller.kp);
+    Serial.print(" | beta: "); Serial.print(controller.beta);
+    Serial.print(" | sigma: "); Serial.print(controller.sigma);
+    Serial.print(" | pidout: ");
+    Serial.println(pid_output);
+    
+    //update prev variables
+    prev_micros = current_micros;
+    prev_deg = enc_deg;
   }
+        
+
 
 
   //Update motor control values

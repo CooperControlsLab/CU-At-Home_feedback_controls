@@ -30,9 +30,9 @@ void loop() {
   current_micros = micros();
   
   if(((current_micros - prev_micros)) >= (diff.Ts * 1000000.0)){
-    Serial.print("d/dt: "); Serial.print(diff.differentiate(enc_deg*2*3.14159/360));
-    Serial.print(" | delta_deg: "); Serial.print(enc_deg - prev_deg);
-    Serial.print(" | time: "); Serial.println(current_micros - prev_micros);
+    Serial.println(diff.differentiate(enc_deg*2*3.14159/360));
+//    Serial.print(" | delta_deg: "); Serial.print(enc_deg - prev_deg);
+//    Serial.print(" | time: "); Serial.println(current_micros - prev_micros);
     prev_micros = current_micros;
     prev_deg = enc_deg;
   }

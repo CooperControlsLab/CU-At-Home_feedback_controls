@@ -12,6 +12,17 @@ PIDControl::PIDControl(double p, double i, double d, double lim, double sigm, do
     Ts = t;
     flag = fl;
     beta = (2.0*sigma - Ts) / (2.0*sigma + Ts);
+
+    //Initialize delayed values to zero
+    y_d1 = 0;
+    error_d1 = 0;
+
+    //Initialize derivative values to zero
+    y_dot = 0;
+    error_dot = 0;
+
+    //Initialize integrator value to zero
+    integrator = 0;
 }
 
 
@@ -101,4 +112,23 @@ double PIDControl::saturate(double u){
         u = limit * (abs(u) / u);
     }
     return u;
+}
+
+void PIDControl::update_time_parameters(double t, double s){
+    Ts = t;
+    sigma = s;
+    beta = (2.0*sigma - Ts) / (2.0*sigma + Ts);
+}
+
+void PIDControl::update_gains(double p, double i, double d){
+    kp = p;
+    ki = i;
+    kd = d;
+}
+
+void PIDControl::setpoint_reset(double y_r, double y){
+    // Reset the critical controller values to prevent instant setpoint change from
+    // ruining the response
+    integrator = 0;
+    error_d1 = y_r - y;
 }

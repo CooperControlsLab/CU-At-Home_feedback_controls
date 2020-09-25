@@ -1,7 +1,9 @@
 #include "SerialComms.h"
-#include <PID_v1.h>
 #include <motor_control_hardware_config.h>
 #include <PID_beard.h>
+#include <Differentiator.h>
+
+#define DEG_TO_RAD 2*3.14159/360
 
 const int storage_length = 200;
 //AnalysisData dataArray[storage_length];
@@ -11,37 +13,34 @@ int velocity[storage_length];
 //int position[storage_length];
 //int inputData[storage_length];
 
-
-unsigned long DELTA_T = 5000; //delta T in us between calculating velocity
-// unsigned int stationary_thresh = 80000; //80000 us threshold to set angular velocity to 0 if reached
+//Timing Parameters for fixed interval calculations for PID and derivitave
+unsigned long prev_micros = 0;
+unsigned long current_micros;
 
 //Global Variables
-double input, setpoint, motor_voltage, kp, ki, kd, lowerOutputLimit, upperOutputLimit, sampleTime; // Controller params
+double setpoint = 100;
+double lowerOutputLimit, upperOutputLimit; // Controller params
 
 volatile double enc_count;  //Encoder "ticks" counted, Enc ++ = CW, Enc -- = CCW
 double enc_deg; // Encoder position in degrees
-double motor_speed; //Angular velocity of the motor
-double prev_pos; //Previous encoder position for angular velocity calculation
-
-volatile unsigned long prev_micros, current_micros;
+double angular_velocity; //Angular velocity of the motor
+double prev_deg =0; //Previous encoder position for angular velocity calculation
 
 SerialComms com;  //Serial Communications class instantiation
 
-// Initialize PID motor controller
-PID motor_controller(&input, &motor_voltage, &setpoint, kp, ki, kd, DIRECT);  // Set up PID controller
-
 //instantiate beard PID controller
-double kpb = 0.5;
-double kib = 0;
-double kdb = 0.2;
+double kp = 5;
+double ki = 0;
+double kd = 1;
 double limit = 12;
-double sigma = 0.1;
-double sample_rate = 100; //in Hz
+double sigma = 0.01;
+double sample_period = 0.005; //in sec
 bool flag = true;
-double pid_output;
-unsigned long beard_previous_millis = 0;
+double pid_output=0;
+bool controller_on = true;
 
-PIDControl controller(kpb, kib, kdb, limit, sigma, sample_rate, flag);
+Differentiator diff(sigma, sample_period);
+PIDControl controller(kp, ki, kd, limit, sigma, sample_period, flag);
 
 
 //***********************************************************************************
@@ -62,7 +61,11 @@ void setup() {
   //Initialize variables
   current_micros = micros();
   prev_micros = current_micros;
-  prev_pos = 0;
+  prev_deg = 0;
+
+  //Force com values for debug
+  com.mode = 1;
+  com.labType = 0;
 }
 
 //***********************************************************************************
@@ -70,7 +73,7 @@ void loop() {
    com.handle_command();  //Process incoming command
    update_control_params();    //Update gains, update inputs based on labtype
    compute_motor_voltage(); // Update controller input, compute motor voltage and write to motor
-   com.send_data(enc_deg, motor_speed, motor_voltage);
+   com.send_data(enc_deg, angular_velocity, pid_output);
 }
 
 //*****************************************************//
@@ -85,17 +88,17 @@ void update_control_params() {
     unsigned long prev_time = init_time;
     
     //Set motor open loop voltage
-    motor_voltage=com.open_loop_voltage;
-    analogWrite(PWM_B, volts_to_PWM(motor_voltage));
+    pid_output=com.open_loop_voltage;
+    analogWrite(PWM_B, volts_to_PWM(pid_output));
 
     //initialize index variable
     int i = 0;
 
     while(1)
     {
-      calc_motor_speed(); //Also updates enc_deg values
+      enc_deg = count_to_deg(enc_count);
 
-
+      //NB: replace millis with micros
       if(millis() >= (prev_time+3)){
         prev_time = millis();
         //append data to large array
@@ -116,29 +119,33 @@ void update_control_params() {
       Serial.print('T'); Serial.print(time[j]); Serial.print(',');
       Serial.print('P'); Serial.print(0); Serial.print(',');
       Serial.print('V'); Serial.print(velocity[j]); Serial.print(',');
-      Serial.print('I'); Serial.print(motor_voltage); Serial.print('$'); 
+      Serial.print('I'); Serial.print(pid_output); Serial.print('$'); 
     }
     Serial.print('\n');
   }
   
   //Update Setpoint
-  setpoint = com.setpoint;
+  if(setpoint != com.setpoint){
+    setpoint = com.setpoint;
+    controller.setpoint_reset(setpoint*DEG_TO_RAD, enc_deg*DEG_TO_RAD); //Reset critical controller values 
+  }
 
   //Update Mode
   if (com.mode == 0) {
-    motor_controller.SetMode(MANUAL);  // M0 - Controller Off, set motor output to zero
-    motor_voltage = 0;
+    controller_on = false;  // M0 - Controller Off, set motor output to zero
+    pid_output = 0;
   }
   else if (com.mode == 1) {
-    motor_controller.SetMode(AUTOMATIC); // M1 - Controller On
+    // M1 - Controller On
+    controller_on = true;
   }
 
   //Update gains
-  // motor_controller.SetTunings(com.kp, com.ki, com.kd);
-
   if (kp != com.kp || ki != com.ki || kd != com.kd) {
     kp = com.kp; ki = com.ki; kd = com.kd;  // Checking for difference before setting to prevent jitter
-    motor_controller.SetTunings(kp, ki, kd); // Update gains
+    // Update gains
+    controller.update_gains(kp, ki, kd);
+//    Serial.print(" kp test: "); Serial.println(controller.kp, 10);
   }
 
   //Update output limits
@@ -148,86 +155,119 @@ void update_control_params() {
   if (lowerOutputLimit != com.lowerOutputLimit || upperOutputLimit != com.upperOutputLimit) {
     lowerOutputLimit = com.lowerOutputLimit;
     upperOutputLimit = com.upperOutputLimit;
-    motor_controller.SetOutputLimits(lowerOutputLimit, upperOutputLimit);
+    
   }
 
   //Update Sample Time
-  // motor_controller.SetSampleTime(sampleTime);
-
-  if (sampleTime != com.sampleTime) {
-    sampleTime = com.sampleTime;
-    motor_controller.SetSampleTime(sampleTime);
+  if (sample_period != com.sampleTime) {
+    sample_period = com.sampleTime;
+    controller.update_time_parameters(sample_period, sigma); //Update controller sample period
+    diff.update_time_parameters(sample_period, sigma);
   }
 }
 
 //*****************************************************//
 // Computes and executes motor voltage based on appropriate labtypes
 void compute_motor_voltage() {
+  enc_deg = count_to_deg(enc_count); // Retrieve Current Position in Radians
+  current_micros = micros(); //Get current microseconds
+  
   switch (com.labType) {
     case 0: // Angle Control
-      enc_deg = count_to_deg(enc_count); // Retrieve Current Position in Radians
-//      input = enc_deg;
-
-      //Check that delta_t has passed
-      if((1/sample_rate) <= (millis() - beard_previous_millis)){
-          pid_output = controller.PID(setpoint, enc_deg);
-          beard_previous_millis = millis();
-      }
-
-
-      if (pid_output < 0) {
-        digitalWrite(DIR_B, LOW); // CCW
-        } 
+      if(controller_on){
+        //If sample period amount has passed do processing
+        if((current_micros - prev_micros) >= (controller.Ts * 1000000.0))
+        {
+          
+          //Calculate PID output
+          pid_output = controller.PID(setpoint*DEG_TO_RAD, enc_deg*DEG_TO_RAD);
+//          Serial.print(" | dt: "); Serial.print(current_micros - prev_micros);
+//          Serial.print(" | setpoint: "); Serial.print(setpoint);
+//          Serial.print(" | encdeg: "); Serial.print(enc_deg);
+//          Serial.print(" | Ts: "); Serial.print(controller.Ts, 10);
+//          Serial.print(" | kp: "); Serial.print(controller.kp);
+//          Serial.print(" | beta: "); Serial.print(controller.beta);
+//          Serial.print(" | sigma: "); Serial.print(controller.sigma);
+//          Serial.print(" | pidout: ");
+//          Serial.println(pid_output);
+      
+          //update prev variables
+          prev_micros = current_micros;
+          prev_deg = enc_deg;
+        }
         
-      else {
-        digitalWrite(DIR_B, HIGH); // CW
       }
-      analogWrite(PWM_B, volts_to_PWM(abs(pid_output)));
+      pid_output = pid_output_signal_conditioning(pid_output);
+      update_motor_voltage(pid_output);
       break;
 
     case 1: // Speed Control
-      calc_motor_speed();
-//      input = motor_speed;
-      controller.PID(setpoint, motor_speed);
-      motor_voltage += com.FF_A*pow(com.setpoint,2) + com.FF_B*com.setpoint + com.FF_C; // voltage = feedforward voltage + PID voltage, FF voltage = Ax^2 + Bx + C
-      analogWrite(PWM_B, volts_to_PWM(motor_voltage));
+      if(controller_on){
+        //If sample period amount has passed do processing
+        if((current_micros - prev_micros) >= (controller.Ts * 1000000.0))
+        {
+          //Calculate angular velocity from derivative
+          angular_velocity = diff.differentiate(enc_deg*2*3.14159/360);
+          
+          //Calculate PID output
+          pid_output = controller.PID(setpoint, angular_velocity);
+          
+          //update prev variables
+          prev_micros = current_micros;
+          prev_deg = enc_deg;
+        } 
+      }
+      pid_output = pid_output_signal_conditioning(pid_output);
+      update_motor_voltage(pid_output);
       break;
 
     case 2: // Open Loop Speed Control
-      calc_motor_speed();
-      if (com.mode == 1) {motor_voltage = com.open_loop_voltage;} // Chnage motor voltage to open loop voltage if controller is on
+      if (com.mode == 1) {pid_output = com.open_loop_voltage;} // Chnage motor voltage to open loop voltage if controller is on
       // else if (com.mode == 0) {
       //   motor_voltage = 0;
       // }
-      analogWrite(PWM_B, volts_to_PWM(motor_voltage));
+      analogWrite(PWM_B, volts_to_PWM(pid_output));
       break;
+      
     default: break; // Null default
   }
 }
 
 //*****************************************************//
-void calc_motor_speed() {
-  enc_deg = count_to_deg(enc_count); // Retrieve Current Position in Degrees
-  current_micros = micros();
-  unsigned long dt = current_micros - prev_micros;
-  if ( dt > DELTA_T)
-  {
-    //Calculate velocity in rpm
-    motor_speed = ((enc_deg - prev_pos) /(dt/(1000000.0 * 60.0)))/360; // rpm = deg/min / (360 deg/rev)
-    prev_micros = current_micros;
-    prev_pos = enc_deg;
+void update_motor_voltage(double voltage){
+  //Fix direction based on +/-
+  if (voltage < 0) {
+    digitalWrite(DIR_B, LOW); // CCW
+//    analogWrite(PWM_B, 0);
+//    return;
+    } 
+    
+  else {
+    digitalWrite(DIR_B, HIGH); // CW
   }
+  //set pwm based off of voltage
+  analogWrite(PWM_B, volts_to_PWM(abs(voltage)));
 }
 
 //*****************************************************//
 // Voltage and PWM duty cycle conversion
 int volts_to_PWM(double voltage) {
+
+  // Convert voltage to PWM duty cycle percent relative to the power supply voltage
   return constrain(round((voltage / SUPPLY_VOLTAGE) * 255), -255, 255);
 }
 
 double PWM_to_volts(int PWM) {
   return double(PWM / 255) * SUPPLY_VOLTAGE;
 }
+
+//*************************************//
+// pid output signal conditioning (clipping based off of lower and upper limits)
+double pid_output_signal_conditioning(double val){
+  val = constrain(val, lowerOutputLimit, upperOutputLimit);
+  return val;
+}
+
 
 //*****************************************************//
 

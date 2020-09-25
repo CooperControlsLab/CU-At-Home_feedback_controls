@@ -19,3 +19,9 @@ double Differentiator::differentiate(double y){
     return y_dot;
 
 }
+
+void Differentiator::update_time_parameters(double t, double s){
+    Ts = t;
+    sigma = s;
+    beta = (2.0*sigma - Ts) / (2.0*sigma + Ts);
+}

@@ -11,7 +11,7 @@ SerialComms::SerialComms(){
     mode = 0;
     lowerOutputLimit = -125;
     upperOutputLimit = 125;
-    sampleTime = 0;
+    sampleTime = 0.005;
     kp = 0;
     ki = 0;
     kd = 0;
@@ -22,6 +22,7 @@ SerialComms::SerialComms(){
     FF_C = 0;
 
     calibration_start = false;
+    open_loop_analysis_start = false;
 }
 
 void SerialComms::process_command(char* cmd_string){
@@ -30,7 +31,7 @@ void SerialComms::process_command(char* cmd_string){
 
     //Handshake command
     cmd = parse_number(cmd_string, 'H', -1);
-    switch(int(cmd)){
+    switch((int)(cmd)){
         case 0: // Handshake stuff to be implemented
             break;
         default: break;
@@ -38,7 +39,7 @@ void SerialComms::process_command(char* cmd_string){
 
     //Request command
     cmd = parse_number(cmd_string, 'R', -1);
-    switch(int(cmd)){
+    switch((int)(cmd)){
         case 0: //Flag to write data
             write_data = 1;
             break;
@@ -51,45 +52,45 @@ void SerialComms::process_command(char* cmd_string){
     cmd = parse_number(cmd_string, 'S', -1);
     switch(int(cmd)){
         case 0: //Set PID gains
-            kp = double(parse_number(cmd_string, 'P', -1));
-            ki = double(parse_number(cmd_string, 'I', -1));
-            kd = double(parse_number(cmd_string, 'D', -1));
+            kp = (double)(parse_number(cmd_string, 'P', -1));
+            ki = (double)(parse_number(cmd_string, 'I', -1));
+            kd = (double)(parse_number(cmd_string, 'D', -1));
             break;
 
         case 1://Set Setpoint
-            setpoint = double(parse_number(cmd_string, 'Z' , -1));
+            setpoint = (double)(parse_number(cmd_string, 'Z' , -1));
             break;
 
         case 2: //Set Lab type
-            labType = int(parse_number(cmd_string, 'Y', -1));
+            labType = (int)(parse_number(cmd_string, 'Y', -1));
             break;
 
         case 3: //Set Controller Mode (on/off)
-            mode = int(parse_number(cmd_string, 'M', -1));
+            mode = (int)(parse_number(cmd_string, 'M', -1));
             break;
 
-        case 4: //Set Sample Time
-            sampleTime = double(parse_number(cmd_string, 'T', -1));
+        case 4: //Set Sample Period
+            sampleTime = parse_number(cmd_string, 'T', -1);
             break;
 
         case 5: //Set Output Limits
-            lowerOutputLimit = double(parse_number(cmd_string, 'L', -1));
-            upperOutputLimit = double(parse_number(cmd_string, 'U', -1));
+            lowerOutputLimit = (double)(parse_number(cmd_string, 'L', -1));
+            upperOutputLimit = (double)(parse_number(cmd_string, 'U', -1));
             break;
 
         case 6: //Openloop control
-            open_loop_voltage = int(parse_number(cmd_string,'O',0));
+            open_loop_voltage = (double)(parse_number(cmd_string,'O',0));
             break;
 
         case 7: //Feed Foward Voltage
-            FF_A = double(parse_number(cmd_string,'A',0));
-            FF_B = double(parse_number(cmd_string,'B',0));
-            FF_C = double(parse_number(cmd_string,'C',0));
+            FF_A = (double)(parse_number(cmd_string,'A',0));
+            FF_B = (double)(parse_number(cmd_string,'B',0));
+            FF_C = (double)(parse_number(cmd_string,'C',0));
             break;
         
         case 8: //Open Loop Step Resonse Analysis
             open_loop_analysis_start = true;
-            open_loop_analysis_time = double(parse_number(cmd_string, 'T', -1));
+            open_loop_analysis_time = (double)(parse_number(cmd_string, 'T', -1));
             break;
 
         case 9:
@@ -100,7 +101,7 @@ void SerialComms::process_command(char* cmd_string){
     }
 }
 
-float SerialComms::parse_number(char* cmd_string, char key, int def){
+double SerialComms::parse_number(char* cmd_string, char key, int def){
     //Search cmd_string for key, return the number between key and delimiter
     // Serial.println(cmd_string);
     // Serial.println(key);

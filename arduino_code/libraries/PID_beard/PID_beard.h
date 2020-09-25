@@ -24,4 +24,7 @@ public:
     double PID(double,double);
     double PD(double, double);
     double saturate(double);
+    void update_time_parameters(double, double);
+    void update_gains(double, double, double);
+    void setpoint_reset(double, double);
 };

@@ -5,7 +5,7 @@ public:
     //Process a command received from serial buffer
     void process_command(char*);
     //Search cmd for letter, return number immideately after letter
-    float parse_number(char*, char, int);
+    double parse_number(char*, char, int);
     // SerialComms(int*, double*, pwmAngle, pwmVelocity, time);
     SerialComms();
 
@@ -26,7 +26,7 @@ public:
     int mode;
     int lowerOutputLimit;
     int upperOutputLimit;
-    int sampleTime;
+    double sampleTime;
     double kp;
     double ki;
     double kd;
@@ -63,3 +63,10 @@ A# - value, angle or ang_speed dependent on labtype
 Q# - PMW
 D#(index),T#(us),P#,V#,I#$D1, etc... \0
 */
+
+// S0,P0.1,I0,D0,%
+// S1,Z100,%
+// S2,Y0,%
+// S3,M1,%
+// S4,T0.005,%
+// S5,L-12,U12,%
