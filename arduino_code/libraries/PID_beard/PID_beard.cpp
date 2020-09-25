@@ -131,4 +131,5 @@ void PIDControl::setpoint_reset(double y_r, double y){
     // ruining the response
     integrator = 0;
     error_d1 = y_r - y;
+    error_dot = 0;
 }

@@ -3,11 +3,11 @@
 #define DEG_TO_RAD 2*3.14159/360
 
 //instantiate PID controller
-double kp = 10;
+double kp = 50;
 double ki = 0;
-double kd = 1;
+double kd = 2;
 double limit = 12;
-double sigma = 0.1;
+double sigma = 0.05;
 double sample_period = 0.005; //sample period in s
 bool flag = true;
 
@@ -36,10 +36,19 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(ENC_B), pulseB, CHANGE);
 }
 
+//counter variable
+int counter = 1;
+
 void loop() {
+
+  
   //Update variables
   enc_deg = count_to_deg(enc_count);
   current_micros = micros(); //Get current microseconds
+
+  //Flip setpoint after 3 seconds
+  if((counter%1000)==0) { setpoint = -1*setpoint; }
+  counter++;
   
   if(((current_micros - prev_micros)) >= (controller.Ts * 1000000.0))
   {          
@@ -47,7 +56,7 @@ void loop() {
     pid_output = controller.PID(setpoint*DEG_TO_RAD, enc_deg*DEG_TO_RAD);
     Serial.print("setpoint: "); Serial.print(setpoint);
     Serial.print(" | encdeg: "); Serial.print(enc_deg);
-    Serial.print(" | Ts: "); Serial.print(controller.Ts, 10);
+    Serial.print(" | Ts: "); Serial.print(current_micros - prev_micros, 10);
     Serial.print(" | kp: "); Serial.print(controller.kp);
     Serial.print(" | beta: "); Serial.print(controller.beta);
     Serial.print(" | sigma: "); Serial.print(controller.sigma);

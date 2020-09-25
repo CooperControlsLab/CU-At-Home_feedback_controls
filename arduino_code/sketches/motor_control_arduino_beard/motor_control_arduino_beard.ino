@@ -4,6 +4,7 @@
 #include <Differentiator.h>
 
 #define DEG_TO_RAD 2*3.14159/360
+#define RPM_TO_RADS 0.104719755
 
 const int storage_length = 200;
 //AnalysisData dataArray[storage_length];
@@ -32,7 +33,7 @@ SerialComms com;  //Serial Communications class instantiation
 double kp = 5;
 double ki = 0;
 double kd = 1;
-double limit = 12;
+double limit = SUPPLY_VOLTAGE;
 double sigma = 0.01;
 double sample_period = 0.005; //in sec
 bool flag = true;
@@ -127,7 +128,6 @@ void update_control_params() {
   //Update Setpoint
   if(setpoint != com.setpoint){
     setpoint = com.setpoint;
-    controller.setpoint_reset(setpoint*DEG_TO_RAD, enc_deg*DEG_TO_RAD); //Reset critical controller values 
   }
 
   //Update Mode
@@ -148,13 +148,10 @@ void update_control_params() {
 //    Serial.print(" kp test: "); Serial.println(controller.kp, 10);
   }
 
-  //Update output limits
-  // motor_controller.SetOutputLimits(com.lowerOutputLimit, com.upperOutputLimit);
-
-
   if (lowerOutputLimit != com.lowerOutputLimit || upperOutputLimit != com.upperOutputLimit) {
     lowerOutputLimit = com.lowerOutputLimit;
     upperOutputLimit = com.upperOutputLimit;
+    controller.limit = upperOutputLimit;
     
   }
 
@@ -207,10 +204,10 @@ void compute_motor_voltage() {
         if((current_micros - prev_micros) >= (controller.Ts * 1000000.0))
         {
           //Calculate angular velocity from derivative
-          angular_velocity = diff.differentiate(enc_deg*2*3.14159/360);
+          angular_velocity = diff.differentiate(enc_deg*DEG_TO_RAD);
           
           //Calculate PID output
-          pid_output = controller.PID(setpoint, angular_velocity);
+          pid_output = controller.PID(setpoint*RPM_TO_RADS, angular_velocity);
           
           //update prev variables
           prev_micros = current_micros;
