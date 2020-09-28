@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (QApplication, QPushButton, QWidget, QComboBox,
 QHBoxLayout, QVBoxLayout, QFormLayout, QCheckBox, QGridLayout, QDialog, 
 QLabel, QLineEdit, QDialogButtonBox, QFileDialog, QSizePolicy, QLayout,
 QSpacerItem, QGroupBox, QShortcut)
-from PyQt5.QtCore import Qt, QTimer, QRegExp, QCoreApplication, QSize
+from PyQt5.QtCore import Qt, QTimer, QRegExp, QCoreApplication, QSize, QRunnable, QThread, QThreadPool
 from pyqtgraph import PlotWidget, plot, ScatterPlotItem
 import pyqtgraph as pg
 import serial
@@ -17,6 +17,8 @@ from itertools import zip_longest
 import qdarkstyle
 from QLed import QLed
 from QSwitch import Switch
+import threading
+import queue
 #Drone: 2 inputs, 4 outputs
 #Pro Con: 1 input, 2 outputs
 
@@ -34,7 +36,7 @@ class SerialComm:
         self.port = port
         self.baudrate = baudrate
         self.timeout = timeout    
-
+        self.thread = None
     def serialOpen(self):
         self.ser = serial.Serial(port = self.port,
                                  baudrate = self.baudrate,
@@ -68,7 +70,6 @@ class SerialComm:
         #current format of received data is b"T23533228,S0.00,A0.00,Q0.00,\0\r\n"
         arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
         return arduinoData        
-
 
     def readValuesOL(self):
         """
@@ -257,6 +258,7 @@ class Window(QWidget):
         self.height = 700
         self.setGeometry(self.left, self.top, self.width, self.height)
 
+        self.thread = None
         self.initUI()
 
     def initUI(self):
@@ -486,7 +488,7 @@ class Window(QWidget):
         self.SaturationInput.setMaximumSize(QSize(100, 20))
         groupParaGridLayout.addWidget(self.SaturationInput, 4, 1, 1, 1)
 
-        self.SampleTimeLabel = QLabel("PID Sample Time (ms)",self)
+        self.SampleTimeLabel = QLabel("PID Sample Time (s)",self)
         self.SampleTimeLabel.setMinimumSize(QSize(110, 20))
         self.SampleTimeLabel.setMaximumSize(QSize(110, 20))
         groupParaGridLayout.addWidget(self.SampleTimeLabel, 5, 0, 1, 1)
@@ -497,14 +499,14 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.SampleTimeInput.sizePolicy().hasHeightForWidth())
         self.SampleTimeInput.setSizePolicy(sizePolicy)
         self.SampleTimeInput.setMaximumSize(QSize(100, 20))
-        self.SampleTimeInput.setText("2")
+        self.SampleTimeInput.setText("0.005")
         #0.0000 to  100.0000
         self.SampleTimeInput.setValidator(QRegExpValidator(QRegExp("^((((\d|[1-9]\d)(\.\d{0,4})?))|(100)(\.0{0,4})?)$"))) 
         groupParaGridLayout.addWidget(self.SampleTimeInput, 5, 1, 1, 1)
 
-        PID_validator = QRegExpValidator(QRegExp("^((((\d|[1-9]\d)(\.\d{0,4})?))|(100)(\.0{0,4})?)$"))
+        #PID_validator = QRegExpValidator(QRegExp("^((((\d|[1-9]\d)(\.\d{0,4})?))|(100)(\.0{0,4})?)$"))
 
-        self.PCheckBox = QCheckBox("P",self)
+        self.PCheckBox = QCheckBox("P (V/Resp)",self)
         self.PCheckBox.setMaximumSize(QSize(100, 20))
         self.PCheckBox.setChecked(True)
         self.PCheckBox.toggled.connect(self.PCheckBoxLogic)
@@ -516,11 +518,11 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.PInput.sizePolicy().hasHeightForWidth())
         self.PInput.setSizePolicy(sizePolicy)
         self.PInput.setMaximumSize(QSize(100, 20))
-        self.PInput.setValidator(PID_validator)
-        self.PInput.setText("0.5")
+        #self.PInput.setValidator(PID_validator)
+        self.PInput.setText("1")
         groupParaGridLayout.addWidget(self.PInput, 6, 1, 1, 1)
 
-        self.ICheckBox = QCheckBox("I",self)
+        self.ICheckBox = QCheckBox("I (V/(s*Resp))",self)
         self.ICheckBox.setMaximumSize(QSize(100, 20))
         self.ICheckBox.setChecked(True)
         self.ICheckBox.toggled.connect(self.ICheckBoxLogic)
@@ -532,11 +534,11 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.IInput.sizePolicy().hasHeightForWidth())
         self.IInput.setSizePolicy(sizePolicy)
         self.IInput.setMaximumSize(QSize(100, 20))
-        self.IInput.setValidator(PID_validator)
+        #self.IInput.setValidator(PID_validator)
         self.IInput.setText("0")
         groupParaGridLayout.addWidget(self.IInput, 7, 1, 1, 1)
 
-        self.DCheckBox = QCheckBox("D",self)
+        self.DCheckBox = QCheckBox("D (V*s/Resp)",self)
         self.DCheckBox.setMaximumSize(QSize(100, 20))
         self.DCheckBox.setChecked(True)
         self.DCheckBox.toggled.connect(self.DCheckBoxLogic)
@@ -548,7 +550,7 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.DInput.sizePolicy().hasHeightForWidth())
         self.DInput.setSizePolicy(sizePolicy)
         self.DInput.setMaximumSize(QSize(100, 20))
-        self.DInput.setValidator(PID_validator)
+        #self.DInput.setValidator(PID_validator)
         self.DInput.setText("0")
         groupParaGridLayout.addWidget(self.DInput, 8, 1, 1, 1)
 
@@ -622,7 +624,7 @@ class Window(QWidget):
 
         #Plot time update settings
         self.timer = QTimer()
-        self.timer.setInterval(20) #Changes the plot speed. Defaulted to 50. Can be placed in startbuttonPushed() method
+        self.timer.setInterval(50) #Changes the plot speed. Defaulted to 50. Can be placed in startbuttonPushed() method
         self.initialState()
         time.sleep(2)
         try:
@@ -725,11 +727,25 @@ class Window(QWidget):
         self.timer.start()
         self.curve()
         self.startbutton.clicked.disconnect(self.startbuttonPushed)
+        """
+        if self.thread == None:
+            self.thread = threading.Thread()
+            try:
+                self.thread.start(target=self.temptest)
+            except:
+                pass
+        """
 
     #Stops timer and ends plotting
     def stopbuttonPushed(self):
         self.timer.stop()
         print("Stopping Data Recording")
+        
+        try:
+            self.thread.join()
+        except:
+            pass
+        
 
     #Resets both plotting windows and reenables Start Button
     def clearbuttonPushed(self):
@@ -765,7 +781,7 @@ class Window(QWidget):
         self.data_set = zip_longest(*[self.time,self.y1,self.y2,self.y3,[],self.parameters_label,self.parameters], fillvalue="")
 
     def createCSVOL(self):
-        self.header = ["index", "time (μs)", "position", "velocity", "voltage", '', "Parameters"]
+        self.header = ["index", "time (ms)", "position", "velocity", "voltage", '', "Parameters"]
         #self.parameters_label = ["Labtype", "Feedforward", "OL Voltage", "Setpoint", "Saturation", "PID Sample Time", "P", "I", "D", "Controller State"]
         self.data_set = zip_longest(*[self.d,self.time,self.position,self.velocity,self.voltage], fillvalue="")#[],self.parameters_label,self.parameters], fillvalue="")
 
@@ -814,10 +830,19 @@ class Window(QWidget):
 
     #Connected to timer to update plot. Incoming data is in the form of timestamp,data1,data2...    
     def updatePlot(self):
-        #fulldata = self.readValues()
-        #print(fulldata)
-        
         fulldata = self.serialInstance.readValues()
+        """
+        if self.thread == None:
+            self.thread = threading.Thread(target=self.serialInstance.readValues())
+            self.thread.start()
+            #self.thread.join()
+            print("thread")
+            que = queue.Queue()
+            fulldata = que.get()
+
+        elif self.thread.is_alive() == True:
+            fulldata = que.get()
+        """
 
         self.step = self.step + 1
         """
@@ -896,16 +921,6 @@ class Window(QWidget):
     def gcodeParsing(self,letter,input_list):
         result = [_ for _ in input_list if _.startswith(letter)][0][1:]
         return(result)
-
-
-    def gcodeParsingOL(self,letter,input_list):
-        empty_list = list()
-        for i in input_list:
-            i = i.split(",")
-            for j in i:
-                if j.startswith(letter):
-                    empty_list.append(float(j[1:]))    
-        return(empty_list)
 
     #Below 4 change visibility of data# in the curves() method
     def visibilityAll(self):
@@ -1017,7 +1032,7 @@ class Window(QWidget):
             self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,550], padding=None, update=True, disableAutoRange=True)
         elif inputType == "Open-Loop":
             self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (RPM)</span>")
-            self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (μs)</span>")
+            self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (ms)</span>")
             self.graphWidgetOutput.setTitle("Open Loop Speed Control", color="w", size="12pt")
             self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,550], padding=None, update=True, disableAutoRange=True)
 
@@ -1110,24 +1125,38 @@ class Window(QWidget):
 
 
     def OLGraph(self):
+        """
+        Note, this is a static plot. Will not be used for realtime, besides each time the OL Characterization button is pressed
+        """
         self.timer.stop()
         self.graphWidgetOutput.clear()
         self.graphWidgetInput.clear()
         self.serialInstance.writeOLCharacterization()
         
         fulldata = self.serialInstance.readValuesOL()
-        
+        print(fulldata)
+
         self.d = self.gcodeParsingOL("D",fulldata)
         self.time = self.gcodeParsingOL("T",fulldata)
         self.position = self.gcodeParsingOL("P",fulldata)
         self.velocity = self.gcodeParsingOL("V",fulldata)
         self.voltage = self.gcodeParsingOL("I",fulldata)
         
-        #Save data for testing
+        print(self.velocity)
+
         pen1 = pg.mkPen(color = (0, 255, 0), width=1)
         pen2 = pg.mkPen(color = (0, 255, 255), width=1)
         self.graphWidgetOutput.plot(self.time, self.velocity, pen=pen1, name="Response")
         self.graphWidgetInput.plot(self.time, self.voltage, pen=pen2, name="Voltage")
+
+    def gcodeParsingOL(self,letter,input_list):
+        empty_list = list()
+        for i in input_list:
+            i = i.split(",")
+            for j in i:
+                if j.startswith(letter):
+                    empty_list.append(float(j[1:]))    
+        return(empty_list)
 
 
     def updateParameters(self):
