@@ -58,9 +58,9 @@ double PIDControl::PID(double y_r, double y){
     double u_sat = saturate(u_unsat);
 
     //Integrator anti-windup
-    if(ki != 0.0){
-        integrator = integrator + ((1.0 / ki) * (u_sat - u_unsat));
-    }
+//     if(ki != 0.0){
+//         integrator = integrator + ((1.0 / ki) * (u_sat - u_unsat));
+//     }
 
     //Update delayed variables
     error_d1 = error;
