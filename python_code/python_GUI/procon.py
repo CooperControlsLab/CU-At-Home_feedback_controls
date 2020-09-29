@@ -1133,6 +1133,9 @@ class Window(QWidget):
         self.graphWidgetInput.clear()
         self.serialInstance.writeOLCharacterization()
         
+        # Sleep for 2 seconds to wait for arduino to finish sending data over serial to prevent empty plotting
+        time.sleep(2)
+        
         fulldata = self.serialInstance.readValuesOL()
         print(fulldata)
 
@@ -1146,8 +1149,11 @@ class Window(QWidget):
 
         pen1 = pg.mkPen(color = (0, 255, 0), width=1)
         pen2 = pg.mkPen(color = (0, 255, 255), width=1)
+        
+
         self.graphWidgetOutput.plot(self.time, self.velocity, pen=pen1, name="Response")
         self.graphWidgetInput.plot(self.time, self.voltage, pen=pen2, name="Voltage")
+        
 
     def gcodeParsingOL(self,letter,input_list):
         empty_list = list()

@@ -3,16 +3,14 @@
 #include <PID_beard.h>
 #include <Differentiator.h>
 
+
 #define DEG_TO_RAD 2*3.14159/360
 #define RPM_TO_RADS 0.104719755
+#define DEGS_TO_RPM 0.166667
 
 const int storage_length = 200;
-//AnalysisData dataArray[storage_length];
 int time[storage_length];
-//int index[storage_length];
 int velocity[storage_length];
-//int position[storage_length];
-//int inputData[storage_length];
 
 //Timing Parameters for fixed interval calculations for PID and derivitave
 unsigned long prev_micros = 0;
@@ -40,9 +38,9 @@ bool flag = true;
 double pid_output=0;
 bool controller_on = true;
 
+
 Differentiator diff(sigma, sample_period);
 PIDControl controller(kp, ki, kd, limit, sigma, sample_period, flag);
-
 
 //***********************************************************************************
 void setup() {
@@ -74,8 +72,9 @@ void loop() {
    com.handle_command();  //Process incoming command
    update_control_params();    //Update gains, update inputs based on labtype
    compute_motor_voltage(); // Update controller input, compute motor voltage and write to motor
-   com.send_data(enc_deg, angular_velocity, pid_output);
+   com.send_data(enc_deg, angular_velocity/RPM_TO_RADS, pid_output);
 }
+
 
 //*****************************************************//
 void update_control_params() {
@@ -86,6 +85,7 @@ void update_control_params() {
 
     double t0 = int(millis());
     unsigned long init_time = millis();
+    unsigned long current_time = init_time;
     unsigned long prev_time = init_time;
     
     //Set motor open loop voltage
@@ -95,19 +95,32 @@ void update_control_params() {
     //initialize index variable
     int i = 0;
 
+    //Reset Open Loop differentiator
+    enc_deg = count_to_deg(enc_count);
+    diff.update_time_parameters(diff.Ts, 0.1);
+    diff.reset(enc_deg);
+
     while(1)
     {
-      enc_deg = count_to_deg(enc_count);
+      enc_deg = count_to_deg(enc_count); //Update encoder degrees
+      current_time = millis();
 
       //NB: replace millis with micros
-      if(millis() >= (prev_time+3)){
-        prev_time = millis();
+      if(current_time - prev_time >= (diff.Ts*1000)){
+        
         //append data to large array
-        time[i] = prev_time - init_time;
-        velocity[i] = enc_deg;
-  
-        if(i>=(storage_length-1)){com.open_loop_analysis_start = false; break;}
-        i++;
+        time[i] = current_time - init_time;
+        velocity[i] = diff.differentiate(enc_deg);
+
+        //If we're at the end of storage length, break the loop
+        if(i>=(storage_length-1)){
+          com.open_loop_analysis_start = false; 
+          diff.update_time_parameters(diff.Ts, 0.01); //Reset differentiator sigma value
+          diff.reset(count_to_deg(enc_count));
+          break;}
+        
+        prev_time = current_time; //Reset previous time
+        i++; //Increment index counter
       }
 
       
@@ -119,7 +132,7 @@ void update_control_params() {
       Serial.print("D0"); Serial.print(',');
       Serial.print('T'); Serial.print(time[j]); Serial.print(',');
       Serial.print('P'); Serial.print(0); Serial.print(',');
-      Serial.print('V'); Serial.print(velocity[j]); Serial.print(',');
+      Serial.print('V'); Serial.print(velocity[j]*DEGS_TO_RPM); Serial.print(',');
       Serial.print('I'); Serial.print(pid_output); Serial.print('$'); 
     }
     Serial.print('\n');

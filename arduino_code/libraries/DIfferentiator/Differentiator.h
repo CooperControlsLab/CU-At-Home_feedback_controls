@@ -14,6 +14,7 @@ public:
     //methods
     double differentiate(double);
     void update_time_parameters(double, double);
+    void reset(double);
 
 private:
     double y_d1; //differentiation variable 1 sample behind

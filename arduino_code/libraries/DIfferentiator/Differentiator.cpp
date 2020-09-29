@@ -5,6 +5,7 @@ Differentiator::Differentiator(double sig, double t_rate){
     Ts = t_rate;
     beta = (2.0*sigma - Ts) / (2.0*sigma + Ts);
     y_dot = 0;
+    y_d1 = 0;
 }
 
 double Differentiator::differentiate(double y){
@@ -24,4 +25,9 @@ void Differentiator::update_time_parameters(double t, double s){
     Ts = t;
     sigma = s;
     beta = (2.0*sigma - Ts) / (2.0*sigma + Ts);
+}
+
+void Differentiator::reset(double degrees){
+    y_dot = 0;
+    y_d1 = degrees;
 }
