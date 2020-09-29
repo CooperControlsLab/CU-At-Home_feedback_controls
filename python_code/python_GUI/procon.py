@@ -506,7 +506,7 @@ class Window(QWidget):
 
         #PID_validator = QRegExpValidator(QRegExp("^((((\d|[1-9]\d)(\.\d{0,4})?))|(100)(\.0{0,4})?)$"))
 
-        self.PCheckBox = QCheckBox("P (V/Resp)",self)
+        self.PCheckBox = QCheckBox("P (V/unit)",self)
         self.PCheckBox.setMaximumSize(QSize(100, 20))
         self.PCheckBox.setChecked(True)
         self.PCheckBox.toggled.connect(self.PCheckBoxLogic)
@@ -522,7 +522,7 @@ class Window(QWidget):
         self.PInput.setText("1")
         groupParaGridLayout.addWidget(self.PInput, 6, 1, 1, 1)
 
-        self.ICheckBox = QCheckBox("I (V/(s*Resp))",self)
+        self.ICheckBox = QCheckBox("I (V/(s*unit))",self)
         self.ICheckBox.setMaximumSize(QSize(100, 20))
         self.ICheckBox.setChecked(True)
         self.ICheckBox.toggled.connect(self.ICheckBoxLogic)
@@ -538,7 +538,7 @@ class Window(QWidget):
         self.IInput.setText("0")
         groupParaGridLayout.addWidget(self.IInput, 7, 1, 1, 1)
 
-        self.DCheckBox = QCheckBox("D (V*s/Resp)",self)
+        self.DCheckBox = QCheckBox("D (V*s/unit)",self)
         self.DCheckBox.setMaximumSize(QSize(100, 20))
         self.DCheckBox.setChecked(True)
         self.DCheckBox.toggled.connect(self.DCheckBoxLogic)
@@ -1021,17 +1021,17 @@ class Window(QWidget):
     def getLabTypeAxes(self):
         inputType = str(self.LabType.currentText())
         if inputType == "Position":
-            self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&theta; (°)</span>")
+            self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&theta; (unit = degrees)</span>")
             self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetOutput.setTitle("Position Control", color="w", size="12pt")
             self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,100], padding=None, update=True, disableAutoRange=True)
         elif inputType == "Speed":
-            self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (RPM)</span>")
+            self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (unit = RPM)</span>")
             self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
             self.graphWidgetOutput.setTitle("Speed Control", color="w", size="12pt")
             self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,550], padding=None, update=True, disableAutoRange=True)
         elif inputType == "Open-Loop":
-            self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (RPM)</span>")
+            self.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">&omega; (unit = RPM)</span>")
             self.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (ms)</span>")
             self.graphWidgetOutput.setTitle("Open Loop Speed Control", color="w", size="12pt")
             self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,550], padding=None, update=True, disableAutoRange=True)
