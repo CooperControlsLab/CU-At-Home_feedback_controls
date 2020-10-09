@@ -97,7 +97,7 @@ void update_control_params() {
 
     //Reset Open Loop differentiator
     enc_deg = count_to_deg(enc_count);
-    diff.update_time_parameters(diff.Ts, 0.1);
+    //diff.update_time_parameters(diff.Ts, 0.1);
     diff.reset(enc_deg);
 
     while(1)
