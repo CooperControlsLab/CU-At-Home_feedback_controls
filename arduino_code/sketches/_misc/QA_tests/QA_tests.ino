@@ -2,7 +2,7 @@
 #include <PID_v1.h>
 #define ENC_CHAN_A 18
 #define ENC_CHAN_B 19
-#define ENC_PROP_A 20
+#define ENC_PROP_A 2
 #define ENC_PROP_B 21
 #define DIR_A 12
 #define DIR_B 13
@@ -19,8 +19,8 @@ void setup() {
   Serial.begin(115200);
   
   //Initialize pins for optical sensors
-  pinMode(20, INPUT);
-  pinMode(21, INPUT);
+  pinMode(ENC_PROP_A, INPUT);
+  pinMode(ENC_PROP_B, INPUT);
   
   attachInterrupt(digitalPinToInterrupt(ENC_PROP_A), do_prop_count_a, RISING);
   attachInterrupt(digitalPinToInterrupt(ENC_PROP_B), do_prop_count_b, RISING);

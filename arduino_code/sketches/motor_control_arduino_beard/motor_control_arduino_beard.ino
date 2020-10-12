@@ -97,7 +97,7 @@ void update_control_params() {
 
     //Reset Open Loop differentiator
     enc_deg = count_to_deg(enc_count);
-    diff.update_time_parameters(diff.Ts, 0.1);
+    //diff.update_time_parameters(diff.Ts, 0.01);
     diff.reset(enc_deg);
 
     while(1)
@@ -111,11 +111,12 @@ void update_control_params() {
         //append data to large array
         time[i] = current_time - init_time;
         velocity[i] = diff.differentiate(enc_deg);
+//        velocity[i] = enc_deg;
 
         //If we're at the end of storage length, break the loop
         if(i>=(storage_length-1)){
           com.open_loop_analysis_start = false; 
-          diff.update_time_parameters(diff.Ts, 0.01); //Reset differentiator sigma value
+          diff.update_time_parameters(diff.Ts, sigma); //Reset differentiator sigma value
           diff.reset(count_to_deg(enc_count));
           break;}
         
