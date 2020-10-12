@@ -237,6 +237,7 @@ void compute_motor_voltage() {
       // else if (com.mode == 0) {
       //   motor_voltage = 0;
       // }
+      angular_velocity = diff.differentiate(enc_deg*DEGS_TO_RPM);
       analogWrite(PWM_B, volts_to_PWM(pid_output));
       break;
       
