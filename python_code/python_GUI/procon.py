@@ -14,15 +14,16 @@ import serial.tools.list_ports
 import numpy as np
 import csv
 from itertools import zip_longest
-import qdarkstyle
-from QLed import QLed
-from QSwitch import Switch
+import qdarkstyle #has some issues on Apple devices and high dpi monitors
+from QLed import QLed #LED indicator on GUI
+from QSwitch import Switch #toggle switch
 import threading
+import multiprocessing
 import queue
 #Drone: 2 inputs, 4 outputs
 #Pro Con: 1 input, 2 outputs
 
-#Fixes Scaling for high resolution monitors
+#Fixes Scaling for high resolution monitors. Must be called before App is created
 if hasattr(Qt, 'AA_EnableHighDpiScaling'):
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
     QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
@@ -32,24 +33,45 @@ if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
     QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 
 class SerialComm:
+    """
+    Python Serial Communication Class. Methods are derived from 
+    exisiting pyserial library
+    """
     def __init__(self, port, baudrate, timeout):
+        """
+        Initializes class with port, baudrate, and timeout
+        """
         self.port = port
         self.baudrate = baudrate
         self.timeout = timeout    
         self.thread = None
+
     def serialOpen(self):
+        """
+        Opens serial communication
+        """
         self.ser = serial.Serial(port = self.port,
                                  baudrate = self.baudrate,
                                  timeout = self.timeout)
         return(self.ser)
     
     def serialClose(self):
+        """
+        Closes serial communication
+        """
         self.ser.close()
 
     def serialIsOpen(self):
+        """
+        Checks if serial communication is open
+        """
         return(self.ser.is_open)
 
     def handshake(self):
+        """
+        Old method to ensure Arduino and Python are communicating with 
+        each other. Hasn't been used for final design.
+        """
         self.ser.flushInput()
         self.ser.write(b"H0,\0")
         print("Handshake request sent")
@@ -63,11 +85,21 @@ class SerialComm:
             self.handshake()
 
     def flushInput(self):
+        """
+        Flushes serial input
+        """
         self.ser.flushInput()
 
     def readValues(self):
-        self.ser.write(b"R0,\0") #used to call for the next line (Request)
-        #current format of received data is b"T23533228,S0.00,A0.00,Q0.00,\0\r\n"
+        """
+        Method to send byte (request) so Arduino can send back byte of data.
+        Current format of received data is b"T23533228,S0.00,A0.00,Q0.00,\0\r\n"
+        T is time 
+        S is Setpoint
+        A is Response (can be position or velocity)
+        Q is PWM Voltage
+        """
+        self.ser.write(b"R0,\0") 
         arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
         return arduinoData        
 
@@ -83,12 +115,12 @@ class SerialComm:
         V is velocity
         I is input voltage
         """
-        print('here')
+        #print('Received Data')
         arduinoData = self.ser.readline().decode().split("$")#.replace('\r\n','')
-        print(len(arduinoData))
+        #print(len(arduinoData))
         return arduinoData
 
-    #S0 
+    #Below are all methods to write to Arduino. Each are different based on GUI input
     def writePID(self,P,I,D):
         values = f"S0,P{P},I{I},D{D},\0"
         self.ser.write(str.encode(values))
@@ -159,6 +191,9 @@ class SerialComm:
     
 
 class SettingsClass(QDialog):
+    """
+    Settings Class. Creates inputs to SerialComm class 
+    """
     def __init__(self, *args, **kwargs):
         super(SettingsClass, self).__init__(*args, **kwargs)
         
@@ -171,6 +206,9 @@ class SettingsClass(QDialog):
         self.initUI()
         
     def initUI(self):
+        """
+        Creates UI of Settings
+        """
         #self.setStyleSheet(qdarkstyle.load_stylesheet())
         self.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
 
@@ -222,6 +260,9 @@ class SettingsClass(QDialog):
         self.setLayout(mainLayout)
 
     def list_port(self): 
+        """
+        Determines what COM Ports are available
+        """
         arduino_ports = [
             p.device
             for p in serial.tools.list_ports.comports()
@@ -232,6 +273,9 @@ class SettingsClass(QDialog):
         self.port.addItems(arduino_ports)
 
     def getDialogValues(self):
+        """
+        Returns inputs to be used in SerialComm class in the main window
+        """
         if self.exec_() == QDialog.Accepted:
             self.com_value = str(self.port.currentText())
             self.baudrate_value = str(self.baudrate.currentText())
@@ -273,14 +317,20 @@ class Window(QWidget):
         mainGridLayout = QGridLayout()
         rightVerticalLayout = QVBoxLayout()
         horizontalLayout.addLayout(rightVerticalLayout)
+        groupBoxPlotting =  QGroupBox("Plot Settings")
         groupBoxParameters =  QGroupBox("Controller Parameters")
 
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
+
         groupBoxParameters.setSizePolicy(sizePolicy)
         groupParaGridLayout = QGridLayout()
         groupBoxParameters.setLayout(groupParaGridLayout)        
+        
+        groupBoxPlotting.setSizePolicy(sizePolicy)
+        plotGridLayout = QGridLayout()
+        groupBoxPlotting.setLayout(plotGridLayout)
 
         self.imageLabel = QLabel()
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
@@ -369,11 +419,13 @@ class Window(QWidget):
         self.settings.setMaximumSize(QSize(300, 21))
         mainGridLayout.addWidget(self.settings, 4, 0, 1, 2)
 
+
+
         self.checkBoxShowAll = QCheckBox("Show All Plots", self)
         self.checkBoxShowAll.setMaximumSize(QSize(88, 21))
         self.checkBoxShowAll.setChecked(True)
         self.checkBoxShowAll.toggled.connect(self.visibilityAll)
-        mainGridLayout.addWidget(self.checkBoxShowAll, 5, 0, 1, 1)
+        plotGridLayout.addWidget(self.checkBoxShowAll, 0, 0, 1, 1)
 
         self.checkBoxHideAll = QCheckBox("Hide All Plots", self)
         self.checkBoxHideAll.setChecked(False)
@@ -384,12 +436,12 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.checkBoxHideAll.sizePolicy().hasHeightForWidth())
         self.checkBoxHideAll.setSizePolicy(sizePolicy)
         self.checkBoxHideAll.setMaximumSize(QSize(88, 21))
-        mainGridLayout.addWidget(self.checkBoxHideAll, 5, 1, 1, 1)
+        plotGridLayout.addWidget(self.checkBoxHideAll, 0, 1, 1, 1)
 
         self.checkBoxPlot1 = QCheckBox("Setpoint", self)
         self.checkBoxPlot1.toggled.connect(self.visibility1)
         self.checkBoxPlot1.setMaximumSize(QSize(88, 21))
-        mainGridLayout.addWidget(self.checkBoxPlot1, 6, 0, 1, 1)
+        plotGridLayout.addWidget(self.checkBoxPlot1, 1, 0, 1, 1)
 
         self.checkBoxPlot2 = QCheckBox("Response", self)
         self.checkBoxPlot2.toggled.connect(self.visibility2)
@@ -399,12 +451,26 @@ class Window(QWidget):
         sizePolicy.setHeightForWidth(self.checkBoxPlot2.sizePolicy().hasHeightForWidth())
         self.checkBoxPlot2.setSizePolicy(sizePolicy)
         self.checkBoxPlot2.setMaximumSize(QSize(88, 21))
-        mainGridLayout.addWidget(self.checkBoxPlot2, 6, 1, 1, 1)
+        plotGridLayout.addWidget(self.checkBoxPlot2, 1, 1, 1, 1)
 
         self.checkBoxShowAll.stateChanged.connect(self.checkbox_logic) 
         self.checkBoxHideAll.stateChanged.connect(self.checkbox_logic) 
         self.checkBoxPlot1.stateChanged.connect(self.checkbox_logic) 
         self.checkBoxPlot2.stateChanged.connect(self.checkbox_logic)
+
+
+        self.maxYLabel = QPushButton("Y max",self)
+        self.maxYLabel.setMinimumSize(QSize(100, 20))
+        self.maxYLabel.setMaximumSize(QSize(100, 20))
+        self.maxYLabel.clicked.connect(self.YMax)
+        plotGridLayout.addWidget(self.maxYLabel, 2, 0, 1, 1)
+
+        self.maxYInput = QLineEdit("",self)
+        self.maxYInput.setText("100")
+        self.maxYInput.setMaximumSize(QSize(88, 21))
+        self.maxYInput.setValidator(QDoubleValidator(0.0000, 1000.0000, 4, notation=QDoubleValidator.StandardNotation))
+        plotGridLayout.addWidget(self.maxYInput, 2, 1, 1, 1)
+
 
         self.LabLabel = QLabel("Lab Type")
         self.LabLabel.setMaximumSize(QSize(100, 20))
@@ -583,6 +649,7 @@ class Window(QWidget):
         groupParaGridLayout.addWidget(self.updateButton, 11, 0, 1, 2)
 
         leftVerticalLayout.addLayout(mainGridLayout)
+        leftVerticalLayout.addWidget(groupBoxPlotting)
         leftVerticalLayout.addWidget(groupBoxParameters)
         spacerItem = QSpacerItem(20, 80, QSizePolicy.Minimum, QSizePolicy.Fixed)
         leftVerticalLayout.addItem(spacerItem)
@@ -601,8 +668,9 @@ class Window(QWidget):
         self.graphWidgetInput.showGrid(x = True, y = True, alpha=None)
 
         #Changes viewboxes of each plot window
-        self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,100], padding=None, update=True, disableAutoRange=True)
+        #self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,100], padding=None, update=True, disableAutoRange=True)
         self.graphWidgetInput.setRange(rect=None, xRange=None, yRange=[-13,13], padding=None, update=True, disableAutoRange=True)
+        #self.graphWidgetInput.setYRange(0, 100, padding=0)
         
         #Changes background color of graph
         self.graphWidgetOutput.setBackground((0,0,0))
@@ -658,6 +726,16 @@ class Window(QWidget):
                 self.checkBoxShowAll.setChecked(False) 
                 self.checkBoxHideAll.setChecked(False)
                 self.checkBoxPlot1.setChecked(False)
+
+    def YMax(self):
+        """
+        Changes range of the Output Graph Viewbox to be constrained between -1 to y specified
+        """
+        if self.maxYInput.text() != "":
+            try:
+                self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,float(self.maxYInput.text())], padding=None, update=True, disableAutoRange=True)
+            except:
+                pass
 
     #Setup for Serial Open and Serial Close is that only 1 button can be active at a time
     def serialOpenPushed(self):
@@ -740,12 +818,12 @@ class Window(QWidget):
     def stopbuttonPushed(self):
         self.timer.stop()
         print("Stopping Data Recording")
-        
+        """
         try:
             self.thread.join()
         except:
             pass
-        
+        """
 
     #Resets both plotting windows and reenables Start Button
     def clearbuttonPushed(self):
