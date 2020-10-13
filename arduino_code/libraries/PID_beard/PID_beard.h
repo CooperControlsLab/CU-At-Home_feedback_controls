@@ -3,13 +3,14 @@ class PIDControl{
 
 public:
     //Construtors
-    PIDControl(double, double, double, double, double, double, bool);
+    PIDControl(double, double, double, double, double, double, double, bool);
 
     //class variables
     double kp; //Proportional gain
     double ki; //Integral gain
     double kd; //Derivative gain
-    double limit; //Output saturates at this limit
+    double lowerLimit; //Output saturates at this limit on lower end
+    double upperLimit; //Output saturates at this limit on upper end
     double sigma; //dirty derivative bandwidth = 1/sigma
     double Ts; //sample period in seconds
     double beta; //(2.0*sigma-Ts)/(2.0*sigma+Ts)
@@ -19,6 +20,8 @@ public:
     double error_dot; //estimated derivative of error
     double error_d1; //error delayed by one sample
     double integrator; //integrator value
+    double integrator_unsat; //Unsaturated integrator value
+    double integrator_sat; //Integrator value saturated
 
     //class methods
     double PID(double,double);

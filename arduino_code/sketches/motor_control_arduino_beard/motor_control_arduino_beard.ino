@@ -31,7 +31,8 @@ SerialComms com;  //Serial Communications class instantiation
 double kp = 5;
 double ki = 0;
 double kd = 1;
-double limit = SUPPLY_VOLTAGE;
+double lowerLimit = -1*SUPPLY_VOLTAGE;
+double upperLimit = SUPPLY_VOLTAGE;
 double sigma = 0.01;
 double sample_period = 0.005; //in sec
 bool flag = true;
@@ -40,7 +41,7 @@ bool controller_on = true;
 
 
 Differentiator diff(sigma, sample_period);
-PIDControl controller(kp, ki, kd, limit, sigma, sample_period, flag);
+PIDControl controller(kp, ki, kd, lowerLimit, upperLimit, sigma, sample_period, flag);
 
 //***********************************************************************************
 void setup() {
@@ -97,7 +98,7 @@ void update_control_params() {
 
     //Reset Open Loop differentiator
     enc_deg = count_to_deg(enc_count);
-    //diff.update_time_parameters(diff.Ts, 0.01);
+    //diff.update_time_parameters(diff.Ts, 0.1);
     diff.reset(enc_deg);
 
     while(1)
@@ -111,12 +112,11 @@ void update_control_params() {
         //append data to large array
         time[i] = current_time - init_time;
         velocity[i] = diff.differentiate(enc_deg);
-//        velocity[i] = enc_deg;
 
         //If we're at the end of storage length, break the loop
         if(i>=(storage_length-1)){
           com.open_loop_analysis_start = false; 
-          diff.update_time_parameters(diff.Ts, sigma); //Reset differentiator sigma value
+          diff.update_time_parameters(diff.Ts, 0.01); //Reset differentiator sigma value
           diff.reset(count_to_deg(enc_count));
           break;}
         
@@ -165,7 +165,8 @@ void update_control_params() {
   if (lowerOutputLimit != com.lowerOutputLimit || upperOutputLimit != com.upperOutputLimit) {
     lowerOutputLimit = com.lowerOutputLimit;
     upperOutputLimit = com.upperOutputLimit;
-    controller.limit = upperOutputLimit;
+    controller.upperLimit = upperOutputLimit;
+    controller.lowerLimit = lowerOutputLimit;
     
   }
 
@@ -213,23 +214,25 @@ void compute_motor_voltage() {
       break;
 
     case 1: // Speed Control
-      if(controller_on){
-        //If sample period amount has passed do processing
-        if((current_micros - prev_micros) >= (controller.Ts * 1000000.0))
-        {
-          //Calculate angular velocity from derivative
-          angular_velocity = diff.differentiate(enc_deg*DEGS_TO_RPM);
-          
-          //Calculate PID output
-          pid_output = controller.PID(setpoint, angular_velocity);
-          
-          //update prev variables
-          prev_micros = current_micros;
-          prev_deg = enc_deg;
-        } 
+      //If sample period amount has passed do processing
+      if((current_micros - prev_micros) >= (controller.Ts * 1000000.0))
+      {
+        //Calculate angular velocity from derivative
+        angular_velocity = diff.differentiate(enc_deg*DEGS_TO_RPM);
+        //Calculate PID output
+        pid_output = controller.PID(setpoint, angular_velocity);
+        //update prev variables
+        prev_micros = current_micros;
+        prev_deg = enc_deg;
       }
-      pid_output = pid_output_signal_conditioning(pid_output);
-      update_motor_voltage(pid_output);
+      
+      if(controller_on){
+        pid_output = pid_output_signal_conditioning(pid_output);
+        update_motor_voltage(pid_output);
+      }
+      else{
+        analogWrite(PWM_B,0);
+      }
       break;
 
     case 2: // Open Loop Speed Control
@@ -237,7 +240,14 @@ void compute_motor_voltage() {
       // else if (com.mode == 0) {
       //   motor_voltage = 0;
       // }
-      angular_velocity = diff.differentiate(enc_deg*DEGS_TO_RPM);
+      if((current_micros - prev_micros) >= (controller.Ts * 1000000.0))
+      {
+        //Calculate angular velocity from derivative
+        angular_velocity = diff.differentiate(enc_deg*DEGS_TO_RPM);
+        //update prev variables
+        prev_micros = current_micros;
+        prev_deg = enc_deg;
+      }
       analogWrite(PWM_B, volts_to_PWM(pid_output));
       break;
       
