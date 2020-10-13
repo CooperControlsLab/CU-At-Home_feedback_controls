@@ -212,23 +212,25 @@ void compute_motor_voltage() {
       break;
 
     case 1: // Speed Control
-      if(controller_on){
-        //If sample period amount has passed do processing
-        if((current_micros - prev_micros) >= (controller.Ts * 1000000.0))
-        {
-          //Calculate angular velocity from derivative
-          angular_velocity = diff.differentiate(enc_deg*DEGS_TO_RPM);
-          
-          //Calculate PID output
-          pid_output = controller.PID(setpoint, angular_velocity);
-          
-          //update prev variables
-          prev_micros = current_micros;
-          prev_deg = enc_deg;
-        } 
+      //If sample period amount has passed do processing
+      if((current_micros - prev_micros) >= (controller.Ts * 1000000.0))
+      {
+        //Calculate angular velocity from derivative
+        angular_velocity = diff.differentiate(enc_deg*DEGS_TO_RPM);
+        //Calculate PID output
+        pid_output = controller.PID(setpoint, angular_velocity);
+        //update prev variables
+        prev_micros = current_micros;
+        prev_deg = enc_deg;
       }
-      pid_output = pid_output_signal_conditioning(pid_output);
-      update_motor_voltage(pid_output);
+      
+      if(controller_on){
+        pid_output = pid_output_signal_conditioning(pid_output);
+        update_motor_voltage(pid_output);
+      }
+      else{
+        analogWrite(PWM_B,0);
+      }
       break;
 
     case 2: // Open Loop Speed Control
@@ -236,7 +238,14 @@ void compute_motor_voltage() {
       // else if (com.mode == 0) {
       //   motor_voltage = 0;
       // }
-      angular_velocity = diff.differentiate(enc_deg*DEGS_TO_RPM);
+      if((current_micros - prev_micros) >= (controller.Ts * 1000000.0))
+      {
+        //Calculate angular velocity from derivative
+        angular_velocity = diff.differentiate(enc_deg*DEGS_TO_RPM);
+        //update prev variables
+        prev_micros = current_micros;
+        prev_deg = enc_deg;
+      }
       analogWrite(PWM_B, volts_to_PWM(pid_output));
       break;
       
