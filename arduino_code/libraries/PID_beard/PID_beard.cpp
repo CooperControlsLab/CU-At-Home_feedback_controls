@@ -2,12 +2,13 @@
 #include <Arduino.h>
 
 //Constructor logic
-PIDControl::PIDControl(double p, double i, double d, double lim, double sigm, double t, bool fl){
+PIDControl::PIDControl(double p, double i, double d, double llim, double ulim, double sigm, double t, bool fl){
 
     kp = p;
     ki = i;
     kd = d;
-    limit = lim;
+    lowerLimit = llim;
+    upperLimit = ulim;
     sigma = sigm;
     Ts = t;
     flag = fl;
@@ -37,6 +38,12 @@ double PIDControl::PID(double y_r, double y){
     //Integrate errkor using trapazoidal rule
     integrator = integrator + ((Ts/2) * (error + error_d1));
 
+    //Generate unsaturated signal from integrator only
+    integrator_unsat = ki*integrator;
+
+    //Saturate the integrator to the limit
+    integrator = saturate(integrator_unsat);
+
     //PID control
     if(flag == true){
         //Differentiate error
@@ -57,10 +64,12 @@ double PIDControl::PID(double y_r, double y){
     //Return saturated control signal
     double u_sat = saturate(u_unsat);
 
-    //Integrator anti-windup
-//     if(ki != 0.0){
-//         integrator = integrator + ((1.0 / ki) * (u_sat - u_unsat));
-//     }
+
+
+    //Integrator anti-windup beard
+    // if(ki != 0.0){
+    //     integrator = integrator + ((1.0 / ki) * (u_sat - u_unsat));
+    // }
 
     //Update delayed variables
     error_d1 = error;
@@ -105,13 +114,18 @@ double PIDControl::PD(double y_r, double y){
     return u_sat;
 }
 
-//Saturation check
+//Saturation check (from beard)
+// double PIDControl::saturate(double u){
+//     //Check if absolute value is above limit, clip value if so
+//     if (abs(u) > limit){
+//         u = limit * (abs(u) / u);
+//     }
+//     return u;
+// }
+
+//Saturation considering two bounds not equal to each other
 double PIDControl::saturate(double u){
-    //Check if absolute value is above limit, clip value if so
-    if (abs(u) > limit){
-        u = limit * (abs(u) / u);
-    }
-    return u;
+    return max(min(upperLimit, u), lowerLimit);
 }
 
 void PIDControl::update_time_parameters(double t, double s){

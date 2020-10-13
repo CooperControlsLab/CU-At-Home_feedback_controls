@@ -31,7 +31,8 @@ SerialComms com;  //Serial Communications class instantiation
 double kp = 5;
 double ki = 0;
 double kd = 1;
-double limit = SUPPLY_VOLTAGE;
+double lowerLimit = -1*SUPPLY_VOLTAGE;
+double upperLimit = SUPPLY_VOLTAGE;
 double sigma = 0.01;
 double sample_period = 0.005; //in sec
 bool flag = true;
@@ -40,7 +41,7 @@ bool controller_on = true;
 
 
 Differentiator diff(sigma, sample_period);
-PIDControl controller(kp, ki, kd, limit, sigma, sample_period, flag);
+PIDControl controller(kp, ki, kd, lowerLimit, upperLimit, sigma, sample_period, flag);
 
 //***********************************************************************************
 void setup() {
@@ -164,7 +165,8 @@ void update_control_params() {
   if (lowerOutputLimit != com.lowerOutputLimit || upperOutputLimit != com.upperOutputLimit) {
     lowerOutputLimit = com.lowerOutputLimit;
     upperOutputLimit = com.upperOutputLimit;
-    controller.limit = upperOutputLimit;
+    controller.upperLimit = upperOutputLimit;
+    controller.lowerLimit = lowerOutputLimit;
     
   }
 
