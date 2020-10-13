@@ -307,7 +307,7 @@ class Window(QWidget):
 
     def initUI(self):
 
-        # self.setStyleSheet(qdarkstyle.load_stylesheet())
+        self.setStyleSheet(qdarkstyle.load_stylesheet())
 
         horizontalLayout = QHBoxLayout()
         leftVerticalLayout = QVBoxLayout()
