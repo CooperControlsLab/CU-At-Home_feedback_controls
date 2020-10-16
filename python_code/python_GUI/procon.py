@@ -190,8 +190,8 @@ class SerialComm:
         print("S8:", values)
     
     #S10 W is binary (1 is activated, 0 is not)
-    def writeAntiWindup(self):
-        values = f"S10,W1,\0"
+    def writeAntiWindup(self,AntiWindup):
+        values = f"S10,W{AntiWindup},\0"
         self.ser.write(str.encode(values))
         print("S10:", values)
 
