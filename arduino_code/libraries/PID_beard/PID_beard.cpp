@@ -38,11 +38,13 @@ double PIDControl::PID(double y_r, double y){
     //Integrate errkor using trapazoidal rule
     integrator = integrator + ((Ts/2) * (error + error_d1));
 
-    //Generate unsaturated signal from integrator only
-    integrator_unsat = ki*integrator;
+    if(anti_windup_activated==1){
+        //Generate unsaturated signal from integrator only
+        integrator_unsat = ki*integrator;
 
-    //Saturate the integrator to the limit
-    integrator = saturate(integrator_unsat);
+        //Saturate the integrator to the limit
+        integrator = saturate(integrator_unsat)/ki;
+    }
 
     //PID control
     if(flag == true){

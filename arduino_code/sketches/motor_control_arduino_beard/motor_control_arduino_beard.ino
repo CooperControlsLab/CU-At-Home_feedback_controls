@@ -73,7 +73,7 @@ void loop() {
    com.handle_command();  //Process incoming command
    update_control_params();    //Update gains, update inputs based on labtype
    compute_motor_voltage(); // Update controller input, compute motor voltage and write to motor
-   com.send_data(enc_deg, angular_velocity, pid_output);
+   com.send_data(enc_deg, angular_velocity/RPM_TO_RADS, pid_output);
 }
 
 
@@ -176,6 +176,11 @@ void update_control_params() {
     controller.update_time_parameters(sample_period, sigma); //Update controller sample period
     diff.update_time_parameters(sample_period, sigma);
   }
+
+  //Update anti-windup activated
+  if(com.anti_windup_activated != controller.anti_windup_activated){
+    controller.anti_windup_activated = com.anti_windup_activated;
+  }
 }
 
 //*****************************************************//
@@ -192,7 +197,7 @@ void compute_motor_voltage() {
         {
           
           //Calculate PID output
-          pid_output = controller.PID(setpoint, enc_deg);
+          pid_output = controller.PID(setpoint*DEG_TO_RAD, enc_deg*DEG_TO_RAD);
 //          Serial.print(" | dt: "); Serial.print(current_micros - prev_micros);
 //          Serial.print(" | setpoint: "); Serial.print(setpoint);
 //          Serial.print(" | encdeg: "); Serial.print(enc_deg);
@@ -218,9 +223,9 @@ void compute_motor_voltage() {
       if((current_micros - prev_micros) >= (controller.Ts * 1000000.0))
       {
         //Calculate angular velocity from derivative
-        angular_velocity = diff.differentiate(enc_deg*DEGS_TO_RPM);
+        angular_velocity = diff.differentiate(enc_deg*DEG_TO_RAD);
         //Calculate PID output
-        pid_output = controller.PID(setpoint, angular_velocity);
+        pid_output = controller.PID(setpoint*RPM_TO_RADS, angular_velocity);
         //update prev variables
         prev_micros = current_micros;
         prev_deg = enc_deg;
@@ -243,7 +248,7 @@ void compute_motor_voltage() {
       if((current_micros - prev_micros) >= (controller.Ts * 1000000.0))
       {
         //Calculate angular velocity from derivative
-        angular_velocity = diff.differentiate(enc_deg*DEGS_TO_RPM);
+        angular_velocity = diff.differentiate(enc_deg*DEG_TO_RAD);
         //update prev variables
         prev_micros = current_micros;
         prev_deg = enc_deg;

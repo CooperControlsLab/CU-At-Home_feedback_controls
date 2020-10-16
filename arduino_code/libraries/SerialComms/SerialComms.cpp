@@ -96,6 +96,10 @@ void SerialComms::process_command(char* cmd_string){
         case 9:
             calibration_start = true;
             break;
+        
+        case 10:
+            anti_windup_activated = (int)(parse_number(cmd_string, 'W', -1));
+            break;
 
         default: break;
     }

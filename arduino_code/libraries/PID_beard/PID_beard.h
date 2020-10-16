@@ -22,6 +22,7 @@ public:
     double integrator; //integrator value
     double integrator_unsat; //Unsaturated integrator value
     double integrator_sat; //Integrator value saturated
+    int anti_windup_activated; //activate anti-windup
 
     //class methods
     double PID(double,double);
