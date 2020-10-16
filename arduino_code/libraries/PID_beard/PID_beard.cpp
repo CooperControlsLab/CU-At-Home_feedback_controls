@@ -38,7 +38,7 @@ double PIDControl::PID(double y_r, double y){
     //Integrate errkor using trapazoidal rule
     integrator = integrator + ((Ts/2) * (error + error_d1));
 
-    if(anti_windup_activated==1){
+    if(anti_windup_activated==1 && ki != 0){
         //Generate unsaturated signal from integrator only
         integrator_unsat = ki*integrator;
 
