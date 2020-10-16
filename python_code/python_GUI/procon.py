@@ -551,7 +551,7 @@ class Window(QWidget):
         self.SaturationInput = QLineEdit("",self)
         self.SaturationInput.setText("-12,12")
         #pair of comma separated numbers, each from -12.0000 to 12.0000
-        self.SaturationInput.setValidator(QRegExpValidator(QRegExp("^(-?(((([0-9]|1[0-1])(\.\d{0,4})?))|(12)(\.0{0,4})?)\,-?(((([0-9]|1[0-1])(\.\d{0,4})?))|(12)(\.0{0,4})?))$")))
+        self.SaturationInput.setValidator(QRegExpValidator(QRegExp("^(-?(((([0-9]|1[0-1])(\.\d{0,4})?))|(12)(\.0{0,4})?|)\,-?(((([0-9]|1[0-1])(\.\d{0,4})?))|(12)(\.0{0,4})?|))$")))
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
