@@ -189,6 +189,12 @@ class SerialComm:
         self.ser.write(str.encode(values))
         print("S8:", values)
     
+    #S10 W is binary (1 is activated, 0 is not)
+    def writeAntiWindup(self,AntiWindup):
+        values = f"S10,W{AntiWindup},\0"
+        self.ser.write(str.encode(values))
+        print("S10:", values)
+
 
 class SettingsClass(QDialog):
     """
@@ -634,11 +640,27 @@ class Window(QWidget):
         self.ControllerSwitch.clicked.connect(self.controllerToggle)
         groupParaGridLayout.addWidget(self.ControllerSwitch, 9, 1, 1, 1, alignment=Qt.AlignCenter)
 
+        self.AntiWindupLabel = QLabel("AW Off/On",self)
+        self.AntiWindupLabel.setMinimumSize(QSize(100, 20))
+        self.AntiWindupLabel.setMaximumSize(QSize(100, 20))
+        groupParaGridLayout.addWidget(self.AntiWindupLabel, 10, 0, 1, 1)
+        self.AntiWindSwitch = Switch(thumb_radius=11, track_radius=8)
+        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.AntiWindSwitch.sizePolicy().hasHeightForWidth())
+        self.AntiWindSwitch.setSizePolicy(sizePolicy)
+        #self.AntiWindSwitch.setMaximumSize(QSize(100, 20))
+        self.AntiWindSwitch.clicked.connect(self.antiwindupToggle)
+        groupParaGridLayout.addWidget(self.AntiWindSwitch, 10, 1, 1, 1, alignment=Qt.AlignCenter)
+        
+
+
         self.OLCButton = QPushButton("OL Characterization",self)
         #Below line is commented as this button should on be live when
         #serial communication is open
         self.OLCButton.setMaximumSize(QSize(300, 20))
-        groupParaGridLayout.addWidget(self.OLCButton, 10, 0, 1, 2)
+        groupParaGridLayout.addWidget(self.OLCButton, 11, 0, 1, 2)
 
 
         self.updateButton = QPushButton("Update Parameters",self)
@@ -646,7 +668,7 @@ class Window(QWidget):
         #serial communication is open
         #self.updateButton.clicked.connect(self.updateParameters)
         self.updateButton.setMaximumSize(QSize(300, 20))
-        groupParaGridLayout.addWidget(self.updateButton, 11, 0, 1, 2)
+        groupParaGridLayout.addWidget(self.updateButton, 12, 0, 1, 2)
 
         leftVerticalLayout.addLayout(mainGridLayout)
         leftVerticalLayout.addWidget(groupBoxPlotting)
@@ -767,6 +789,7 @@ class Window(QWidget):
             self.serialInstance.writeSaturation(self.getSaturationValue())
             self.serialInstance.writeOLPWM(self.getOLPWMValue())
             self.serialInstance.writeFF(self.getFFValue())
+            self.serialInstance.writeAntiWindup(self.getAntiWindupState())
 
         except AttributeError:
             print("Some fields are empty. Recheck then try again")
@@ -877,7 +900,8 @@ class Window(QWidget):
                             self.PIDInput()["P"],
                             self.PIDInput()["I"],
                             self.PIDInput()["D"],     
-                            self.getControllerState()
+                            self.getControllerState(),
+                            self.getAntiWindupState()
                             ]
 
         #Data buffers. What is being plotted in the 2 windows
@@ -1148,6 +1172,26 @@ class Window(QWidget):
 
             elif test1.isChecked() == True:
                 self.serialInstance.writeController("1")
+
+    #This method will only be activated once serial is starting up
+    def getAntiWindupState(self):
+        if self.AntiWindSwitch.isChecked() == False:
+            return("0")
+        elif self.AntiWindSwitch.isChecked() == True:
+            return("1")
+
+
+    #This method can be activated as many times as long as Led is Green
+    #AND lab type is position/speed
+    # which is when serial communication is open. Otherwise it will do nothing
+    def antiwindupToggle(self):
+        test1 = self.sender()
+        if self._led.onColour == QLed.Green:
+            if test1.isChecked() == False:
+                self.serialInstance.writeAntiWindup("0")
+            
+            elif test1.isChecked() == True:
+                self.serialInstance.writeAntiWindup("1")
 
 
     #GCode format for Sample Time
