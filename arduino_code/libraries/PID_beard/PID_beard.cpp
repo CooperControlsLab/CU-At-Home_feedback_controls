@@ -24,6 +24,10 @@ PIDControl::PIDControl(double p, double i, double d, double llim, double ulim, d
 
     //Initialize integrator value to zero
     integrator = 0;
+
+    // Inialize deadband voltages
+    deadband_voltage_upper = 0; 
+    deadband_voltage_lower = 0;
 }
 
 
@@ -76,7 +80,7 @@ double PIDControl::PID(double y_r, double y){
     //Update delayed variables
     error_d1 = error;
     y_d1 = y;
-    return u_sat;
+    return deadband_compensation(u_sat);
 }
 
 //PD calculation
@@ -130,6 +134,17 @@ double PIDControl::saturate(double u){
     return max(min(upperLimit, u), lowerLimit);
 }
 
+// Compensate for motor deadband, by adjusting output related to deadband voltages.
+double PIDControl::deadband_compensation(double u){
+    if(u > 0){
+        return deadband_voltage_upper + ( (u/upperLimit) * (upperLimit - deadband_voltage_upper) );
+    }
+    if(u < 0){
+        return deadband_voltage_lower + ( (u/lowerLimit) * (lowerLimit - deadband_voltage_lower) );
+    }
+    else{ return u; }
+}
+
 void PIDControl::update_time_parameters(double t, double s){
     Ts = t;
     sigma = s;
@@ -148,4 +163,9 @@ void PIDControl::setpoint_reset(double y_r, double y){
     integrator = 0;
     error_d1 = y_r - y;
     error_dot = 0;
+}
+
+void PIDControl::update_deadband_voltages(double upper, double lower){
+    deadband_voltage_upper = upper;
+    deadband_voltage_lower = lower;
 }

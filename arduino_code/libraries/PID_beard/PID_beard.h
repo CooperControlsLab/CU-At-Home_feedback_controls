@@ -23,6 +23,8 @@ public:
     double integrator_unsat; //Unsaturated integrator value
     double integrator_sat; //Integrator value saturated
     int anti_windup_activated; //activate anti-windup
+    double deadband_voltage_upper; //Voltage at which motor starts to rotate
+    double deadband_voltage_lower;
 
     //class methods
     double PID(double,double);
@@ -31,4 +33,6 @@ public:
     void update_time_parameters(double, double);
     void update_gains(double, double, double);
     void setpoint_reset(double, double);
+    void update_deadband_voltages(double, double);
+    double deadband_compensation(double);
 };

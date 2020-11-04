@@ -66,6 +66,9 @@ void setup() {
   //Force com values for debug
   com.mode = 1;
   com.labType = 0;
+
+  // Set deadband voltages
+  controller.update_deadband_voltages(2, -2);
 }
 
 //***********************************************************************************
