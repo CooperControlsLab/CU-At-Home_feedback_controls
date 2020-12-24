@@ -1,6 +1,7 @@
+#ifndef _PIDCONTROL_H
+#define _PIDCONTROL_H
 
 class PIDControl{
-
 public:
     //Construtors
     PIDControl(double, double, double, double, double, double, double, bool);
@@ -32,3 +33,5 @@ public:
     void update_gains(double, double, double);
     void setpoint_reset(double, double);
 };
+
+#endif // !_PIDCONTROL_H
