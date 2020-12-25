@@ -34,13 +34,13 @@ ProCon::ProCon() {
 }
 
 void ProCon::process_cmd() {
-	Serial.println("Calling ProCon process_cmd");
+	//Serial.println("Calling ProCon process_cmd");
 	int pos;
 	int cmd;
 
 	//Handshake command
 	cmd = get_cmd_code('H', -1);
-	switch ((int)(cmd)) {
+	switch (cmd) {
 	case 0: // Handshake stuff to be implemented
 		break;
 	default: break;
@@ -48,101 +48,179 @@ void ProCon::process_cmd() {
 
 	//Request command
 	cmd = get_cmd_code('R', -1);
-	switch ((int)(cmd)) {
+	switch (cmd) {
 	case 0: //Flag to write data
-		write_data = 1;
+		write_data = true;
+		//Serial.println("Write data on");
 		break;
 
 		//If no matches, break
-	default: break;
+	default: 
+		break;
 	}
 
 	//Set value/mode commands
 	cmd = get_cmd_code('S', -1);
-	switch (int(cmd)) {
-	case 0: //Set PID gains
-		kp = (double)(get_cmd_code('P', -1));
-		ki = (double)(get_cmd_code('I', -1));
-		kd = (double)(get_cmd_code('D', -1));
+	//Serial.print("S"); Serial.println(cmd);
+	switch (cmd) {
+	case 0: { //Set PID gains
+		double new_kp = get_cmd_code('P', -1);
+		if (new_kp != -1 && new_kp != kp) {
+			kp = new_kp;
+		}
+
+		double new_ki = get_cmd_code('I', -1);
+		if (new_ki != -1 && new_ki != ki) {
+			ki = new_ki;
+		}
+
+		double new_kd = get_cmd_code('D', -1);
+		if (new_kd != -1 && new_kd != kd) {
+			kd = new_kd;
+		}
+		//Serial.print("S0"); Serial.print(kp); Serial.print(ki); Serial.print(kd);
+	}
 		break;
 
-	case 1://Set Setpoint
-		setpoint = (double)(get_cmd_code('Z', -1));
+	case 1: { //Set Setpoint
+		//Serial.print("setpoint"); Serial.println(setpoint);
+		double new_setpoint = get_cmd_code('Z', -1);
+		if (new_setpoint != -1 && new_setpoint != setpoint) {
+			setpoint = new_setpoint;
+		}
+	}
 		break;
-
-	case 2: //Set Lab type
-		labType = (int)(get_cmd_code('Y', -1));
+	case 2: { //Set Lab type
+		int new_labType{ get_cmd_code('Y', -1) };
+		//Serial.print("old labType"); Serial.println(labType);
+		if (new_labType != -1 && new_labType != labType) {
+			labType = new_labType;
+		}
+		//Serial.print("new labType"); Serial.println(labType);
+	}
 		break;
-
-	case 3: //Set Controller Mode (on/off)
-		mode = (int)(get_cmd_code('M', -1));
+	case 3: { //Set Controller Mode (on/off)
+		int new_mode{ get_cmd_code('M', -1) };
+		if (new_mode != -1 && new_mode != mode) {
+			mode = new_mode;
+		}
+		//Serial.print("Mode"); Serial.println(mode);
+	}
 		break;
-
-	case 4: //Set Sample Period
+	case 4: { //Set Sample Period
 		double new_sample_period{ get_cmd_code('T', -1) };
-		if (new_sample_period != -1) {
+		if (new_sample_period != -1 && new_sample_period != sample_period) {
 			sample_period = new_sample_period;
 		}
+	}
 		break;
 
-	case 5: //Set Output Limits
-		lowerOutputLimit = (double)(get_cmd_code('L', -1));
-		upperOutputLimit = (double)(get_cmd_code('U', -1));
-		break;
+	case 5: { //Set Output Limits
+		double new_lowerOutputLimit{ get_cmd_code('L', -1) };
+		if (new_lowerOutputLimit != -1 && new_lowerOutputLimit != lowerOutputLimit) {
+			lowerOutputLimit = new_lowerOutputLimit;
+		}
 
-	case 6: //Openloop control
-		open_loop_voltage = (double)(get_cmd_code('O', 0));
-		break;
+		double new_upperOutputLimit{ get_cmd_code('U', -1) };
+		if (new_upperOutputLimit != -1 && new_upperOutputLimit != upperOutputLimit) {
+			upperOutputLimit = new_upperOutputLimit;
+		}
 
-	case 7: //Feed Foward Voltage
+	}
+		break;
+	case 6: { //Openloop control
+		double new_open_loop_voltage{ get_cmd_code('O', 0) };
+		if (new_open_loop_voltage != 0 && new_open_loop_voltage != open_loop_voltage) {
+			open_loop_voltage = new_open_loop_voltage;
+		}
+	}
+		break;
+	case 7: { //Feed Foward Voltage
 		FF_A = (double)(get_cmd_code('A', 0));
 		FF_B = (double)(get_cmd_code('B', 0));
 		FF_C = (double)(get_cmd_code('C', 0));
+	}
 		break;
-
-	case 8: //Open Loop Step Resonse Analysis
+	case 8: { //Open Loop Step Resonse Analysis
 		open_loop_analysis_start = true;
 		open_loop_analysis_time = (double)(get_cmd_code('T', -1));
-		break;
-
-	case 9:
-		calibration_start = true;
-		break;
-
-	case 10:
-		anti_windup_activated = (int)(get_cmd_code('W', -1));
-		break;
-
-	default: break;
 	}
+		break;
+	case 9: {
+		calibration_start = true;
+	}
+		break;
+	case 10: {
+		int new_anti_windup_activated{ get_cmd_code('W', -1) };
+		if (new_anti_windup_activated != -1 && new_anti_windup_activated != anti_windup_activated) {
+			anti_windup_activated = new_anti_windup_activated;
+		}
+	}
+		break;
+
+	default: 
+		break;
+	}
+	//if (cmd == 3) {
+	//	Serial.println("Read 3");
+	//}
+	//else {
+	//	Serial.print("Read "); Serial.println(cmd);
+	//}
+	//Serial.println((int)(get_cmd_code('M', -1)));
 }
 
 void ProCon::run_lab() {
-	return;
+	update_control_params();
+	compute_motor_voltage();
+
+	// Check and if there is a request, send data
+	if (write_data) {
+		Serial.print("T"); Serial.print(micros()); Serial.print(',');
+		Serial.print('S'); Serial.print(setpoint); Serial.print(',');
+		Serial.print('A');
+		if (labType == 0) { // Angle
+			Serial.print(enc_deg);
+		}
+		else if (labType == 1 || labType == 2) {
+			Serial.print(angular_velocity / RPM_TO_RADS);
+		}
+		else {
+			Serial.print(labType);
+			Serial.print(999);
+		}
+
+		Serial.print(',');
+		Serial.print('Q'); Serial.print(pid_output); Serial.print(',');
+		Serial.println('\0');
+		write_data = false; // Reset write data flag
+		//Serial.println("Write data off");
+	}
 }
 
 void ProCon::update_control_params() {
 	//Check for OpenLoop Analysis and run
 	if (open_loop_analysis_start) {
 		//Create large array to store data
-		double t0{ millis() };
-		unsigned long init_time{ millis() };
-		unsigned long current_time{ init_time };
-		unsigned long prev_time{ init_time };
+
+		double t0 = int(millis());
+		unsigned long init_time = millis();
+		unsigned long current_time = init_time;
+		unsigned long prev_time = init_time;
 
 		//Set motor open loop voltage
 		pid_output = open_loop_voltage;
 		analogWrite(PWM_B, volts_to_PWM(pid_output));
 
 		//initialize index variable
-		int i{ 0 };
+		int i = 0;
 
 		//Reset Open Loop differentiator
 		enc_deg = count_to_deg(enc_count);
 		//diff.update_time_parameters(diff.Ts, 0.1);
 		diff.reset(enc_deg);
 
-		while (true) {
+		while (1) {
 			enc_deg = count_to_deg(enc_count); //Update encoder degrees
 			current_time = millis();
 
@@ -164,18 +242,135 @@ void ProCon::update_control_params() {
 				prev_time = current_time; //Reset previous time
 				i++; //Increment index counter
 			}
+
+
 		}
 
-		// Send data function in SerialCommsBase?
 		//Send long serial data to python
-		for (int j = 0; j < storage_length; j++) {
-			Serial.print("D0"); Serial.print(',');
-			Serial.print('T'); Serial.print(time[j]); Serial.print(',');
-			Serial.print('P'); Serial.print(0); Serial.print(',');
-			Serial.print('V'); Serial.print(velocity[j] * DEGS_TO_RPM); Serial.print(',');
-			Serial.print('I'); Serial.print(pid_output); Serial.print('$');
+		//for (int j = 0; j < storage_length; j++) {
+		//	Serial.print("D0"); Serial.print(',');
+		//	Serial.print('T'); Serial.print(time[j]); Serial.print(',');
+		//	Serial.print('P'); Serial.print(0); Serial.print(',');
+		//	Serial.print('V'); Serial.print(velocity[j] * DEGS_TO_RPM); Serial.print(',');
+		//	Serial.print('I'); Serial.print(pid_output); Serial.print('$');
+		//}
+		//Serial.print('\n');
+	}
+
+	//Update Setpoint
+	if (setpoint != setpoint) {
+		setpoint = setpoint;
+	}
+
+	//Update Mode
+	if (mode == 0) {
+		controller_on = false;  // M0 - Controller Off, set motor output to zero
+		pid_output = 0;
+	}
+	else if (mode == 1) {
+		// M1 - Controller On
+		controller_on = true;
+	}
+
+	////Update gains
+	//if (kp != com.kp || ki != com.ki || kd != com.kd) {
+	//	kp = com.kp; ki = com.ki; kd = com.kd;  // Checking for difference before setting to prevent jitter
+	//	// Update gains
+	//	controller.update_gains(kp, ki, kd);
+	//	//    Serial.print(" kp test: "); Serial.println(controller.kp, 10);
+	//}
+
+	//if (lowerOutputLimit != com.lowerOutputLimit || upperOutputLimit != com.upperOutputLimit) {
+	//	lowerOutputLimit = com.lowerOutputLimit;
+	//	upperOutputLimit = com.upperOutputLimit;
+	//	controller.upperLimit = upperOutputLimit;
+	//	controller.lowerLimit = lowerOutputLimit;
+
+	//}
+
+	////Update Sample Time
+	//if (sample_period != com.sampleTime) {
+	//	sample_period = com.sampleTime;
+	//	controller.update_time_parameters(sample_period, sigma); //Update controller sample period
+	//	diff.update_time_parameters(sample_period, sigma);
+	//}
+
+	////Update anti-windup activated
+	//if (com.anti_windup_activated != controller.anti_windup_activated) {
+	//	controller.anti_windup_activated = com.anti_windup_activated;
+	//}
+}
+
+void ProCon::compute_motor_voltage() {
+	enc_deg = count_to_deg(enc_count); // Retrieve Current Position in Radians
+	current_micros = micros(); //Get current microseconds
+
+	switch (labType) {
+	case 0: // Angle Control
+		if (controller_on) {
+			//If sample period amount has passed do processing
+			if ((current_micros - prev_micros) >= (controller.Ts * 1000000.0)) {
+
+				//Calculate PID output
+				pid_output = controller.PID(setpoint * DEG_TO_RAD, enc_deg * DEG_TO_RAD);
+				//          Serial.print(" | dt: "); Serial.print(current_micros - prev_micros);
+				//          Serial.print(" | setpoint: "); Serial.print(setpoint);
+				//          Serial.print(" | encdeg: "); Serial.print(enc_deg);
+				//          Serial.print(" | Ts: "); Serial.print(controller.Ts, 10);
+				//          Serial.print(" | kp: "); Serial.print(controller.kp);
+				//          Serial.print(" | beta: "); Serial.print(controller.beta);
+				//          Serial.print(" | sigma: "); Serial.print(controller.sigma);
+				//          Serial.print(" | pidout: ");
+				//          Serial.println(pid_output);
+
+						  //update prev variables
+				prev_micros = current_micros;
+				prev_deg = enc_deg;
+			}
 		}
-		Serial.print('\n');
+		pid_output = pid_output_signal_conditioning(pid_output);
+		update_motor_voltage(pid_output);
+		break;
+
+	case 1: // Speed Control
+	  //If sample period amount has passed do processing
+		if ((current_micros - prev_micros) >= (controller.Ts * 1000000.0)) {
+			//Calculate angular velocity from derivative
+			angular_velocity = diff.differentiate(enc_deg * DEG_TO_RAD);
+			//Calculate PID output
+			pid_output = controller.PID(setpoint * RPM_TO_RADS, angular_velocity);
+			//update prev variables
+			prev_micros = current_micros;
+			prev_deg = enc_deg;
+		}
+		if (controller_on) {
+			pid_output = pid_output_signal_conditioning(pid_output);
+			update_motor_voltage(pid_output);
+		}
+		else {
+			analogWrite(PWM_B, 0);
+		}
+		break;
+	case 2: // Open Loop Speed Control
+		// Chnage motor voltage to open loop voltage if controller is on
+		if (mode == 1) { 
+			pid_output = open_loop_voltage; 
+		}
+		// else if (com.mode == 0) {
+		//   motor_voltage = 0;
+		// }
+		if ((current_micros - prev_micros) >= (controller.Ts * 1000000.0))
+		{
+			//Calculate angular velocity from derivative
+			angular_velocity = diff.differentiate(enc_deg * DEG_TO_RAD);
+			//update prev variables
+			prev_micros = current_micros;
+			prev_deg = enc_deg;
+		}
+		analogWrite(PWM_B, volts_to_PWM(pid_output));
+		break;
+	default: 
+		break; // Null default
 	}
 }
 
@@ -186,7 +381,6 @@ void ProCon::update_motor_voltage(double voltage) {
 	//    analogWrite(PWM_B, 0);
 	//    return;
 	}
-
 	else {
 		digitalWrite(DIR_B, HIGH); // CW
 	}

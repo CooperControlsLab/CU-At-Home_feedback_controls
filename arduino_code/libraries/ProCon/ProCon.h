@@ -35,14 +35,14 @@ private:
 	double lowerLimit{ -1 * SUPPLY_VOLTAGE };
 	double upperLimit{ SUPPLY_VOLTAGE };
 
-	int mode;
+	int mode{ 0 };
 	int lowerOutputLimit;
 	int upperOutputLimit;
 
-	int write_data;
+	bool write_data{ false };
 	char data[200];
 
-	int labType;
+	int labType{ -1 };
 
 	int open_loop_voltage;
 
@@ -51,7 +51,7 @@ private:
 	double FF_B;
 	double FF_C;
 
-	bool open_loop_analysis_start;
+	bool open_loop_analysis_start{ false };
 	double open_loop_analysis_time;
 
 	bool calibration_start;
@@ -61,12 +61,14 @@ private:
 
 	bool flag{ true };
 	double pid_output{ 0 };
-	bool controller_on{ true };
+	bool controller_on{ false };
 
 	double current_micros{ micros() };
 	double prev_micros{ current_micros };
 
 	double enc_deg{ 0 };
+
+	double angular_velocity;
 
 	// storage_length was defined in SerialComms
 	int time[storage_length];

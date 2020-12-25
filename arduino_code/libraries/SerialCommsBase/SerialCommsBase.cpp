@@ -61,7 +61,7 @@ void SerialComms::retrieve_cmd() {
 		incoming_char = Serial.read();
 		cmd_string[cmd_index] = incoming_char;
 		if (incoming_char == '\0' || incoming_char == '%') {
-			Serial.println("End of line, processing commands!");
+			//Serial.println("End of line, processing commands!");
 			cmd_index = 0;
 			if (cmd_string[0] == 'L') {
 				lab_code = get_cmd_code('L', -1);
