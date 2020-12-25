@@ -19,7 +19,7 @@ constexpr auto DEGS_TO_RPM{ 0.166667 };
 
 
 #include "CUatHomeLab.h"
-#include "PID_beard.h""
+#include "PID_beard.h"
 #include "Differentiator.h"
 #include "motor_control_hardware_config.h"
 #include <Arduino.h>
@@ -67,7 +67,6 @@ private:
 	double prev_micros{ current_micros };
 
 	double enc_deg{ 0 };
-	static double enc_count;
 
 	// storage_length was defined in SerialComms
 	int time[storage_length];
@@ -81,6 +80,8 @@ public:
 	void process_cmd();
 	void run_lab();
 
+	static double enc_count;
+
 	void update_control_params();
 	void compute_motor_voltage();
 	void update_motor_voltage(double voltage);
@@ -88,7 +89,7 @@ public:
 	double PWM_to_volts(int PWM);
 	double pid_output_signal_conditioning(double val);
 	double count_to_deg(double count);
-	void pulseA();
+	static void pulseA();
 	static void pulseB();
 };
 

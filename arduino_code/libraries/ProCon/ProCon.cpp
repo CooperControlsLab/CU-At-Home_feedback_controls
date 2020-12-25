@@ -12,19 +12,19 @@ running the ProCon lab using the CUatHome kit.
 
 #include "ProCon.h"
 #include "CUatHomeLab.h"
-#include "PID_beard.h""
+#include "PID_beard.h"
 #include "Differentiator.h"
 #include "motor_control_hardware_config.h"
 #include <Arduino.h>
 
-ProCon::ProCon() {
-	double enc_count{ 0 };
+double ProCon::enc_count = 0;
 
+ProCon::ProCon() {
 	//Encoder Setup
 	pinMode(ENC_A, INPUT_PULLUP);
 	pinMode(ENC_B, INPUT_PULLUP);
 
-	//attachInterrupt(digitalPinToInterrupt(ENC_A), pulseA, CHANGE);
+	attachInterrupt(digitalPinToInterrupt(ENC_A), ProCon::pulseA, CHANGE);
 	attachInterrupt(digitalPinToInterrupt(ENC_B), ProCon::pulseB, CHANGE);
 
 	//Motor Setup
@@ -34,6 +34,7 @@ ProCon::ProCon() {
 }
 
 void ProCon::process_cmd() {
+	Serial.println("Calling ProCon process_cmd");
 	int pos;
 	int cmd;
 
@@ -122,8 +123,7 @@ void ProCon::run_lab() {
 
 void ProCon::update_control_params() {
 	//Check for OpenLoop Analysis and run
-	if (open_loop_analysis_start)
-	{
+	if (open_loop_analysis_start) {
 		//Create large array to store data
 		double t0{ millis() };
 		unsigned long init_time{ millis() };
@@ -212,7 +212,7 @@ double ProCon::count_to_deg(double count) {
 	return (double(count / PPR) * 360);  // rad = (count / pulse/rev) * 360 deg/rev
 }
 
-void ProCon::pulseA() {
+static void ProCon::pulseA() {
 	int valA = digitalRead(ENC_A);
 	int valB = digitalRead(ENC_B);
 
