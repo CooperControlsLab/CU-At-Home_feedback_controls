@@ -10,8 +10,8 @@ is inherited by CUatHomeLab class to be used for serial communication purposes.
 This header file contains the function declerations.
 */
 
-#ifndef _SERIAL_COMMS_BASE_H
-#define _SERIAL_COMMS_BASE_H
+#ifndef SERIAL_COMMS_BASE_H
+#define SERIAL_COMMS_BASE_H
 
 #include <Arduino.h>
 
@@ -51,7 +51,8 @@ public:
 	bool lab_changed{ false };  // Start true and then overwrite for new lab
 
 	// For data processing
-	char cmd_string[200];
+	static const int storage_length{ 200 };
+	char cmd_string[storage_length];
 	int cmd_index{ 0 };
 	bool cmd_retrieved{ false };
 	char incoming_char;
@@ -60,7 +61,7 @@ public:
 	SerialComms();
 
 	// Updates the sample rate
-	void update_sample_period(double new_sample_period);
+	//void update_sample_period(double new_sample_period);
 
 	// Called by lab to retrieve command string
 	void retrieve_cmd();
@@ -77,4 +78,4 @@ public:
 	void send_data(char* data);
 };
 
-#endif // _SERIAL_COMMS_BASE_H 
+#endif // !SERIAL_COMMS_BASE_H 

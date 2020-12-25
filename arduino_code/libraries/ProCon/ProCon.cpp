@@ -12,43 +12,25 @@ running the ProCon lab using the CUatHome kit.
 
 #include "ProCon.h"
 #include "CUatHomeLab.h"
-#include <PID_beard.h>
-#include <Differentiator.h>
-#include <motor_control_hardware_config.h>
+#include "PID_beard.h""
+#include "Differentiator.h"
+#include "motor_control_hardware_config.h"
 #include <Arduino.h>
 
 ProCon::ProCon() {
-	setpoint = 100;
-	prev_deg = 0;
-	//instantiate beard PID controller
-	kp = 5;
-	ki = 0;
-	kd = 1;
-	lowerLimit = -1 * SUPPLY_VOLTAGE;
-	upperLimit = SUPPLY_VOLTAGE;
-	sigma = 0.01;
-	flag = true;
-	pid_output = 0;
-	controller_on = true;
-
-	Differentiator diff(sigma, sample_period);
-	//PIDControl controller(kp, ki, kd, lowerLimit, upperLimit, sigma, sample_period, flag);
+	double enc_count{ 0 };
 
 	//Encoder Setup
 	pinMode(ENC_A, INPUT_PULLUP);
 	pinMode(ENC_B, INPUT_PULLUP);
+
 	//attachInterrupt(digitalPinToInterrupt(ENC_A), pulseA, CHANGE);
-	//attachInterrupt(digitalPinToInterrupt(ENC_B), pulseB, CHANGE);
+	attachInterrupt(digitalPinToInterrupt(ENC_B), ProCon::pulseB, CHANGE);
 
 	//Motor Setup
 	pinMode(PWM_B, OUTPUT);
 	pinMode(DIR_B, OUTPUT);
 	digitalWrite(PWM_B, LOW); // Stop Motor on Start Up
-
-	//Initialize variables
-	current_micros = micros();
-	prev_micros = current_micros;
-	prev_deg = 0;
 }
 
 void ProCon::process_cmd() {
@@ -96,9 +78,9 @@ void ProCon::process_cmd() {
 		break;
 
 	case 4: //Set Sample Period
-		new_sample_period = get_cmd_code('T', -1);
+		double new_sample_period{ get_cmd_code('T', -1) };
 		if (new_sample_period != -1) {
-			update_sample_period(new_sample_period);
+			sample_period = new_sample_period;
 		}
 		break;
 
@@ -134,30 +116,33 @@ void ProCon::process_cmd() {
 	}
 }
 
+void ProCon::run_lab() {
+	return;
+}
+
 void ProCon::update_control_params() {
 	//Check for OpenLoop Analysis and run
 	if (open_loop_analysis_start)
 	{
 		//Create large array to store data
-		double t0 = int(millis());
-		unsigned long init_time = millis();
-		unsigned long current_time = init_time;
-		unsigned long prev_time = init_time;
+		double t0{ millis() };
+		unsigned long init_time{ millis() };
+		unsigned long current_time{ init_time };
+		unsigned long prev_time{ init_time };
 
 		//Set motor open loop voltage
 		pid_output = open_loop_voltage;
 		analogWrite(PWM_B, volts_to_PWM(pid_output));
 
 		//initialize index variable
-		int i = 0;
+		int i{ 0 };
 
 		//Reset Open Loop differentiator
 		enc_deg = count_to_deg(enc_count);
 		//diff.update_time_parameters(diff.Ts, 0.1);
 		diff.reset(enc_deg);
 
-		while (1)
-		{
+		while (true) {
 			enc_deg = count_to_deg(enc_count); //Update encoder degrees
 			current_time = millis();
 
@@ -183,8 +168,7 @@ void ProCon::update_control_params() {
 
 		// Send data function in SerialCommsBase?
 		//Send long serial data to python
-		for (int j = 0; j < storage_length; j++)
-		{
+		for (int j = 0; j < storage_length; j++) {
 			Serial.print("D0"); Serial.print(',');
 			Serial.print('T'); Serial.print(time[j]); Serial.print(',');
 			Serial.print('P'); Serial.print(0); Serial.print(',');
@@ -250,24 +234,24 @@ void ProCon::pulseA() {
 	}
 }
 
-void ProCon::pulseB() {
+static void ProCon::pulseB() {
 	int valA = digitalRead(ENC_A);
 	int valB = digitalRead(ENC_B);
 
 	if (valB == HIGH) { // B rise
 		if (valA == HIGH) {
-			enc_count++; // CW
+			++enc_count; // CW
 		}
 		else {
-			enc_count--; // CCW
+			--enc_count; // CCW
 		}
 	}
 	else { //B fall
 		if (valA == LOW) {
-			enc_count++; // CW
+			++enc_count; // CW
 		}
 		else {
-			enc_count--; // CCW
+			--enc_count; // CCW
 		}
 	}
 }

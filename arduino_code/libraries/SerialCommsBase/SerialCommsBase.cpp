@@ -16,10 +16,10 @@ This cpp file contains the function definitions.
 
 SerialComms::SerialComms(){}
 
-// Updates the sample rate
-void SerialComms::update_sample_period(double new_sample_period) {
-	sample_period = new_sample_period;
-}
+//// Updates the sample rate
+//void SerialComms::update_sample_period(double new_sample_period) {
+//	sample_period = new_sample_period;
+//}
 
 // Search cmd_string for key, return the number between key and delimiter
 // Returns number if the command exists, "def" if it does not exist

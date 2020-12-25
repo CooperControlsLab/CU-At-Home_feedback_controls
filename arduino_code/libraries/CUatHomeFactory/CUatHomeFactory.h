@@ -12,8 +12,8 @@ When adding a new lab to the CU@Home kit, the new lab must be added to the
 constructor switch statement and the header file must be included.
 */
 
-#ifndef _CU_AT_HOME_FACTORY_H
-#define _CU_AT_HOME_FACTORY_H
+#ifndef CU_AT_HOME_FACTORY_H
+#define CU_AT_HOME_FACTORY_H
 
 #include "CUatHomeLab.h"
 #include "ProCon.h"
@@ -37,4 +37,4 @@ private:
 	CUatHomeLab* lab;
 };
 
-#endif // _CU_AT_HOME_FACTORY_H
+#endif // !CU_AT_HOME_FACTORY_H

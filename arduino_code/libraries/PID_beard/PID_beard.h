@@ -1,5 +1,5 @@
-#ifndef _PIDCONTROL_H
-#define _PIDCONTROL_H
+#ifndef PIDCONTROL_H
+#define PIDCONTROL_H
 
 class PIDControl{
 public:
@@ -34,4 +34,4 @@ public:
     void setpoint_reset(double, double);
 };
 
-#endif // !_PIDCONTROL_H
+#endif // !PIDCONTROL_H

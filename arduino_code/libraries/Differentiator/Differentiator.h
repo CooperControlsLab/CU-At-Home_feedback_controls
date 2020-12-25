@@ -1,8 +1,7 @@
-#ifndef _DIFFERENTIATOR_H
-#define _DIFFERENTIATOR_H
+#ifndef DIFFERENTIATOR_H
+#define DIFFERENTIATOR_H
 
-class Differentiator{
-
+class Differentiator {
 public:
     //Constructors
     Differentiator(double, double);
@@ -23,4 +22,4 @@ private:
     double y_dot; //derivative of y
 };
 
-#endif // !_DIFFERENTIATOR_H
+#endif // !DIFFERENTIATOR_H

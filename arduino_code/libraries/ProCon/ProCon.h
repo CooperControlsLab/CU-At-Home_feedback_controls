@@ -10,20 +10,30 @@ This class contains also contains all the variables and functions necessary for
 running the ProCon lab using the CUatHome kit.
 */
 
+#ifndef PROCON_H
+#define PROCON_H
+
+//constexpr auto DEG_TO_RAD{ 2 * 3.14159 / 360 }; // defined in Arduino.h
+constexpr auto RPM_TO_RADS{ 0.104719755 };
+constexpr auto DEGS_TO_RPM{ 0.166667 };
+
+
 #include "CUatHomeLab.h"
-#include <PID_beard.h>
-#include <Differentiator.h>
-#include <motor_control_hardware_config.h>
+#include "PID_beard.h""
+#include "Differentiator.h"
+#include "motor_control_hardware_config.h"
 #include <Arduino.h>
 
 class ProCon : public CUatHomeLab {
 private:
-	double kp, ki, kd;
-	double setpoint;
+	double kp{ 5 };
+	double ki{ 0 };
+	double kd{ 1 };
+	double setpoint{ 100 };
 
-	double prev_deg;
-	double lowerLimit;
-	double upperLimit;
+	double prev_deg{ 0 };
+	double lowerLimit{ -1 * SUPPLY_VOLTAGE };
+	double upperLimit{ SUPPLY_VOLTAGE };
 
 	int mode;
 	int lowerOutputLimit;
@@ -47,20 +57,24 @@ private:
 	bool calibration_start;
 	int anti_windup_activated;
 
-	double sigma;
+	double sigma{ 0.01 };
 
-	double sample_period; //in sec
-	bool flag;
-	double pid_output;
-	bool controller_on;
+	bool flag{ true };
+	double pid_output{ 0 };
+	bool controller_on{ true };
 
-	double current_micros;
-	double prev_micros;
+	double current_micros{ micros() };
+	double prev_micros{ current_micros };
 
-	double new_sample_period;
+	double enc_deg{ 0 };
+	static double enc_count;
 
-	double enc_deg;
-	double enc_count;
+	// storage_length was defined in SerialComms
+	int time[storage_length];
+	int velocity[storage_length];
+
+	Differentiator diff{ sigma, sample_period };
+	PIDControl controller{ kp, ki, kd, lowerLimit, upperLimit, sigma, sample_period, flag };
 
 public:
 	ProCon();
@@ -75,5 +89,7 @@ public:
 	double pid_output_signal_conditioning(double val);
 	double count_to_deg(double count);
 	void pulseA();
-	void pulseB();
+	static void pulseB();
 };
+
+#endif // !PROCON_H

@@ -31,4 +31,4 @@ public:
 	virtual void run_lab();
 };
 
-#endif // _CU_AT_HOME_H
+#endif // !_CU_AT_HOME_H
