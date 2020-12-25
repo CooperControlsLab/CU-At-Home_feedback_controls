@@ -38,18 +38,19 @@ double SerialComms::get_cmd_code(char key, int def) {
 		}
 		++cmd_start;
 	}
-	//Serial.print("Start: "); Serial.println(cmd_start);
 
 	// Find position of the comma or \0 to get the index of the end of the code
 	int cmd_end{ cmd_start };
-	while (cmd_string[cmd_end] && !(cmd_string[cmd_end] == ',' || cmd_string[cmd_end] == '\0')) {
+	while (cmd_string[cmd_end] && !(cmd_string[cmd_end] == ',' || cmd_string[cmd_end] == '\0' || cmd_string[cmd_end] == '%')) {
 		++cmd_end;
 	}
 
+	//Serial.print("Start: "); Serial.println(cmd_start);
 	//Serial.print("End: "); Serial.println(cmd_end);
 	char cmd[20];
 	strncpy(cmd, &cmd_string[cmd_start], cmd_end - cmd_start);
-
+	cmd[cmd_end - cmd_start] = '\0'; // dangerous if code is too long
+	//Serial.print("cmd array: "); Serial.println(cmd);
 	return atof(cmd); // return the substring in float format
 }
 
@@ -62,6 +63,7 @@ void SerialComms::retrieve_cmd() {
 		cmd_string[cmd_index] = incoming_char;
 		if (incoming_char == '\0' || incoming_char == '%') {
 			//Serial.println("End of line, processing commands!");
+			//Serial.print("CMD: "); Serial.println(cmd_string);
 			cmd_index = 0;
 			if (cmd_string[0] == 'L') {
 				lab_code = get_cmd_code('L', -1);
