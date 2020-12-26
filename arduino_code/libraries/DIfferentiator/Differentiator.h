@@ -1,6 +1,7 @@
+#ifndef DIFFERENTIATOR_H
+#define DIFFERENTIATOR_H
 
-class Differentiator{
-
+class Differentiator {
 public:
     //Constructors
     Differentiator(double, double);
@@ -20,3 +21,5 @@ private:
     double y_d1; //differentiation variable 1 sample behind
     double y_dot; //derivative of y
 };
+
+#endif // !DIFFERENTIATOR_H
