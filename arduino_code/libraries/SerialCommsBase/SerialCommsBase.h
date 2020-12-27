@@ -48,6 +48,7 @@ class SerialComms {
 public:
 	double sample_period{ 0.005 };
 	int lab_code;
+	int new_lab_code;
 	bool lab_changed{ false };  // Start true and then overwrite for new lab
 
 	// For data processing

@@ -64,15 +64,20 @@ void SerialComms::retrieve_cmd() {
 		if (incoming_char == '\0' || incoming_char == '%') {
 			//Serial.println("End of line, processing commands!");
 			//Serial.print("CMD: "); Serial.println(cmd_string);
-			cmd_index = 0;
-			if (cmd_string[0] == 'L') {
-				lab_code = get_cmd_code('L', -1);
-				lab_changed = true;
+
+			new_lab_code = get_cmd_code('L', -1);
+			if (new_lab_code != -1) {
+				//Serial.println("L command called.");
+				if (new_lab_code != -1 && new_lab_code != lab_code) {
+					lab_code = new_lab_code;
+					lab_changed = true;
+				}
 			}
 			else {
 				process_cmd();
 			}
-			memset(cmd_string, '\0', sizeof(cmd_string)); // necessary?
+			cmd_index = 0;
+			memset(cmd_string, '\0', sizeof(cmd_string)); // resets to all \0
 		}
 		else {
 			++cmd_index;
