@@ -15,16 +15,19 @@ CUatHomeLab *lab = factory->get_lab();
 
 //***********************************************************************************
 void setup() {
-  Serial.begin(57600);
+  Serial.begin(500000);
 }
 
 //***********************************************************************************
 void loop() {
   lab->retrieve_cmd();
   if (lab->lab_changed){
+    int lab_code{ lab->lab_code };
+//    Serial.println("Changing Lab");
+//    Serial.println(lab_code);
     factory->~CUatHomeFactory();
-//    lab->~CUatHomeLab();
-    factory = new CUatHomeFactory(lab->lab_code);
+    lab->~CUatHomeLab();
+    factory = new CUatHomeFactory(lab_code);
     lab = factory->get_lab();
   }
   lab->run_lab();
