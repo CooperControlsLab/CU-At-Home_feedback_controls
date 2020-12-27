@@ -34,7 +34,7 @@ public:
 	// instantiated lab type.
 	CUatHomeLab* get_lab();
 private:
-	CUatHomeLab* lab;
+	CUatHomeLab* lab{ nullptr };
 };
 
 #endif // !CU_AT_HOME_FACTORY_H

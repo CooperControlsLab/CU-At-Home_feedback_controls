@@ -32,10 +32,8 @@ CUatHomeFactory::CUatHomeFactory(int lab_code) {
 // Destructor called when changing the lab type (or the code finishes and the 
 // object goes out of scope)
 CUatHomeFactory::~CUatHomeFactory() {
-	if (lab) {
-		delete[] lab;
-		lab = nullptr;
-	}
+	delete lab;
+	lab = nullptr;
 }
 
 // lab is a pointer to the CUatHomeLab object, which will correspond to 
