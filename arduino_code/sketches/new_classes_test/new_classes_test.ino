@@ -30,5 +30,5 @@ void loop() {
     factory = new CUatHomeFactory(lab_code);
     lab = factory->get_lab();
   }
-  lab->run_lab();
+  else lab->run_lab();
 }
