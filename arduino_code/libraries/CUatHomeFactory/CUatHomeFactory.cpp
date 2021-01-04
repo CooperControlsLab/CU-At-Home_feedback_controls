@@ -24,7 +24,7 @@ CUatHomeFactory::CUatHomeFactory(int lab_code) {
 		lab = new ProCon();
 		break;
 	default:
-		lab = nullptr;
+		//lab = nullptr;
 		break;
 	}
 }

@@ -66,7 +66,7 @@ void SerialComms::retrieve_cmd() {
 			//Serial.print("CMD: "); Serial.println(cmd_string);
 
 			new_lab_code = get_cmd_code('L', -1);
-			if (new_lab_code != -1) {
+			if (get_cmd_code('S', -1) == -1 && new_lab_code != -1) {
 				//Serial.println("L command called.");
 				if (new_lab_code != -1 && new_lab_code != lab_code) {
 					lab_code = new_lab_code;

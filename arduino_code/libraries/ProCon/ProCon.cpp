@@ -17,15 +17,15 @@ running the ProCon lab using the CUatHome kit.
 #include "motor_control_hardware_config.h"
 #include <Arduino.h>
 
-double ProCon::enc_count = 0;
+int ProCon::enc_count = 0;
 
 ProCon::ProCon() {
 	//Encoder Setup
 	pinMode(ENC_A, INPUT_PULLUP);
 	pinMode(ENC_B, INPUT_PULLUP);
 
-	attachInterrupt(digitalPinToInterrupt(ENC_A), ProCon::pulseA, CHANGE);
-	attachInterrupt(digitalPinToInterrupt(ENC_B), ProCon::pulseB, CHANGE);
+	attachInterrupt(digitalPinToInterrupt(ENC_A), pulseA, CHANGE);
+	attachInterrupt(digitalPinToInterrupt(ENC_B), pulseB, CHANGE);
 
 	//Motor Setup
 	pinMode(PWM_B, OUTPUT);
@@ -49,12 +49,14 @@ void ProCon::process_cmd() {
 	//Request command
 	cmd = get_cmd_code('R', -1);
 	switch (cmd) {
-	case 0: //Flag to write data
+	case 0: { //Flag to write data
 		write_data = true;
 		//Serial.println("Write data on");
+		//return;
+	}
 		break;
 
-		//If no matches, break
+	//If no matches, break
 	default: 
 		break;
 	}
@@ -184,6 +186,17 @@ void ProCon::process_cmd() {
 }
 
 void ProCon::run_lab() {
+	//Update Mode
+	// M0 - Controller Off, set motor output to zero
+	if (mode == 0) {
+		controller_on = false;
+		pid_output = 0;
+	}
+	// M1 - Controller On
+	else if (mode == 1) {
+		controller_on = true;
+	}
+
 	update_control_params();
 	compute_motor_voltage();
 
@@ -205,22 +218,11 @@ void ProCon::run_lab() {
 		write_data = false; // Reset write data flag
 		//Serial.println("Write data off");
 	}
-	//Update Mode
-		// M0 - Controller Off, set motor output to zero
-	if (mode == 0) {
-		controller_on = false;
-		pid_output = 0;
-	}
-	// M1 - Controller On
-	else if (mode == 1) {
-		controller_on = true;
-	}
 }
 
 void ProCon::update_control_params() {
 	//Check for OpenLoop Analysis and run
 	if (open_loop_analysis_start) {
-		double t0 = int(millis());
 		unsigned long init_time = millis();
 		unsigned long current_time = init_time;
 		unsigned long prev_time = init_time;
@@ -231,31 +233,31 @@ void ProCon::update_control_params() {
 
 		//Reset Open Loop differentiator
 		enc_deg = count_to_deg(enc_count);
-		//diff.update_time_parameters(diff.Ts, 0.1);
 		diff.reset(enc_deg);
 
-		int i{ 0 };
-		while (i < storage_length) {
+		int index{ 0 };
+		while (index < storage_length - 1) {
 			enc_deg = count_to_deg(enc_count); //Update encoder degrees
 			current_time = millis();
 
 			//NB: replace millis with micros
 			if (current_time - prev_time >= (diff.Ts * 1000)) {
-				time[i] = current_time - init_time;
-				velocity[i] = diff.differentiate(enc_deg);
+				time[index] = current_time - init_time;
+				velocity[index] = diff.differentiate(enc_deg);
 				prev_time = current_time;
-				++i;
+				++index;
 			}
-			open_loop_analysis_start = false;
-			diff.update_time_parameters(diff.Ts, 0.01); //Reset differentiator sigma value
-			diff.reset(count_to_deg(enc_count));
 		}
+		open_loop_analysis_start = false;
+		diff.update_time_parameters(diff.Ts, 0.01); //Reset differentiator sigma value
+		diff.reset(count_to_deg(enc_count));
+
 		//Send long serial data to python
-		for (int j{ 0 }; j < storage_length; ++j) {
+		for (index = 0; index < storage_length - 1; ++index) {
 			Serial.print("D0"); Serial.print(',');
-			Serial.print('T'); Serial.print(time[j]); Serial.print(',');
+			Serial.print('T'); Serial.print(time[index]); Serial.print(',');
 			Serial.print('P'); Serial.print(0); Serial.print(',');
-			Serial.print('V'); Serial.print(velocity[j] * DEGS_TO_RPM); Serial.print(',');
+			Serial.print('V'); Serial.print(velocity[index] * DEGS_TO_RPM); Serial.print(',');
 			Serial.print('I'); Serial.print(pid_output); Serial.print('$');
 		}
 		Serial.print('\n');
@@ -268,33 +270,30 @@ void ProCon::compute_motor_voltage() {
 
 	switch (labType) {
 	case 0: { // Angle Control
-		if (controller_on) {
-			//If sample period amount has passed do processing
-			if ((current_micros - prev_micros) >= (controller.Ts * 1000000.0)) {
+		if (controller_on && ((current_micros - prev_micros) >= (controller.Ts * 1000000.0))) {
+			//If controller and sample period amount has passed, do processing
+			//Calculate PID output
+			pid_output = controller.PID(setpoint * DEG_TO_RAD, enc_deg * DEG_TO_RAD);
+			//          Serial.print(" | dt: "); Serial.print(current_micros - prev_micros);
+			//          Serial.print(" | setpoint: "); Serial.print(setpoint);
+			//          Serial.print(" | encdeg: "); Serial.print(enc_deg);
+			//          Serial.print(" | Ts: "); Serial.print(controller.Ts, 10);
+			//          Serial.print(" | kp: "); Serial.print(controller.kp);
+			//          Serial.print(" | beta: "); Serial.print(controller.beta);
+			//          Serial.print(" | sigma: "); Serial.print(controller.sigma);
+			//          Serial.print(" | pidout: ");
+			//          Serial.println(pid_output);
 
-				//Calculate PID output
-				pid_output = controller.PID(setpoint * DEG_TO_RAD, enc_deg * DEG_TO_RAD);
-				//          Serial.print(" | dt: "); Serial.print(current_micros - prev_micros);
-				//          Serial.print(" | setpoint: "); Serial.print(setpoint);
-				//          Serial.print(" | encdeg: "); Serial.print(enc_deg);
-				//          Serial.print(" | Ts: "); Serial.print(controller.Ts, 10);
-				//          Serial.print(" | kp: "); Serial.print(controller.kp);
-				//          Serial.print(" | beta: "); Serial.print(controller.beta);
-				//          Serial.print(" | sigma: "); Serial.print(controller.sigma);
-				//          Serial.print(" | pidout: ");
-				//          Serial.println(pid_output);
-
-						  //update prev variables
-				prev_micros = current_micros;
-				prev_deg = enc_deg;
-			}
+						//update prev variables
+			prev_micros = current_micros;
+			prev_deg = enc_deg;
 		}
 		pid_output = pid_output_signal_conditioning(pid_output);
 		update_motor_voltage(pid_output);
 	}
 		break;
 	case 1: { // Speed Control
-	  //If sample period amount has passed do processing
+		//If sample period amount has passed do processing
 		if ((current_micros - prev_micros) >= (controller.Ts * 1000000.0)) {
 			//Calculate angular velocity from derivative
 			angular_velocity = diff.differentiate(enc_deg * DEG_TO_RAD);
@@ -370,18 +369,18 @@ static void ProCon::pulseA() {
 
 	if (valA == HIGH) { // A Rise
 		if (valB == LOW) {
-			enc_count++;  // CW
+			++enc_count;  // CW
 		}
 		else {
-			enc_count--;  // CCW
+			--enc_count;  // CCW
 		}
 	}
 	else { // A fall
 		if (valB == HIGH) {
-			enc_count++;  // CW
+			++enc_count;  // CW
 		}
 		else {
-			enc_count--;  //CCW
+			--enc_count;  //CCW
 		}
 	}
 }

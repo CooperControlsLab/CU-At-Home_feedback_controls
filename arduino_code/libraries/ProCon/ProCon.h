@@ -29,20 +29,19 @@ private:
 	double kp{ 5 };
 	double ki{ 0 };
 	double kd{ 1 };
+
 	double setpoint{ 100 };
 
 	double prev_deg{ 0 };
 	double lowerLimit{ -1 * SUPPLY_VOLTAGE };
 	double upperLimit{ SUPPLY_VOLTAGE };
 
-	int mode{ 0 };
+
 	int lowerOutputLimit;
 	int upperOutputLimit;
 
 	bool write_data{ false };
 	char data[200];
-
-	int labType{ -1 };
 
 	int open_loop_voltage;
 
@@ -57,14 +56,14 @@ private:
 	bool calibration_start;
 	int anti_windup_activated;
 
-	double sigma{ 0.01 };
+	int mode{ 0 };
+	int labType{ -1 };
 
-	bool flag{ true };
 	double pid_output{ 0 };
 	bool controller_on{ false };
 
-	double current_micros{ micros() };
-	double prev_micros{ current_micros };
+	unsigned long current_micros{ micros() };
+	unsigned long prev_micros{ current_micros };
 
 	double enc_deg{ 0 };
 
@@ -74,7 +73,10 @@ private:
 	int time[storage_length];
 	int velocity[storage_length];
 
+	// sample_period defined in SerialComms
+	double sigma{ 0.01 };
 	Differentiator diff{ sigma, sample_period };
+	bool flag{ true };
 	PIDControl controller{ kp, ki, kd, lowerLimit, upperLimit, sigma, sample_period, flag };
 
 public:
@@ -82,7 +84,7 @@ public:
 	void process_cmd();
 	void run_lab();
 
-	static double enc_count;
+	static int enc_count;
 
 	void update_control_params();
 	void compute_motor_voltage();
