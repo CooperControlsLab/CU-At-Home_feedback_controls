@@ -55,8 +55,9 @@ public:
 	static const int storage_length{ 200 };
 	char cmd_string[storage_length];
 	int cmd_index{ 0 };
-	bool cmd_retrieved{ false };
 	char incoming_char;
+	bool cmd_retrieved{ false };
+
 
 	// Instantiate SerialComms for use in extracting lab selection
 	SerialComms();
@@ -64,12 +65,12 @@ public:
 	// Updates the sample rate
 	//void update_sample_period(double new_sample_period);
 
-	// Called by lab to retrieve command string
-	void retrieve_cmd();
-
 	// Search cmd_string for the number after the specifiec key
 	// Returns number immediately after key if it exists, def otherwise
 	double get_cmd_code(char key, int def);
+
+	// Called by lab to retrieve command string
+	void retrieve_cmd();
 
 	// Process a command received from serial buffer
 	// virtual function implemented in CUatHomeLab; switch per lab

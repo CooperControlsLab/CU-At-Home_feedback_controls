@@ -10,7 +10,7 @@
 //unsigned long current_micros;
 //double sample_period = 0.005; //in sec
 
-CUatHomeFactory *factory = new CUatHomeFactory(1);
+CUatHomeFactory *factory = new CUatHomeFactory(4);
 CUatHomeLab *lab = factory->get_lab();
 
 //***********************************************************************************
