@@ -24,8 +24,6 @@ SerialComms::SerialComms(){}
 // Search cmd_string for key, return the number between key and delimiter
 // Returns number if the command exists, "def" if it does not exist
 double SerialComms::get_cmd_code(char key, int def) {
-	//Serial.print("Key: "); Serial.println(key);
-
 	// Search string for first instance of key; return def if not found
 	int cmd_start{ 0 };
 	while (cmd_string[cmd_start]) {
@@ -54,24 +52,20 @@ double SerialComms::get_cmd_code(char key, int def) {
 	return atof(cmd); // return the substring in float format
 }
 
-// Extracts the cmd_string from the Ardunio Serial
-// This
+// Extracts and process the cmd_string from the Ardunio Serial
 void SerialComms::retrieve_cmd() {
 	if (Serial.available()) {
-		//Serial.println(Serial.available());
+		// Store a single command into the cmd_string array
 		incoming_char = Serial.read();
 		cmd_string[cmd_index] = incoming_char;
+		// If end of the command, process the command
 		if (incoming_char == '\0' || incoming_char == '%') {
 			//Serial.println("End of line, processing commands!");
 			//Serial.print("CMD: "); Serial.println(cmd_string);
-
 			new_lab_code = get_cmd_code('L', -1);
-			if (get_cmd_code('S', -1) == -1 && new_lab_code != -1) {
-				//Serial.println("L command called.");
-				if (new_lab_code != -1 && new_lab_code != lab_code) {
-					lab_code = new_lab_code;
-					lab_changed = true;
-				}
+			if (get_cmd_code('S', -1) == -1 && new_lab_code != -1 && new_lab_code != lab_code) {
+				lab_code = new_lab_code;
+				lab_changed = true;
 			}
 			else {
 				process_cmd();
@@ -79,6 +73,7 @@ void SerialComms::retrieve_cmd() {
 			cmd_index = 0;
 			memset(cmd_string, '\0', sizeof(cmd_string)); // resets to all \0
 		}
+		// If not end of the command, proceed to the next char
 		else {
 			++cmd_index;
 		}

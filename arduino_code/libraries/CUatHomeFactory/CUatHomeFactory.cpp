@@ -16,6 +16,7 @@ constructor switch statement and the header file must be included.
 #include "ProCon.h"
 #include "Statics.h"
 #include "SpeedofSound.h"
+#include "Beam.h"
 
 // Constructor instantiates a CUatHomeLab object according to the specified lab
 // code. This object will be dynamically allocated as there is no way to know
@@ -30,6 +31,9 @@ CUatHomeFactory::CUatHomeFactory(int lab_code) {
 		break;
 	case 3:
 		lab = new SpeedofSound();
+		break;
+	case 4:
+		lab = new Beam();
 		break;
 	default:
 		//lab = nullptr;
