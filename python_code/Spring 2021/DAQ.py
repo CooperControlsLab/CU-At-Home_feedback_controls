@@ -30,10 +30,18 @@ class Window(QMainWindow):
         super(Window, self).__init__(*args, **kwargs)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+
+        script_dir = os.path.dirname(__file__)
+        rel_path = r"logo\CUAtHomeLogo-Horz.png"
+        abs_file_path = os.path.join(script_dir, rel_path)
+        self.ui.imageLabel.setPixmap(QPixmap(abs_file_path).scaled(200, 130, Qt.KeepAspectRatio, Qt.FastTransformation))
+
         self.setStyleSheet(qdarkstyle.load_stylesheet())
-        self.connections()
-        self.graphsettings()
+        self.initalConnections()
+        self.initialGraphSettings()
         self.arduinoStatusLed()
+        self.initialTimer()
+        self.initialState()
 
     def arduinoStatusLed(self):
         self._led = QLed(self, onColour=QLed.Red, shape=QLed.Circle)
@@ -49,10 +57,42 @@ class Window(QMainWindow):
         #self.statusBar().reformat()
         self.statusBar().addWidget(self._led)
 
-        self.initialTimer()
-        self.initialState()
 
-    def connections(self):
+    def currentValueSB(self,labtype):
+        try:
+            for item in self.currentItemsSB:
+                self.statusBar().removeWidget(item)
+        except:
+            pass
+
+        if labtype == "Statics":
+            self.voltage_label = QLabel("Voltage")
+            self.voltage_value = QLabel("")
+            self.currentItemsSB = [self.voltage_label, self.voltage_value]
+            for item in self.currentItemsSB:
+                self.statusBar().addPermanentWidget(item)
+
+        elif labtype == "Beam":
+            self.accel_label = QLabel("Acceleration")
+            self.accel_value = QLabel("")
+            self.currentItemsSB = [self.accel_label, self.accel_value]
+            for item in self.currentItemsSB:
+                self.statusBar().addPermanentWidget(item)
+        
+        elif labtype == "Sound":
+            self.mic1_label = QLabel("Mic 1:")
+            self.mic1_value = QLabel("")
+            self.mic2_label = QLabel("Mic 2:")
+            self.mic2_value = QLabel("")
+            self.temperature_label = QLabel("Temp:")
+            self.temperature_value = QLabel("")
+            self.currentItemsSB = [self.mic1_label, self.mic1_value,
+                                   self.mic2_label, self.mic2_value,
+                                   self.temperature_label, self.temperature_value]
+            for item in self.currentItemsSB:
+                self.statusBar().addPermanentWidget(item)
+
+    def initalConnections(self):
         """
         Menubar
         """
@@ -61,37 +101,29 @@ class Window(QMainWindow):
         self.ui.actionSound.triggered.connect(self.soundPushed) #
         #self.ui.menubar.triggered.connect(self.soundPushed) # COME BACK TO THIS
         """
-        5 Main Buttons
+        7 Main Buttons
         """
         self.ui.serialOpenButton.clicked.connect(self.serialOpenPushed)  
-        self.ui.serialCloseButton.clicked.connect(self.serialClosePushed)
-        self.ui.startbutton.clicked.connect(self.startbuttonPushed)        
-        self.ui.stopbutton.clicked.connect(self.stopbuttonPushed)
+        #self.ui.serialCloseButton.clicked.connect(self.serialClosePushed)
+        #self.ui.startbutton.clicked.connect(self.startbuttonPushed)        
+        self.ui.stopbutton.clicked.connect(self.stopbuttonPushed) #this is originally enabled
         self.ui.savebutton.clicked.connect(self.savebuttonPushed)
         self.ui.clearbutton.clicked.connect(self.clearbuttonPushed)
         self.ui.settings.clicked.connect(self.settingsMenu)
 
-    def graphsettings(self):
+    def initialGraphSettings(self):
         self.ui.graphWidgetOutput.showGrid(x = True, y = True, alpha=None)
         self.ui.graphWidgetInput.showGrid(x = True, y = True, alpha=None)
         self.ui.graphWidgetOutput.setBackground((0,0,0))
         self.ui.graphWidgetInput.setBackground((0,0,0))
+        #self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,100], padding=None, update=True, disableAutoRange=True)
+        #self.graphWidgetInput.setRange(rect=None, xRange=None, yRange=[-13,13], padding=None, update=True, disableAutoRange=True)
         self.legendOutput = self.ui.graphWidgetOutput.addLegend()
         self.legendInput = self.ui.graphWidgetInput.addLegend()
 
-        '''
+    def initialTimer(self,default=50):
         self.timer = QTimer()
-        self.timer.setInterval(50) #Changes the plot speed. Defaulted to 50. Can be placed in startbuttonPushed() method
-        self.initialState()
-        time.sleep(2)
-        try:
-            self.timer.timeout.connect(self.updatePlot)
-        except AttributeError:
-            print("Something went wrong")
-        '''
-    def initialTimer(self):
-        self.timer = QTimer()
-        self.timer.setInterval(500) #Changes the plot speed. Defaulted to 50 ms. Can be placed in startbuttonPushed() method
+        self.timer.setInterval(default) #Changes the plot speed. Defaulted to 50 ms. Can be placed in startbuttonPushed() method
         time.sleep(2)
         try: 
             self.timer.timeout.connect(self.updatePlot)
@@ -99,7 +131,6 @@ class Window(QMainWindow):
             print("Something went wrong")
 
     def staticsPushed(self):
-        print('statics')
         self.course = "Statics"    
         self.setWindowTitle(self.course)
 
@@ -111,9 +142,9 @@ class Window(QMainWindow):
         self.ui.graphWidgetInput.setLabel('left',"")
         self.ui.graphWidgetInput.setLabel('bottom',"")
         self.ui.graphWidgetInput.setTitle("")
+        self.currentValueSB(self.course)
 
     def beamPushed(self):
-        print('beam')
         self.course = "Beam"    
         self.setWindowTitle(self.course)
 
@@ -125,9 +156,9 @@ class Window(QMainWindow):
         self.ui.graphWidgetInput.setLabel('left',"")
         self.ui.graphWidgetInput.setLabel('bottom',"")
         self.ui.graphWidgetInput.setTitle("")
+        self.currentValueSB(self.course)
 
     def soundPushed(self):
-        print('sound')
         self.course = "Sound"    
         self.setWindowTitle(self.course)
 
@@ -139,10 +170,11 @@ class Window(QMainWindow):
         self.ui.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">°C</span>")
         self.ui.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
         self.ui.graphWidgetInput.setTitle("Temperature", color="w", size="12pt")
-
+        self.currentValueSB(self.course)
 
     def serialOpenPushed(self):
         #Try/except/else/finally statement is to check whether settings menu was opened/changed
+
         try:
             self.size = self.serial_values[3] #Value from settings. Windows data
 
@@ -156,7 +188,9 @@ class Window(QMainWindow):
                 self.serialInstance = CoursesDataClass.SoundLab(self.serial_values[0],self.serial_values[1],self.serial_values[2])
                 self.serialInstance.gcodeLetters = ["T","S","A"]
 
-            self.serialInstance.open() #COME BACK TO THIS. I THINK IT'S WRONG 
+            if self.serialInstance.is_open() == False:
+                self.serialInstance.open() #COME BACK TO THIS. I THINK IT'S WRONG 
+                
             time.sleep(2)
             print("Serial successfully open!")
 
@@ -165,6 +199,10 @@ class Window(QMainWindow):
                 self.ui.serialOpenButton.clicked.disconnect(self.serialOpenPushed)
                 self.ui.serialCloseButton.clicked.connect(self.serialClosePushed)
                 self.ui.startbutton.clicked.connect(self.startbuttonPushed)
+            
+            self.ui.menubar.setEnabled(False)
+            #self.ui.serialOpenButton.clicked.disconnect(self.serialOpenPushed)
+            #self.ui.serialCloseButton.clicked.connect(self.serialClosePushed)
 
         except AttributeError:
             print("Settings menu was never opened or Course was never selected in menubar")
@@ -177,27 +215,41 @@ class Window(QMainWindow):
         if self.serialInstance.is_open() == True:
             self.serialInstance.close()
             print("Serial was open. Now closed")   
-        elif self.serialInstance.is_open() == False:
-            print("Serial is already closed")
-        
+
         try:
             self.ui.serialOpenButton.clicked.connect(self.serialOpenPushed)
         except:
             print("Serial Open button already connected")
 
         self._led.onColour = QLed.Red
-
+        self.ui.menubar.setEnabled(True)
+        
+        '''
+        try:
+            self.ui.startbutton.clicked.disconnect(self.startbuttonPushed)
+            self.ui.stopbutton.clicked.disconnect(self.stopbuttonPushed)
+        except:
+            pass #THIS TRY EXCEPT IS DIFFERENT
+        '''
         self.ui.serialCloseButton.clicked.disconnect(self.serialClosePushed)
-
+        
     def startbuttonPushed(self):
         print("Recording Data")
         self.timer.start()
         self.curve()
+        self.serialInstance.requestByte() #
         self.ui.startbutton.clicked.disconnect(self.startbuttonPushed)
+        #self.ui.stopbutton.clicked.connect(self.stopbuttonPushed)
 
     def stopbuttonPushed(self):
-        self.timer.stop()
-        print("Stopping Data Recording")
+        try:
+            self.timer.stop()
+            self.serialInstance.requestByte() #
+            print("Stopping Data Recording")
+            #self.ui.startbutton.clicked.connect(self.startbuttonPushed)
+            #self.ui.stopbutton.clicked.disconnect(self.stopbuttonPushed)
+        except:
+            pass
 
     def clearbuttonPushed(self):
         self.ui.graphWidgetOutput.clear()
@@ -217,6 +269,7 @@ class Window(QMainWindow):
         if path[0] != '':
             with open(path[0], 'w', newline = '') as csvfile:
                 csvwriter = csv.writer(csvfile)
+                csvwriter.writerow(self.header)
                 csvwriter.writerows(self.data_set)        
         print("Saved All Data")
 
@@ -234,10 +287,10 @@ class Window(QMainWindow):
         self.y2_zeros = np.zeros(self.buffersize+1, float)
         self.y3_zeros = np.zeros(self.buffersize+1, float)        
 
-        self.time = ["rat"]
-        self.y1 = ["fat"]
-        self.y2 = ["gnat"]
-        self.y3 = ["cat"]
+        self.time = []
+        self.y1 = []
+        self.y2 = []
+        self.y3 = []
 
     def curve(self):
         pen1 = pg.mkPen(color = (255, 0, 0), width=1)
@@ -272,7 +325,62 @@ class Window(QMainWindow):
         fulldata = self.serialInstance.readValues()
         print(fulldata)
         self.step = self.step + 1
-        print(self.serialInstance.gcodeParsing(fulldata))
+        #print(self.serialInstance.gcodeParsing(fulldata))
+
+        if self.course == "Statics":
+            time_index, blah= self.dataParse(fulldata, self.time, self.time_zeros, "T")
+            i,voltage = self.dataParse(fulldata, self.y1, self.y1_zeros, "S")
+
+            self.data.setData(self.time_zeros[time_index:time_index+self.size],self.y1_zeros[i:i+self.size])
+            self.data.setPos(self.step,0)
+            self.voltage_value.setText(str(voltage))
+
+        elif self.course == "Beam":
+            time_index, blah= self.dataParse(fulldata, self.time, self.time_zeros, "T")
+            i,voltage = self.dataParse(fulldata, self.y1, self.y1_zeros, "S")
+
+            self.data.setData(self.time_zeros[time_index:time_index+self.size],self.y1_zeros[i:i+self.size])
+            self.data.setPos(self.step,0)
+            self.accel_value.setText(str(voltage))
+
+        elif self.course == "Sound":
+            time_index, blah= self.dataParse(fulldata, self.time, self.time_zeros, "T")
+            i,mic1 = self.dataParse(fulldata, self.y1, self.y1_zeros, "S")
+            j,mic2 = self.dataParse(fulldata, self.y2, self.y2_zeros, "A")
+            k,temp = self.dataParse(fulldata, self.y3, self.y3_zeros, "Q")
+
+            self.data1.setData(self.time_zeros[time_index:time_index+self.size],self.y1_zeros[i:i+self.size])
+            self.data1.setPos(self.step,0)
+            self.mic1_value.setText(str(mic1))
+
+            self.data2.setData(self.time_zeros[time_index:time_index+self.size],self.y2_zeros[j:j+self.size])
+            self.data2.setPos(self.step,0)
+            self.mic2_value.setText(str(mic2))
+
+            self.data3.setData(self.time_zeros[time_index:time_index+self.size],self.y3_zeros[k:k+self.size])
+            self.data3.setPos(self.step,0)
+            self.temperature_value.setText(str(temp))
+
+    def dataParse(self,datastream, data_array, data_zeros, char):
+        buffersize=self.buffersize
+        size=self.size
+        try:
+            temp = self.gcodeParsing(char,datastream)
+            i = int(data_zeros[buffersize])
+            data_zeros[i] = data_zeros[i+size] = float(temp)
+            data_zeros[buffersize] = i = (i+1)%size 
+            data_array.append(temp)
+            return i, temp
+        except ValueError:
+            print("Couldn't parse")
+        except IndexError:
+            print("Couldn't parse index. Skipping point")
+        except TypeError:
+            print("Couldn't unpack due to a None Object")
+
+    def gcodeParsing(self,letter,input_list):
+        result = [_ for _ in input_list if _.startswith(letter)][0][1:]
+        return(result)
 
 def main():
     app = QApplication(sys.argv)
