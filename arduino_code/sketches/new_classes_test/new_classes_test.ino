@@ -10,7 +10,8 @@
 //unsigned long current_micros;
 //double sample_period = 0.005; //in sec
 
-CUatHomeFactory *factory = new CUatHomeFactory(4);
+//this is currently changed from Procon = 1, Statics = 2, Speed of Sound = 3, Beam = 4
+CUatHomeFactory *factory = new CUatHomeFactory(2);
 CUatHomeLab *lab = factory->get_lab();
 
 //***********************************************************************************

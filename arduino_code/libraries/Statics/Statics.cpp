@@ -27,7 +27,7 @@ void Statics::process_cmd() {
 	cmd = get_cmd_code('R', -1);
 	switch (cmd) {
 	case 0: // toggle data writing
-		write_data = !write_data;
+		write_data = true; //!write_data
 		start_micros = micros();
 		prev_micros = start_micros;
 		break;
@@ -49,8 +49,11 @@ void Statics::run_lab() {
 	if (write_data && delta >= dt * 1000000) {
 		Serial.print('T'); Serial.print(current_micros - start_micros); 
 		Serial.print(',');
-		Serial.println(analogRead(A0));
-
+		//Serial.println(analogRead(A0));
+		Serial.print('S'); Serial.print(3); 
+		Serial.print(',');
+		Serial.print('A'); Serial.print(5);
+		Serial.print('\n'); //This is needed for Python to parse the data
 		prev_micros = current_micros;
 	}
 }
