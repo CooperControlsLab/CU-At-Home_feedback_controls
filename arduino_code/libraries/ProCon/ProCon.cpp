@@ -50,7 +50,7 @@ void ProCon::process_cmd() {
 	cmd = get_cmd_code('R', -1);
 	switch (cmd) {
 	case 0: { //Flag to write data
-		write_data = true;
+		write_data = !write_data;
 		//Serial.println("Write data on");
 		//return;
 	}

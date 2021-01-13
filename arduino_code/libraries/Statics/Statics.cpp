@@ -15,32 +15,28 @@ running the Statics lab using the CUatHome kit.
 #include <Arduino.h>
 
 
-Statics::Statics() {
-	pinMode(2, INPUT_PULLUP);
-}
+Statics::Statics() { pinMode(2, INPUT_PULLUP); }
 
 
-// nothing to process for this lab
 void Statics::process_cmd() {
 	int cmd;
 
 	cmd = get_cmd_code('R', -1);
 	switch (cmd) {
-	case 0: // toggle data writing
-		write_data = true; //!write_data
-		start_micros = micros();
-		prev_micros = start_micros;
+	case 0: // toggle data writing off
+		write_data = false;
 		break;
+	case 1: // toggle data writing on
+		if (write_data == false) {
+			write_data = true;
+			start_micros = micros();
+			prev_micros = start_micros;
+			break;
+		}
+		else { break; }
 	default:
 		break;
 	}
-
-	// Alternative form of this function
-	//if (get_cmd_code('R', -1) != -1) {
-	//	write_data = !write_data;
-	//	start_micros = micros();
-	//	prev_micros = start_micros;
-	//}
 }
 
 void Statics::run_lab() {
@@ -49,10 +45,9 @@ void Statics::run_lab() {
 	if (write_data && delta >= dt * 1000000) {
 		Serial.print('T'); Serial.print(current_micros - start_micros); 
 		Serial.print(',');
-		//Serial.println(analogRead(A0));
-		Serial.print('S'); Serial.print(3); 
+		Serial.print('S'); Serial.print(100); 
 		Serial.print(',');
-		Serial.print('A'); Serial.print(5);
+		Serial.print('A'); Serial.print(analogRead(A0));
 		Serial.print('\n'); //This is needed for Python to parse the data
 		prev_micros = current_micros;
 	}

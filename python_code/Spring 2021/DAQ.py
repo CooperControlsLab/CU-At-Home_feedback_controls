@@ -57,7 +57,6 @@ class Window(QMainWindow):
         #self.statusBar().reformat()
         self.statusBar().addWidget(self._led)
 
-
     def currentValueSB(self,labtype):
         try:
             for item in self.currentItemsSB:
@@ -144,6 +143,20 @@ class Window(QMainWindow):
         self.ui.graphWidgetInput.setTitle("")
         self.currentValueSB(self.course)
 
+    def soundPushed(self):
+        self.course = "Sound"
+        self.setWindowTitle(self.course)
+
+        # Graph settings for specific lab
+        self.ui.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">Speed (m/s)</span>")
+        self.ui.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
+        self.ui.graphWidgetOutput.setTitle("Speed", color="w", size="12pt")
+
+        self.ui.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">°C</span>")
+        self.ui.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
+        self.ui.graphWidgetInput.setTitle("Temperature", color="w", size="12pt")
+        self.currentValueSB(self.course)
+
     def beamPushed(self):
         self.course = "Beam"    
         self.setWindowTitle(self.course)
@@ -158,20 +171,6 @@ class Window(QMainWindow):
         self.ui.graphWidgetInput.setTitle("")
         self.currentValueSB(self.course)
 
-    def soundPushed(self):
-        self.course = "Sound"    
-        self.setWindowTitle(self.course)
-
-        # Graph settings for specific lab
-        self.ui.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">Speed (m/s)</span>")
-        self.ui.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
-        self.ui.graphWidgetOutput.setTitle("Speed", color="w", size="12pt")
-
-        self.ui.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">°C</span>")
-        self.ui.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
-        self.ui.graphWidgetInput.setTitle("Temperature", color="w", size="12pt")
-        self.currentValueSB(self.course)
-
     def serialOpenPushed(self):
         #Try/except/else/finally statement is to check whether settings menu was opened/changed
 
@@ -180,13 +179,31 @@ class Window(QMainWindow):
 
             if self.course == "Statics":
                 self.serialInstance = CoursesDataClass.StaticsLab(self.serial_values[0],self.serial_values[1],self.serial_values[2])
-                
-            elif self.course == "Beam":
-                self.serialInstance = CoursesDataClass.BeamLab(self.serial_values[0],self.serial_values[1],self.serial_values[2])
+                time.sleep(2)
+                self.serialInstance.ser.flush()
+                self.serialInstance.ser.reset_input_buffer()
+                self.serialInstance.ser.reset_output_buffer()
+                self.serialInstance.ser.write("L2%".encode())
+                print("Now in Statics Lab")
 
             elif self.course == "Sound":
                 self.serialInstance = CoursesDataClass.SoundLab(self.serial_values[0],self.serial_values[1],self.serial_values[2])
                 self.serialInstance.gcodeLetters = ["T","S","A"]
+                time.sleep(2)
+                self.serialInstance.ser.flush()
+                self.serialInstance.ser.reset_input_buffer()
+                self.serialInstance.ser.reset_output_buffer()
+                self.serialInstance.ser.write("L3%".encode())
+                print("Now in Speed of Sound Lab")
+
+            elif self.course == "Beam":
+                self.serialInstance = CoursesDataClass.BeamLab(self.serial_values[0],self.serial_values[1],self.serial_values[2])
+                time.sleep(2)
+                self.serialInstance.ser.flush()
+                self.serialInstance.ser.reset_input_buffer()
+                self.serialInstance.ser.reset_output_buffer()
+                self.serialInstance.ser.write("L4%".encode())
+                print("Now in Beam Lab")
 
             if self.serialInstance.is_open() == False:
                 self.serialInstance.open() #COME BACK TO THIS. I THINK IT'S WRONG 
@@ -209,7 +226,6 @@ class Window(QMainWindow):
 
         except TypeError:
             print("Settings menu was opened, however OK was not pressed to save values")
-
 
     def serialClosePushed(self):
         if self.serialInstance.is_open() == True:
@@ -245,7 +261,7 @@ class Window(QMainWindow):
     def stopbuttonPushed(self):
         try:
             self.timer.stop()
-            self.serialInstance.requestByte() #
+            self.serialInstance.stopRequestByte() #
             print("Stopping Data Recording")
             #self.ui.startbutton.clicked.connect(self.startbuttonPushed)
             #self.ui.stopbutton.clicked.disconnect(self.stopbuttonPushed)

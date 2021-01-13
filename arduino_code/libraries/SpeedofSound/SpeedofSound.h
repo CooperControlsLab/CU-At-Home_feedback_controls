@@ -1,5 +1,5 @@
 /*
-Statics.h
+SpeedofSound.h
 
 Jared Jacobowitz
 Winter 2020
@@ -18,17 +18,8 @@ running the Speed of Sound lab using the CUatHome kit.
 
 class SpeedofSound : public CUatHomeLab {
 private:
-	unsigned long current_micros{ 0 };
-	unsigned long prev_micros{ 0 };
-	unsigned long start_micros{ 0 };
-
-	double dt{ 0.0002 };
-	unsigned long delta;
-
 	int mic1;
 	int mic2;
-
-	bool write_data{ false };
 public:
 	SpeedofSound();
 	void process_cmd();

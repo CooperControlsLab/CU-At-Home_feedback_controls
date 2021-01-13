@@ -78,8 +78,6 @@ private:
 	unsigned long delta;
 
 	bool write_data{ false };
-
-	int labtype;
 public:
 	Beam();
 	void process_cmd();

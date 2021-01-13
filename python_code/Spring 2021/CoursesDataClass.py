@@ -66,16 +66,15 @@ class SerialComm:
 
     def requestByte(self):
         """
-        Request byte to start and stop serial communication with arduino
+        Start serial communication with arduino
         """
-        self.ser.write(b"R0,\0") 
+        self.ser.write("R1%".encode())
 
-    def L(self):
+    def stopRequestByte(self):
         """
-        Request byte to start and stop serial communication with arduino
+        Stop serial communication with arduino
         """
-        self.ser.write(b"L2,\0") 
-
+        self.ser.write("R0%".encode())
 
     def sendInitialRequest(self):
         """
@@ -89,7 +88,6 @@ class SerialComm:
             #return binascii.hexlify(a)
             self.ser.write(a)
             return a
-
     
     def gcodeParsing(self,datastream,hex=False):
         '''

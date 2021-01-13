@@ -15,9 +15,7 @@ running the Speed of Sound lab using the CUatHome kit.
 #include <Arduino.h>
 
 
-SpeedofSound::SpeedofSound() {
-	Serial.begin(115200);
-}
+SpeedofSound::SpeedofSound() {}
 
 
 void SpeedofSound::process_cmd() {
@@ -25,23 +23,21 @@ void SpeedofSound::process_cmd() {
 
 	cmd = get_cmd_code('R', -1);
 	switch (cmd) {
-	case 0: // toggle data writing
-		write_data = !write_data;
-		start_micros = micros();
-		prev_micros = start_micros;
+	case 0: // toggle data writing off
+		write_data = false;
 		break;
+	case 1: // toggle data writing on
+		if (write_data == false) {
+			write_data = true;
+			start_micros = micros();
+			prev_micros = start_micros;
+			break;
+		}
+		else { break; }
 	default:
 		break;
 	}
-
-	// Alternative form of this function
-	//if (get_cmd_code('R', -1) != -1) {
-	//	write_data = !write_data;
-	//	start_micros = micros();
-	//	prev_micros = start_micros;
-	//}
 }
-
 
 void SpeedofSound::run_lab() {
 	current_micros = micros();
@@ -53,8 +49,10 @@ void SpeedofSound::run_lab() {
 
 		Serial.print('T'); Serial.print(current_micros - start_micros); 
 		Serial.print(',');
-		Serial.print(mic1); 
+		Serial.print("mic1: "); Serial.print(mic1);
 		Serial.print(',');
-		Serial.println(mic2);
+		Serial.print("mic2: "); Serial.print(mic2);
+		Serial.print('\n');
+		prev_micros = current_micros;
 	}
 }

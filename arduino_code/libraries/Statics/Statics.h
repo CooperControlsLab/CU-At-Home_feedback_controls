@@ -17,15 +17,6 @@ running the Statics lab using the CUatHome kit.
 #include <Arduino.h>
 
 class Statics : public CUatHomeLab {
-private:
-	unsigned long current_micros{ 0 };
-	unsigned long prev_micros{ 0 };
-	unsigned long start_micros{ 0 };
-
-	double dt{ 0.003 };
-	unsigned long delta;
-
-	bool write_data{ false };
 public:
 	Statics();
 	void process_cmd();

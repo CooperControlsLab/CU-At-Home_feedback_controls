@@ -16,7 +16,6 @@ constructor switch statement and the header file must be included.
 #define CU_AT_HOME_FACTORY_H
 
 #include "CUatHomeLab.h"
-#include "ProCon.h"
 
 class CUatHomeFactory {
 public:
@@ -24,6 +23,8 @@ public:
 	// lab code. This object will be dynamically allocated as there is no way to 
 	// know which lab will be run before it is specified by the Python "L" 
 	// command.
+	CUatHomeFactory();
+
 	CUatHomeFactory(int lab_code);
 
 	// Destructor called when changing the lab type (or the code finishes and 

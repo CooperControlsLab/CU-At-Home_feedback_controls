@@ -38,11 +38,17 @@ void Beam::process_cmd() {
 	int cmd;
 	cmd = get_cmd_code('R', -1);
 	switch (cmd) {
-	case 0: // toggle data writing
-		write_data = !write_data;
-		start_micros = micros();
-		prev_micros = start_micros;
+	case 0: // toggle data writing off
+		write_data = false;
 		break;
+	case 1: // toggle data writing on
+		if (write_data == false) {
+			write_data = true;
+			start_micros = micros();
+			prev_micros = start_micros;
+			break;
+		}
+		else { break; }
 	default:
 		break;
 	}
@@ -98,6 +104,7 @@ void Beam::run_lab() {
 		Serial.print('Translational acceleration'); Serial.print(accX);
 		Serial.print(',');
 		Serial.print('Anglular displacement'); Serial.println(angleX);
+		Serial.print('\n');
 
 		prev_micros = current_micros;
 	}
