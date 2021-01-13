@@ -237,6 +237,7 @@ class Window(QMainWindow):
         print("Recording Data")
         self.timer.start()
         self.curve()
+        #self.serialInstance.L() ####################################
         self.serialInstance.requestByte() #
         self.ui.startbutton.clicked.disconnect(self.startbuttonPushed)
         #self.ui.stopbutton.clicked.connect(self.stopbuttonPushed)
@@ -322,6 +323,8 @@ class Window(QMainWindow):
             self.data_set = zip_longest(*[self.time,self.y1,self.y2,self.y3], fillvalue="")
 
     def updatePlot(self):
+        self.serialInstance.requestByte() #
+        #self.serialInstance.L() ####################################
         fulldata = self.serialInstance.readValues()
         print(fulldata)
         self.step = self.step + 1

@@ -27,9 +27,9 @@ class Ui_MainWindow(object):
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
         self.verticalLayout_3 = QtWidgets.QVBoxLayout()
         self.verticalLayout_3.setObjectName("verticalLayout_3")
-        self.label = QtWidgets.QLabel(self.centralwidget)
-        self.label.setObjectName("label")
-        self.verticalLayout_3.addWidget(self.label)
+        self.imageLabel = QtWidgets.QLabel(self.centralwidget)
+        self.imageLabel.setObjectName("label")
+        self.verticalLayout_3.addWidget(self.imageLabel)
         self.verticalLayout_5 = QtWidgets.QVBoxLayout()
         self.verticalLayout_5.setObjectName("verticalLayout_5")
         self.gridLayout = QtWidgets.QGridLayout()
@@ -162,7 +162,7 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Please select a lab type"))
-        self.label.setText(_translate("MainWindow", "Image Label (DON\'T CHANGE)"))
+        self.imageLabel.setText(_translate("MainWindow", "Image Label (DON\'T CHANGE)"))
         self.LEDLabel.setText(_translate("MainWindow", "Arduino Status"))
         self.stopbutton.setText(_translate("MainWindow", "Stop Plot"))
         self.serialCloseButton.setText(_translate("MainWindow", "Close Serial"))

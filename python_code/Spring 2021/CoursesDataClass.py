@@ -13,8 +13,10 @@ class SerialComm:
         self.thread = None
         self._gcodeLetters = None #Private
         self.time = []
-
-
+        self.ser = serial.Serial(port = self.port,
+                                 baudrate = self.baudrate,
+                                 timeout = self.timeout)
+    '''
     def open(self):
         """
         Opens serial communication
@@ -23,6 +25,13 @@ class SerialComm:
                                  baudrate = self.baudrate,
                                  timeout = self.timeout)
         return(self.ser)
+    '''
+
+    def open(self):
+        """
+        Opens serial communication
+        """
+        self.ser.open()
 
     def close(self):
         """
@@ -57,9 +66,16 @@ class SerialComm:
 
     def requestByte(self):
         """
-        Request byte
+        Request byte to start and stop serial communication with arduino
         """
         self.ser.write(b"R0,\0") 
+
+    def L(self):
+        """
+        Request byte to start and stop serial communication with arduino
+        """
+        self.ser.write(b"L2,\0") 
+
 
     def sendInitialRequest(self):
         """
@@ -73,6 +89,7 @@ class SerialComm:
             #return binascii.hexlify(a)
             self.ser.write(a)
             return a
+
     
     def gcodeParsing(self,datastream,hex=False):
         '''
@@ -109,6 +126,42 @@ class SerialComm:
             raise TypeError("Should be set to a list")
 
 
+    '''
+    def dataPlot(self):
+        try:
+            j = int(self.y2_zeros[self.buffersize])
+            self.y2_zeros[j] = self.y2_zeros[j+self.size] = float(self.gcodeParsing("A",fulldata))
+            self.y2_zeros[self.buffersize] = j = (j+1) % self.size
+            self.y2.append(self.gcodeParsing("A",fulldata))
+        except ValueError:
+            print("Couldn't parse")
+        except IndexError:
+            print("Couldn't parse index. Skipping point")
+    '''
+
+    def initialLabSelectionSend(self):
+        pass
+
+    def initialLabSelectionReceive(self):
+        pass
+
+    def labSelection(self,course):
+        self.ser.write(f"L{course}".encode())
+        '''
+        case 1:
+            lab = new ProCon();
+            break;
+        case 2:
+            lab = new Statics();
+            break;
+        case 3:
+            lab = new SpeedofSound();
+            break;
+        case 4:
+            lab = new Beam();
+            break;
+        '''
+
 class StaticsLab(SerialComm):
     def __init__(self, port, baudrate, timeout):
         super().__init__(port, baudrate, timeout)
@@ -120,6 +173,13 @@ class BeamLab(SerialComm):
 class SoundLab(SerialComm):
     def __init__(self, port, baudrate, timeout):
         super().__init__(port, baudrate, timeout)
+
+class GeneralizedDAQ(SerialComm):
+    def __init__(self, port, baudrate, timeout):
+        super().__init__(port, baudrate, timeout)
+
+#self.serialInstance.gcodeLetters = ["T","S","A"]
+
 '''
 classType = Thermo("COM5",500000,0.1)
 classType.gcodeLetters = ("T","Q")#, "\0"]
