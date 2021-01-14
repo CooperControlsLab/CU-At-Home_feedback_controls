@@ -13,6 +13,7 @@ constructor switch statement and the header file must be included.
 
 #include "CUatHomeFactory.h"
 #include "CUatHomeLab.h"
+
 #include "DefaultLab.h"
 #include "GeneralDAQ.h"
 #include "Statics.h"

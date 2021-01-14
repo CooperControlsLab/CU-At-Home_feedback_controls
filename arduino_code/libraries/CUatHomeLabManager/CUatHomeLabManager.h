@@ -11,17 +11,18 @@ and the destruction of the lab instances.
 #ifndef CU_AT_HOME_LABMANAGER_H
 #define CU_AT_HOME_LABMANAGER_H
 
-#include <Arduino.h>
 #include "CUatHomeFactory.h"
 #include "CUatHomeLab.h"
 
+#include <Arduino.h>
+
 class CUatHomeLabManager {
+private:
+	CUatHomeFactory* factory;
+	CUatHomeLab* lab;
 public:
 	CUatHomeLabManager();
 	void run();
-private:
-	CUatHomeFactory* factory;
-	CUatHomeLab *lab;
 };
 
 #endif // !CU_AT_HOME_LABMANAGER_H

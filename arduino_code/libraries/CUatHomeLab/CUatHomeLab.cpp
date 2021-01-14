@@ -63,7 +63,8 @@ double CUatHomeLab::get_cmd_code(char key, int def) {
 		++cmd_start;
 	}
 
-	// Find position of the comma or \0 to get the index of the end of the code
+	// Find position of the comma or \0 to get the index of the end of the code.
+	// % is for manual testing in the Arduino serial monitor.
 	int cmd_end{ cmd_start };
 	while (cmd_string[cmd_end] && !(cmd_string[cmd_end] == ',' || cmd_string[cmd_end] == '\0' || cmd_string[cmd_end] == '%')) {
 		++cmd_end;
