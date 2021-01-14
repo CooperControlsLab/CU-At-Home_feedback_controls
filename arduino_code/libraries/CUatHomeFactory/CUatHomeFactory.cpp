@@ -13,6 +13,7 @@ constructor switch statement and the header file must be included.
 
 #include "CUatHomeFactory.h"
 #include "CUatHomeLab.h"
+#include "DefaultLab.h"
 #include "GeneralDAQ.h"
 #include "Statics.h"
 #include "SpeedofSound.h"
@@ -21,7 +22,7 @@ constructor switch statement and the header file must be included.
 // Constructor instantiates a CUatHomeLab object according to the specified lab
 // code. This object will be dynamically allocated as there is no way to know
 // which lab will be run before it is specified by the Python "L" command.
-CUatHomeFactory::CUatHomeFactory() { }
+CUatHomeFactory::CUatHomeFactory() { lab = new DefaultLab(); }
 
 CUatHomeFactory::CUatHomeFactory(int lab_code) {
 	switch (lab_code) {

@@ -19,7 +19,7 @@ class CUatHomeLab {
 public:
 	/*** Lab ***/
 	/* 1)	For changing between labs */
-	int lab_code{ 0 }; // Current lab code
+	int lab_code; // Current lab code
 	int new_lab_code;
 	bool lab_changed{ false };  // Will become true when new lab command
 
@@ -27,7 +27,7 @@ public:
 	unsigned long current_micros{ 0 };
 	unsigned long prev_micros{ 0 };
 	unsigned long start_micros{ 0 };
-	double dt{ 0.1 };
+	double dt{ 0.001 };
 	unsigned long delta;
 
 	bool write_data{ false };
