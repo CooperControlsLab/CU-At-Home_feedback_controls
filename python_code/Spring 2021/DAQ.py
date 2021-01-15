@@ -178,37 +178,43 @@ class Window(QMainWindow):
             self.size = self.serial_values[3] #Value from settings. Windows data
 
             if self.course == "Statics":
+                print("Changing to Statics Lab...")
                 self.serialInstance = CoursesDataClass.StaticsLab(self.serial_values[0],self.serial_values[1],self.serial_values[2])
-                time.sleep(2)
+                print("Flushing buffer...")
+                time.sleep(3)
                 self.serialInstance.ser.flush()
                 self.serialInstance.ser.reset_input_buffer()
                 self.serialInstance.ser.reset_output_buffer()
                 self.serialInstance.ser.write("L2%".encode())
-                print("Now in Statics Lab")
+                print("Now in Statics Lab!")
 
             elif self.course == "Sound":
+                print("Changing to Sound Lab...")
                 self.serialInstance = CoursesDataClass.SoundLab(self.serial_values[0],self.serial_values[1],self.serial_values[2])
                 self.serialInstance.gcodeLetters = ["T","S","A"]
-                time.sleep(2)
+                print("Flushing buffer...")
+                time.sleep(3)
                 self.serialInstance.ser.flush()
                 self.serialInstance.ser.reset_input_buffer()
                 self.serialInstance.ser.reset_output_buffer()
                 self.serialInstance.ser.write("L3%".encode())
-                print("Now in Speed of Sound Lab")
+                print("Now in Speed of Sound Lab!")
 
             elif self.course == "Beam":
+                print("Changing to Beam Lab...")
                 self.serialInstance = CoursesDataClass.BeamLab(self.serial_values[0],self.serial_values[1],self.serial_values[2])
-                time.sleep(2)
+                print("Flushing buffer...")
+                time.sleep(3)
                 self.serialInstance.ser.flush()
                 self.serialInstance.ser.reset_input_buffer()
                 self.serialInstance.ser.reset_output_buffer()
                 self.serialInstance.ser.write("L4%".encode())
-                print("Now in Beam Lab")
+                print("Now in Beam Lab!")
 
             if self.serialInstance.is_open() == False:
                 self.serialInstance.open() #COME BACK TO THIS. I THINK IT'S WRONG 
                 
-            time.sleep(2)
+            #time.sleep(2)
             print("Serial successfully open!")
 
             if self.serialInstance.is_open() == True:
@@ -250,18 +256,18 @@ class Window(QMainWindow):
         self.ui.serialCloseButton.clicked.disconnect(self.serialClosePushed)
         
     def startbuttonPushed(self):
-        print("Recording Data")
         self.timer.start()
         self.curve()
         #self.serialInstance.L() ####################################
-        self.serialInstance.requestByte() #
+        self.serialInstance.requestByte() # Sends R1 command
+        print("Recording Data")
         self.ui.startbutton.clicked.disconnect(self.startbuttonPushed)
         #self.ui.stopbutton.clicked.connect(self.stopbuttonPushed)
 
     def stopbuttonPushed(self):
         try:
             self.timer.stop()
-            self.serialInstance.stopRequestByte() #
+            self.serialInstance.stopRequestByte() # Sends R0 command
             print("Stopping Data Recording")
             #self.ui.startbutton.clicked.connect(self.startbuttonPushed)
             #self.ui.stopbutton.clicked.disconnect(self.stopbuttonPushed)
@@ -339,7 +345,7 @@ class Window(QMainWindow):
             self.data_set = zip_longest(*[self.time,self.y1,self.y2,self.y3], fillvalue="")
 
     def updatePlot(self):
-        self.serialInstance.requestByte() #
+        #self.serialInstance.requestByte() #
         #self.serialInstance.L() ####################################
         fulldata = self.serialInstance.readValues()
         print(fulldata)

@@ -31,8 +31,8 @@ void CUatHomeLab::retrieve_cmd() {
 			if (new_lab_code != -1 && new_lab_code != lab_code) {
 				lab_changed = true;
 
-				Serial.print("Previous lab: "); Serial.println(lab_code);
-				Serial.print("New lab: "); Serial.println(new_lab_code);
+				/*Serial.print("Previous lab: "); Serial.println(lab_code);
+				Serial.print("New lab: "); Serial.println(new_lab_code);*/
 
 			}
 			// If lab not changed
