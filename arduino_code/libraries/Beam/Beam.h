@@ -13,17 +13,15 @@ running the Beam lab using the CUatHome kit.
 #ifndef BEAM_H
 #define BEAM_H
 
-#include <Wire.h>
-#include <Arduino.h>
 #include "CUatHomeLab.h"
 #include "MPU6050.h"
 
+#include <Wire.h>
+#include <Arduino.h>
+
 class Beam : public CUatHomeLab {
-//MPU6050
 private:
 	MPU6050* mpu6050 = new MPU6050(Wire);
-
-// Beam Lab
 public:
 	Beam();
 	void process_cmd();

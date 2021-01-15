@@ -28,13 +28,12 @@ void Beam::process_cmd() {
 		write_data = false;
 		break;
 	case 1: // toggle data writing on
-		if (write_data == false) {
+		if (!write_data) {
 			write_data = true;
 			start_micros = micros();
 			prev_micros = start_micros;
-			break;
 		}
-		else { break; }
+		break;
 	default:
 		break;
 	}

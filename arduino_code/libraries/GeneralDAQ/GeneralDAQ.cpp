@@ -17,7 +17,6 @@ running the GeneralDAQ lab using the CUatHome kit.
 
 GeneralDAQ::GeneralDAQ() {}
 
-
 void GeneralDAQ::process_cmd() {
 	int cmd;
 
@@ -27,13 +26,12 @@ void GeneralDAQ::process_cmd() {
 		write_data = false;
 		break;
 	case 1: // toggle data writing on
-		if (write_data == false) {
+		if (!write_data) {
 			write_data = true;
 			start_micros = micros();
 			prev_micros = start_micros;
-			break;
 		}
-		else { break; }
+		break;
 	default:
 		break;
 	}
@@ -43,7 +41,6 @@ void GeneralDAQ::run_lab() {
 	current_micros = micros();
 	delta = current_micros - prev_micros;
 	if (write_data && delta >= dt * 1000000) {
-		// placed into variables to get their values at the proper time
 		analog0 = analogRead(A0);
 		analog1 = analogRead(A1);
 		analog2 = analogRead(A2);

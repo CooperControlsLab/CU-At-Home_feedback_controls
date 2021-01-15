@@ -4,7 +4,7 @@ SpeedofSound.cpp
 Jared Jacobowitz
 Winter 2020
 
-Function definitions for the SpeedofSound class. This class is a subclass of 
+Function definitions for the SpeedofSound class. This class is a subclass of
 CUatHomeLab and therefore must implement the process_cmd and run_lab functions.
 This class contains also contains all the variables and functions necessary for
 running the Speed of Sound lab using the CUatHome kit.
@@ -17,7 +17,6 @@ running the Speed of Sound lab using the CUatHome kit.
 
 SpeedofSound::SpeedofSound() {}
 
-
 void SpeedofSound::process_cmd() {
 	int cmd;
 
@@ -27,13 +26,12 @@ void SpeedofSound::process_cmd() {
 		write_data = false;
 		break;
 	case 1: // toggle data writing on
-		if (write_data == false) {
+		if (!write_data) {
 			write_data = true;
 			start_micros = micros();
 			prev_micros = start_micros;
-			break;
 		}
-		else { break; }
+		break;
 	default:
 		break;
 	}
@@ -47,7 +45,7 @@ void SpeedofSound::run_lab() {
 		mic1 = analogRead(A0);
 		mic2 = analogRead(A1);
 
-		Serial.print('T'); Serial.print(current_micros - start_micros); 
+		Serial.print('T'); Serial.print(current_micros - start_micros);
 		Serial.print(',');
 		Serial.print("mic1: "); Serial.print(mic1);
 		Serial.print(',');

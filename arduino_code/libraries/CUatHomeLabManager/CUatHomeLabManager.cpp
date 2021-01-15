@@ -4,8 +4,8 @@ CUatHomeLabManager.cpp
 YoungWoong Cho
 Winter 2020
 
-Function definitions for the CUatHomeLabManager class. This class manages the creation
-and the destruction of the lab instances.
+Function definitions for the CUatHomeLabManager class. This class manages the 
+creation and the destruction of the lab instances.
 */
 
 #include <Arduino.h>
@@ -16,8 +16,11 @@ CUatHomeLabManager::CUatHomeLabManager() {
 	lab = factory->get_lab();
 }
 void CUatHomeLabManager::run(){
-    lab->retrieve_cmd(); // Retrieve the command to check if the lab has changed
-    if (lab->lab_changed) { // If lab changed, destroy the old lab and create the new lab instance
+	// Retrieve the command to check if the lab has changed
+    lab->retrieve_cmd();
+
+	// If lab changed, destroy the old lab and create the new lab instance
+    if (lab->lab_changed) { 
         int temp_lab_code{ lab->new_lab_code };
         factory->~CUatHomeFactory();
         lab->~CUatHomeLab();
