@@ -30,12 +30,12 @@ class Window(QMainWindow):
         super(Window, self).__init__(*args, **kwargs)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.currentItemsSB = []
 
         script_dir = os.path.dirname(__file__)
         rel_path = r"logo\CUAtHomeLogo-Horz.png"
         abs_file_path = os.path.join(script_dir, rel_path)
         self.ui.imageLabel.setPixmap(QPixmap(abs_file_path).scaled(200, 130, Qt.KeepAspectRatio, Qt.FastTransformation))
-
         self.setStyleSheet(qdarkstyle.load_stylesheet())
         self.initalConnections()
         self.initialGraphSettings()
@@ -143,20 +143,6 @@ class Window(QMainWindow):
         self.ui.graphWidgetInput.setTitle("")
         self.currentValueSB(self.course)
 
-    def soundPushed(self):
-        self.course = "Sound"
-        self.setWindowTitle(self.course)
-
-        # Graph settings for specific lab
-        self.ui.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">Speed (m/s)</span>")
-        self.ui.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
-        self.ui.graphWidgetOutput.setTitle("Speed", color="w", size="12pt")
-
-        self.ui.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">°C</span>")
-        self.ui.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
-        self.ui.graphWidgetInput.setTitle("Temperature", color="w", size="12pt")
-        self.currentValueSB(self.course)
-
     def beamPushed(self):
         self.course = "Beam"    
         self.setWindowTitle(self.course)
@@ -171,6 +157,20 @@ class Window(QMainWindow):
         self.ui.graphWidgetInput.setTitle("")
         self.currentValueSB(self.course)
 
+    def soundPushed(self):
+        self.course = "Sound"    
+        self.setWindowTitle(self.course)
+
+        # Graph settings for specific lab
+        self.ui.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">Speed (m/s)</span>")
+        self.ui.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
+        self.ui.graphWidgetOutput.setTitle("Speed", color="w", size="12pt")
+
+        self.ui.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">°C</span>")
+        self.ui.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
+        self.ui.graphWidgetInput.setTitle("Temperature", color="w", size="12pt")
+        self.currentValueSB(self.course)
+
     def serialOpenPushed(self):
         #Try/except/else/finally statement is to check whether settings menu was opened/changed
 
@@ -179,30 +179,30 @@ class Window(QMainWindow):
 
             if self.course == "Statics":
                 self.serialInstance = CoursesDataClass.StaticsLab(self.serial_values[0],self.serial_values[1],self.serial_values[2])
-                time.sleep(2)
-                self.serialInstance.ser.flush()
-                self.serialInstance.ser.reset_input_buffer()
-                self.serialInstance.ser.reset_output_buffer()
-                self.serialInstance.ser.write("L2%".encode())
+                time.sleep(2) #
+                self.serialInstance.ser.flush() #
+                self.serialInstance.ser.reset_input_buffer() #
+                self.serialInstance.ser.reset_output_buffer() #
+                self.serialInstance.ser.write("L2%".encode()) #
                 print("Now in Statics Lab")
 
             elif self.course == "Sound":
                 self.serialInstance = CoursesDataClass.SoundLab(self.serial_values[0],self.serial_values[1],self.serial_values[2])
                 self.serialInstance.gcodeLetters = ["T","S","A"]
-                time.sleep(2)
-                self.serialInstance.ser.flush()
-                self.serialInstance.ser.reset_input_buffer()
-                self.serialInstance.ser.reset_output_buffer()
-                self.serialInstance.ser.write("L3%".encode())
+                time.sleep(2) #
+                self.serialInstance.ser.flush() #
+                self.serialInstance.ser.reset_input_buffer() #
+                self.serialInstance.ser.reset_output_buffer() #
+                self.serialInstance.ser.write("L3%".encode()) #
                 print("Now in Speed of Sound Lab")
 
             elif self.course == "Beam":
                 self.serialInstance = CoursesDataClass.BeamLab(self.serial_values[0],self.serial_values[1],self.serial_values[2])
-                time.sleep(2)
-                self.serialInstance.ser.flush()
-                self.serialInstance.ser.reset_input_buffer()
-                self.serialInstance.ser.reset_output_buffer()
-                self.serialInstance.ser.write("L4%".encode())
+                time.sleep(2) #
+                self.serialInstance.ser.flush() # 
+                self.serialInstance.ser.reset_input_buffer() #
+                self.serialInstance.ser.reset_output_buffer() #
+                self.serialInstance.ser.write("L4%".encode()) #
                 print("Now in Beam Lab")
 
             if self.serialInstance.is_open() == False:
@@ -253,7 +253,15 @@ class Window(QMainWindow):
         print("Recording Data")
         self.timer.start()
         self.curve()
+
+        #self.serialInstance.ser.flush()
+        #self.serialInstance.ser.write("L2%".encode())
+        #time.sleep(1)
+
+
         #self.serialInstance.L() ####################################
+        #self.serialInstance.ser.write("L2%".encode())
+        #self.serialInstance.labSelection(2)
         self.serialInstance.requestByte() #
         self.ui.startbutton.clicked.disconnect(self.startbuttonPushed)
         #self.ui.stopbutton.clicked.connect(self.stopbuttonPushed)

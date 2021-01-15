@@ -55,6 +55,7 @@ class SerialComm:
         """
         Current method to send byte (request) so Arduino can send back byte of data.
         Current format of received data is b"T23533228,S0.00,A0.00,Q0.00,\0\r\n"
+        Returns a list of datapoints
         T is time 
         S is Setpoint
         A is Response (can be position or velocity)
@@ -76,6 +77,20 @@ class SerialComm:
         """
         self.ser.write("R0%".encode())
 
+    '''
+    def requestByte(self):
+        """
+        Request byte to start and stop serial communication with arduino
+        """
+        self.ser.write(b"R0,\0") 
+
+    def L(self):
+        """
+        Request byte to start and stop serial communication with arduino
+        """
+        self.ser.write(b"L2,\0") 
+    '''
+
     def sendInitialRequest(self):
         """
         This should be the first thing sent to Arduino. It is to send a byte of what
@@ -88,7 +103,7 @@ class SerialComm:
             #return binascii.hexlify(a)
             self.ser.write(a)
             return a
-    
+
     def gcodeParsing(self,datastream,hex=False):
         '''
         Returns full list of data from Arduino given the specified gcode letters
@@ -144,7 +159,7 @@ class SerialComm:
         pass
 
     def labSelection(self,course):
-        self.ser.write(f"L{course}".encode())
+        self.ser.write(f"L{course}\0".encode())
         '''
         case 1:
             lab = new ProCon();
