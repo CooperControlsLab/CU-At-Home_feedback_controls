@@ -32,13 +32,15 @@ class Window(QMainWindow):
         super(Window, self).__init__(*args, **kwargs)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.currentItemsSB = [] #Used to store variables to be displayed in bottom right
-        self.verbose = True #Initialization. Used to change between True and False for saving data
+        self.currentItemsSB = [] # Used to store variables to be displayed in bottom right
+        self.verbose = True # Initialization. Used to change between True and False for saving data
 
         script_dir = os.path.dirname(__file__)
         rel_path = r"logo\CUAtHomeLogo-Horz.png"
         abs_file_path = os.path.join(script_dir, rel_path)
-        self.ui.imageLabel.setPixmap(QPixmap(abs_file_path).scaled(200, 130, Qt.KeepAspectRatio, Qt.FastTransformation))
+        self.ui.imageLabel.setPixmap(QPixmap(abs_file_path).scaled(200, 130, 
+                                                                   Qt.KeepAspectRatio, 
+                                                                   Qt.FastTransformation))
         self.setStyleSheet(qdarkstyle.load_stylesheet())
         self.initalConnections()
         self.initialGraphSettings()
@@ -51,10 +53,10 @@ class Window(QMainWindow):
         self._led = QLed(self, onColour=QLed.Red, shape=QLed.Circle)
         self._led.clickable = False
         self._led.value = True
-        self._led.setMinimumSize(QSize(15,15))
-        self._led.setMaximumSize(QSize(15,15))     
+        self._led.setMinimumSize(QSize(15, 15))
+        self._led.setMaximumSize(QSize(15, 15))     
         self.statusLabel = QLabel("Arduino Status:")
-        self.statusLabel.setFont(QFont("Calibri",12,QFont.Bold)) 
+        self.statusLabel.setFont(QFont("Calibri", 12, QFont.Bold)) 
 
         self.statusBar().addWidget(self.statusLabel)
         #self.statusBar().reformat()
@@ -98,9 +100,9 @@ class Window(QMainWindow):
         """
         Menubar
         """
-        self.ui.actionStatics.triggered.connect(self.staticsPushed) #
-        self.ui.actionBeam.triggered.connect(self.beamPushed) #
-        self.ui.actionSound.triggered.connect(self.soundPushed) #
+        self.ui.actionStatics.triggered.connect(self.staticsPushed)
+        self.ui.actionBeam.triggered.connect(self.beamPushed)
+        self.ui.actionSound.triggered.connect(self.soundPushed)
         #self.ui.menubar.triggered.connect(self.soundPushed) # COME BACK TO THIS
         """
         7 Main Buttons
@@ -108,16 +110,16 @@ class Window(QMainWindow):
         self.ui.serialOpenButton.clicked.connect(self.serialOpenPushed)  
         #self.ui.serialCloseButton.clicked.connect(self.serialClosePushed)
         #self.ui.startbutton.clicked.connect(self.startbuttonPushed)        
-        self.ui.stopbutton.clicked.connect(self.stopbuttonPushed) #this is originally enabled
+        self.ui.stopbutton.clicked.connect(self.stopbuttonPushed) # this is originally enabled
         self.ui.savebutton.clicked.connect(self.savebuttonPushed)
         self.ui.clearbutton.clicked.connect(self.clearbuttonPushed)
         self.ui.settings.clicked.connect(self.settingsMenu)
 
     def initialGraphSettings(self):
-        self.ui.graphWidgetOutput.showGrid(x = True, y = True, alpha=None)
-        self.ui.graphWidgetInput.showGrid(x = True, y = True, alpha=None)
-        self.ui.graphWidgetOutput.setBackground((0,0,0))
-        self.ui.graphWidgetInput.setBackground((0,0,0))
+        self.ui.graphWidgetOutput.showGrid(x=True, y=True, alpha=None)
+        self.ui.graphWidgetInput.showGrid(x=True, y=True, alpha=None)
+        self.ui.graphWidgetOutput.setBackground((0, 0, 0))
+        self.ui.graphWidgetInput.setBackground((0, 0, 0))
         #self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,100], padding=None, update=True, disableAutoRange=True)
         #self.graphWidgetInput.setRange(rect=None, xRange=None, yRange=[-13,13], padding=None, update=True, disableAutoRange=True)
         self.legendOutput = self.ui.graphWidgetOutput.addLegend()
@@ -139,7 +141,8 @@ class Window(QMainWindow):
         # Graph settings for specific lab
         self.ui.graphWidgetOutput.setLabel('left',"<span style=\"color:white;font-size:16px\">Voltage (V)</span>")
         self.ui.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
-        self.ui.graphWidgetOutput.setTitle("Voltage????? Might be resistance IDK", color="w", size="12pt")
+        self.ui.graphWidgetOutput.setTitle("Voltage????? Might be resistance IDK", 
+                                           color="w", size="12pt")
 
         self.ui.graphWidgetInput.setLabel('left',"")
         self.ui.graphWidgetInput.setLabel('bottom',"")
@@ -181,40 +184,46 @@ class Window(QMainWindow):
             self.size = self.serial_values[3] #Value from settings. Windows data
 
             if self.course == "Statics":
-                self.serialInstance = CoursesDataClass.StaticsLab(self.serial_values[0],self.serial_values[1],self.serial_values[2])
-                time.sleep(2) #
-                self.serialInstance.ser.flush() #
-                self.serialInstance.ser.reset_input_buffer() #
-                self.serialInstance.ser.reset_output_buffer() #
-                self.serialInstance.ser.write("L2%".encode()) #
+                self.serialInstance = CoursesDataClass.StaticsLab(self.serial_values[0],
+                                                                  self.serial_values[1],
+                                                                  self.serial_values[2])
+                time.sleep(2)
+                self.serialInstance.ser.flush()
+                self.serialInstance.ser.reset_input_buffer()
+                self.serialInstance.ser.reset_output_buffer()
+                self.serialInstance.ser.write("L2%".encode())
                 print("Now in Statics Lab")
 
             elif self.course == "Sound":
-                self.serialInstance = CoursesDataClass.SoundLab(self.serial_values[0],self.serial_values[1],self.serial_values[2])
+                self.serialInstance = CoursesDataClass.SoundLab(self.serial_values[0],
+                                                                self.serial_values[1],
+                                                                self.serial_values[2])
                 self.serialInstance.gcodeLetters = ["T","S","A"]
-                time.sleep(2) #
-                self.serialInstance.ser.flush() #
-                self.serialInstance.ser.reset_input_buffer() #
-                self.serialInstance.ser.reset_output_buffer() #
-                self.serialInstance.ser.write("L3%".encode()) #
+                time.sleep(2)
+                self.serialInstance.ser.flush()
+                self.serialInstance.ser.reset_input_buffer()
+                self.serialInstance.ser.reset_output_buffer()
+                self.serialInstance.ser.write("L3%".encode())
                 print("Now in Speed of Sound Lab")
 
             elif self.course == "Beam":
-                self.serialInstance = CoursesDataClass.BeamLab(self.serial_values[0],self.serial_values[1],self.serial_values[2])
-                time.sleep(2) #
-                self.serialInstance.ser.flush() # 
-                self.serialInstance.ser.reset_input_buffer() #
-                self.serialInstance.ser.reset_output_buffer() #
-                self.serialInstance.ser.write("L4%".encode()) #
+                self.serialInstance = CoursesDataClass.BeamLab(self.serial_values[0],
+                                                               self.serial_values[1],
+                                                               self.serial_values[2])
+                time.sleep(2)
+                self.serialInstance.ser.flush()
+                self.serialInstance.ser.reset_input_buffer()
+                self.serialInstance.ser.reset_output_buffer()
+                self.serialInstance.ser.write("L4%".encode())
                 print("Now in Beam Lab")
 
-            if self.serialInstance.is_open() == False:
-                self.serialInstance.open() #COME BACK TO THIS. I THINK IT'S WRONG 
+            if not self.serialInstance.is_open():
+                self.serialInstance.open() # COME BACK TO THIS. I THINK IT'S WRONG 
                 
             #time.sleep(2)
             print("Serial successfully open!")
 
-            if self.serialInstance.is_open() == True:
+            if self.serialInstance.is_open():
                 self._led.onColour = QLed.Green  
                 self.ui.serialOpenButton.clicked.disconnect(self.serialOpenPushed)
                 self.ui.serialCloseButton.clicked.connect(self.serialClosePushed)
@@ -231,7 +240,7 @@ class Window(QMainWindow):
             print("Settings menu was opened, however OK was not pressed to save values")
 
     def serialClosePushed(self):
-        if self.serialInstance.is_open() == True:
+        if self.serialInstance.is_open():
             self.serialInstance.close()
             print("Serial was open. Now closed")   
 
@@ -262,11 +271,11 @@ class Window(QMainWindow):
         #self.serialInstance.L() ####################################
         #self.serialInstance.ser.write("L2%".encode())
         #self.serialInstance.labSelection(2)
-        #self.serialInstance.requestByte() #
+        self.serialInstance.requestByte()
         self.ui.startbutton.clicked.disconnect(self.startbuttonPushed)
         #self.ui.stopbutton.clicked.connect(self.stopbuttonPushed)
         
-        self.verbose == True
+        self.verbose = True
         self.threadRecordSave = threading.Thread(target=self.readStoreValues)
         self.threadRecordSave.start()
         #self.newclass = self.serialInstance.copy()
@@ -280,26 +289,25 @@ class Window(QMainWindow):
         requesting that datapoint every X ms. Using this, there should be a smaller
         amount of datapoints that are missed.
         '''
-        while self.verbose is True:
+        while self.verbose:
             #self.serialInstance.requestByte() 
             self.fulldata = self.serialInstance.readValues()
             print(self.fulldata)
             #self.serialInstance.stopRequestByte()
 
             if self.course == "Statics":
-
-                self.time.append(self.gcodeParsing("T",self.fulldata))
-                self.y1.append(self.gcodeParsing("S",self.fulldata))
+                self.time.append(self.gcodeParsing("T", self.fulldata))
+                self.y1.append(self.gcodeParsing("S", self.fulldata))
 
             elif self.course == "Beam":
-                self.time.append(self.gcodeParsing("T",self.fulldata))
-                self.y1.append(self.gcodeParsing("S",self.fulldata))
+                self.time.append(self.gcodeParsing("T", self.fulldata))
+                self.y1.append(self.gcodeParsing("S", self.fulldata))
 
             elif self.course == "Sound":
-                self.time.append(self.gcodeParsing("T",self.fulldata))
-                self.y1.append(self.gcodeParsing("S",self.fulldata))
-                self.y2.append(self.gcodeParsing("A",self.fulldata))
-                self.y3.append(self.gcodeParsing("Q",self.fulldata))
+                self.time.append(self.gcodeParsing("T", self.fulldata))
+                self.y1.append(self.gcodeParsing("S", self.fulldata))
+                self.y2.append(self.gcodeParsing("A", self.fulldata))
+                self.y3.append(self.gcodeParsing("Q", self.fulldata))
 
     def stopbuttonPushed(self):
         try:
@@ -317,9 +325,9 @@ class Window(QMainWindow):
     def clearbuttonPushed(self):
         self.ui.graphWidgetOutput.clear()
         self.ui.graphWidgetInput.clear()
-        self.legendOutput.clear()#
-        self.legendInput.clear()#
-        #Come back to this
+        self.legendOutput.clear()
+        self.legendInput.clear()
+        # Come back to this
         self.ui.graphWidgetOutput.addLegend()
         self.ui.graphWidgetInput.addLegend()
         #self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,100], padding=None, update=True, disableAutoRange=True)
@@ -330,7 +338,8 @@ class Window(QMainWindow):
 
     def savebuttonPushed(self):
         self.createCSV(self.course)
-        path = QFileDialog.getSaveFileName(self, 'Save CSV', os.getenv('HOME'), 'CSV(*.csv)')
+        path = QFileDialog.getSaveFileName(self, 'Save CSV', 
+                                           os.getenv('HOME'), 'CSV(*.csv)')
         if path[0] != '':
             with open(path[0], 'w', newline = '') as csvfile:
                 csvwriter = csv.writer(csvfile)
@@ -382,9 +391,9 @@ class Window(QMainWindow):
             self.data = self.ui.graphWidgetOutput.plot(pen = pen1, name="Acceleration") 
 
         elif self.course == "Sound":
-            self.data1 = self.ui.graphWidgetOutput.plot(pen = pen1, name="Mic 1") 
-            self.data2 = self.ui.graphWidgetOutput.plot(pen = pen2, name="Mic 2") 
-            self.data3 = self.ui.graphWidgetInput.plot(pen = pen3, name="Temperature")
+            self.data1 = self.ui.graphWidgetOutput.plot(pen=pen1, name="Mic 1") 
+            self.data2 = self.ui.graphWidgetOutput.plot(pen=pen2, name="Mic 2") 
+            self.data3 = self.ui.graphWidgetInput.plot(pen=pen3, name="Temperature")
 
     def createCSV(self,labtype):
         '''
@@ -400,7 +409,8 @@ class Window(QMainWindow):
 
         elif labtype == "Sound":
             self.header = ["Time (ms???)", "Mic 1", "Mic 2", "Temperature (°C)"]
-            self.data_set = zip_longest(*[self.time,self.y1,self.y2,self.y3], fillvalue="")
+            self.data_set = zip_longest(*[self.time, self.y1, self.y2, self.y3], 
+                                        fillvalue="")
 
     def updatePlot(self):
         '''
@@ -417,50 +427,57 @@ class Window(QMainWindow):
         #print(self.serialInstance.gcodeParsing(self.fulldata))
 
         if self.course == "Statics":
-            time_index, blah = self.dataParse(self.fulldata, self.time_zeros, "T")
-            i,voltage = self.dataParse(self.fulldata, self.y1_zeros, "S")
+            time_index, blah = self.dataParse(self.fulldata, 
+                                              self.time_zeros, "T")
+            i, voltage = self.dataParse(self.fulldata, self.y1_zeros, "S")
 
-            self.data.setData(self.time_zeros[time_index:time_index+self.size],self.y1_zeros[i:i+self.size])
+            self.data.setData(self.time_zeros[time_index:time_index+self.size],
+                              self.y1_zeros[i:i+self.size])
             self.data.setPos(self.step,0)
             self.voltage_value.setText(str(voltage))
 
         elif self.course == "Beam":
-            time_index, blah = self.dataParse(self.fulldata, self.time_zeros, "T")
-            i,voltage = self.dataParse(self.fulldata, self.y1_zeros, "S")
+            time_index, blah = self.dataParse(self.fulldata, 
+                                              self.time_zeros, "T")
+            i, voltage = self.dataParse(self.fulldata, self.y1_zeros, "S")
 
-            self.data.setData(self.time_zeros[time_index:time_index+self.size],self.y1_zeros[i:i+self.size])
-            self.data.setPos(self.step,0)
+            self.data.setData(self.time_zeros[time_index:time_index+self.size],
+                              self.y1_zeros[i:i+self.size])
+            self.data.setPos(self.step, 0)
             self.accel_value.setText(str(voltage))
 
         elif self.course == "Sound":
             time_index, blah = self.dataParse(self.fulldata, self.time_zeros, "T")
-            i,mic1 = self.dataParse(self.fulldata, self.y1_zeros, "S")
-            j,mic2 = self.dataParse(self.fulldata, self.y2_zeros, "A")
-            k,temp = self.dataParse(self.fulldata, self.y3_zeros, "Q")
+            i, mic1 = self.dataParse(self.fulldata, self.y1_zeros, "S")
+            j, mic2 = self.dataParse(self.fulldata, self.y2_zeros, "A")
+            k, temp = self.dataParse(self.fulldata, self.y3_zeros, "Q")
 
-            self.data1.setData(self.time_zeros[time_index:time_index+self.size],self.y1_zeros[i:i+self.size])
-            self.data1.setPos(self.step,0)
+            self.data1.setData(self.time_zeros[time_index:time_index+self.size],
+                               self.y1_zeros[i:i+self.size])
+            self.data1.setPos(self.step, 0)
             self.mic1_value.setText(str(mic1))
 
-            self.data2.setData(self.time_zeros[time_index:time_index+self.size],self.y2_zeros[j:j+self.size])
-            self.data2.setPos(self.step,0)
+            self.data2.setData(self.time_zeros[time_index:time_index+self.size],
+                               self.y2_zeros[j:j+self.size])
+            self.data2.setPos(self.step, 0)
             self.mic2_value.setText(str(mic2))
 
-            self.data3.setData(self.time_zeros[time_index:time_index+self.size],self.y3_zeros[k:k+self.size])
-            self.data3.setPos(self.step,0)
+            self.data3.setData(self.time_zeros[time_index:time_index+self.size],
+                               self.y3_zeros[k:k+self.size])
+            self.data3.setPos(self.step, 0)
             self.temperature_value.setText(str(temp))
         
 
-    def dataParse(self,datastream, data_zeros, char):
+    def dataParse(self, datastream, data_zeros, char):
         '''
         datastream is the live stream of values from Arduino
         data_zeros is the list where the data is windowed in the live graphs
         char is the character where it parses for the starting letter using Gcode
         '''
-        buffersize=self.buffersize
-        size=self.size
+        buffersize = self.buffersize
+        size = self.size
         try:
-            temp = self.gcodeParsing(char,datastream)
+            temp = self.gcodeParsing(char, datastream)
             i = int(data_zeros[buffersize])
             data_zeros[i] = data_zeros[i+size] = float(temp)
             data_zeros[buffersize] = i = (i+1)%size 
@@ -472,9 +489,9 @@ class Window(QMainWindow):
         except TypeError:
             print("Couldn't unpack due to a None Object")
 
-    def gcodeParsing(self,letter,input_list):
+    def gcodeParsing(self, letter, input_list):
         result = [_ for _ in input_list if _.startswith(letter)][0][1:]
-        return(result)
+        return result
 
 def main():
     app = QApplication(sys.argv)

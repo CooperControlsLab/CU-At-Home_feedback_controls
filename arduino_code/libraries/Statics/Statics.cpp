@@ -46,8 +46,7 @@ void Statics::run_lab() {
 		Serial.print(',');
 		Serial.print('S'); Serial.print(100);
 		Serial.print(',');
-		Serial.print('A'); Serial.print(analogRead(A0));
-		Serial.print('\n'); //This is needed for Python to parse the data
+		Serial.print('A'); Serial.println(analogRead(A0));
 		prev_micros = current_micros;
 	}
 }
