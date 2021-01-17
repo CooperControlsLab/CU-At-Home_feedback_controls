@@ -47,6 +47,7 @@ void Statics::run_lab() {
 		Serial.print('S'); Serial.print(100);
 		Serial.print(',');
 		Serial.print('A'); Serial.println(analogRead(A0));
+
 		prev_micros = current_micros;
 	}
 }

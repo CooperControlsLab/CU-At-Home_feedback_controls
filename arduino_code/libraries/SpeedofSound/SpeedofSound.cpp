@@ -49,8 +49,8 @@ void SpeedofSound::run_lab() {
 		Serial.print(',');
 		Serial.print("mic1: "); Serial.print(mic1);
 		Serial.print(',');
-		Serial.print("mic2: "); Serial.print(mic2);
-		Serial.print('\n');
+		Serial.print("mic2: "); Serial.println(mic2);
+
 		prev_micros = current_micros;
 	}
 }

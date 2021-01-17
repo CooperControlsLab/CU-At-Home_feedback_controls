@@ -53,8 +53,7 @@ void Beam::run_lab() {
 		Serial.print(',');
 		Serial.print("Translational acceleration: "); Serial.print(mpu6050->getAccX());
 		Serial.print(',');
-		Serial.print("Anglular displacement: "); Serial.print(mpu6050->getAngleX());
-		Serial.print('\n');
+		Serial.print("Anglular displacement: "); Serial.println(mpu6050->getAngleX());
 
 		prev_micros = current_micros;
 	}
