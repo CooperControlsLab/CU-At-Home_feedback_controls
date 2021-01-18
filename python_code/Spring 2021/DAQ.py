@@ -7,11 +7,12 @@ import CoursesDataClass
 from SettingsClass import *
 from ui_file import Ui_MainWindow
 from QLed import QLed
-from PyQt5.QtGui import QDoubleValidator, QKeySequence, QPixmap, QRegExpValidator, QIcon, QFont
+from PyQt5.QtGui import QDoubleValidator, QKeySequence, QPixmap, QRegExpValidator, QIcon, QFont, QFontDatabase
 from PyQt5.QtWidgets import (QApplication, QPushButton, QWidget, QComboBox, 
 QHBoxLayout, QVBoxLayout, QFormLayout, QCheckBox, QGridLayout, QDialog, 
 QLabel, QLineEdit, QDialogButtonBox, QFileDialog, QSizePolicy, QLayout,
 QSpacerItem, QGroupBox, QShortcut, QMainWindow)
+from PyQt5.QtCore import QDir
 import numpy as np
 import csv
 from itertools import zip_longest
@@ -26,7 +27,6 @@ if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
     QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
     QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 
-
 class Window(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(Window, self).__init__(*args, **kwargs)
@@ -36,17 +36,29 @@ class Window(QMainWindow):
         self.verbose = True # Initialization. Used in the thread generated in application
 
         script_dir = os.path.dirname(__file__)
-        rel_path = r"logo\CUAtHomeLogo-Horz.png"
-        abs_file_path = os.path.join(script_dir, rel_path)
-        self.ui.imageLabel.setPixmap(QPixmap(abs_file_path).scaled(200, 130, 
+        logo_rel_path = r"logo\CUAtHomeLogo-Horz.png"
+        logo_abs_file_path = os.path.join(script_dir, logo_rel_path)
+        self.ui.imageLabel.setPixmap(QPixmap(logo_abs_file_path).scaled(200, 130, 
                                                                    Qt.KeepAspectRatio, 
                                                                    Qt.FastTransformation))
+        
         self.setStyleSheet(qdarkstyle.load_stylesheet())
+        self.getFonts()
         self.initalConnections()
         self.initialGraphSettings()
         self.arduinoStatusLed()
         self.initialTimer()
         self.initialState()
+
+    def getFonts(self):
+        script_dir = os.path.dirname(__file__)
+        font_rel_path = r"fonts\Roboto" 
+        font_abs_file_path = os.path.join(script_dir, font_rel_path)
+
+        for f in os.listdir(font_abs_file_path):
+            if f.endswith("ttf"):
+                QFontDatabase.addApplicationFont(os.path.join(font_abs_file_path,f))
+        #print(QFontDatabase().families())
 
     def arduinoStatusLed(self):
         self._led = QLed(self, onColour=QLed.Red, shape=QLed.Circle)
@@ -55,7 +67,7 @@ class Window(QMainWindow):
         self._led.setMinimumSize(QSize(15, 15))
         self._led.setMaximumSize(QSize(15, 15))     
         self.statusLabel = QLabel("Arduino Status:")
-        self.statusLabel.setFont(QFont("Calibri", 12, QFont.Bold)) 
+        self.statusLabel.setFont(QFont("Roboto", 12)) 
 
         self.statusBar().addWidget(self.statusLabel)
         #self.statusBar().reformat()
@@ -78,6 +90,7 @@ class Window(QMainWindow):
             self.currentItemsSB = [self.voltage_label, self.voltage_value]
             for item in self.currentItemsSB:
                 self.statusBar().addPermanentWidget(item)
+                item.setFont(QFont("Roboto", 12)) 
 
         elif labtype == "Beam":
             self.accel_label = QLabel("Acceleration")
@@ -85,7 +98,8 @@ class Window(QMainWindow):
             self.currentItemsSB = [self.accel_label, self.accel_value]
             for item in self.currentItemsSB:
                 self.statusBar().addPermanentWidget(item)
-        
+                item.setFont(QFont("Roboto", 12)) 
+
         elif labtype == "Sound":
             self.mic1_label = QLabel("Mic 1:")
             self.mic1_value = QLabel("")
@@ -98,6 +112,7 @@ class Window(QMainWindow):
                                    self.temperature_label, self.temperature_value]
             for item in self.currentItemsSB:
                 self.statusBar().addPermanentWidget(item)
+                item.setFont(QFont("Roboto", 12)) 
 
     def initalConnections(self):
         """
@@ -191,10 +206,11 @@ class Window(QMainWindow):
                                                                   self.serial_values[1],
                                                                   self.serial_values[2])
                 time.sleep(2)
-                self.serialInstance.ser.flush()
-                self.serialInstance.ser.reset_input_buffer()
-                self.serialInstance.ser.reset_output_buffer()
-                self.serialInstance.ser.write("L2%".encode())
+                self.serialInstance.flush()
+                self.serialInstance.reset_input_buffer()
+                self.serialInstance.reset_output_buffer()
+                #self.serialInstance.ser.write("L2%".encode())
+                self.serialInstance.labSelection(self.course)
                 print("Now in Statics Lab")
 
             elif self.course == "Sound":
@@ -202,22 +218,22 @@ class Window(QMainWindow):
                                                                 self.serial_values[1],
                                                                 self.serial_values[2])
                 self.serialInstance.gcodeLetters = ["T","S","A"]
-                time.sleep(2)
-                self.serialInstance.ser.flush()
-                self.serialInstance.ser.reset_input_buffer()
-                self.serialInstance.ser.reset_output_buffer()
-                self.serialInstance.ser.write("L3%".encode())
+                #time.sleep(2)
+                self.serialInstance.flush()
+                self.serialInstance.reset_input_buffer()
+                self.serialInstance.reset_output_buffer()
+                self.serialInstance.labSelection(self.course)
                 print("Now in Speed of Sound Lab")
 
             elif self.course == "Beam":
                 self.serialInstance = CoursesDataClass.BeamLab(self.serial_values[0],
                                                                self.serial_values[1],
                                                                self.serial_values[2])
-                time.sleep(2)
-                self.serialInstance.ser.flush()
-                self.serialInstance.ser.reset_input_buffer()
-                self.serialInstance.ser.reset_output_buffer()
-                self.serialInstance.ser.write("L4%".encode())
+                #time.sleep(2)
+                self.serialInstance.flush()
+                self.serialInstance.reset_input_buffer()
+                self.serialInstance.reset_output_buffer()
+                self.serialInstance.labSelection(self.course)
                 print("Now in Beam Lab")
 
             if not self.serialInstance.is_open():
@@ -268,12 +284,6 @@ class Window(QMainWindow):
         print("Recording Data")
         self.timer.start()
         self.curve()
-        #self.serialInstance.ser.flush()
-        #self.serialInstance.ser.write("L2%".encode())
-        #time.sleep(1)
-        #self.serialInstance.L() ####################################
-        #self.serialInstance.ser.write("L2%".encode())
-        #self.serialInstance.labSelection(2)
         self.serialInstance.requestByte()
         self.ui.startbutton.clicked.disconnect(self.startbuttonPushed)
         #self.ui.stopbutton.clicked.connect(self.stopbuttonPushed)
@@ -414,23 +424,12 @@ class Window(QMainWindow):
                                         fillvalue="")
 
     def updatePlot(self):
-        '''
-        self.serialInstance.requestByte() #
-        #self.serialInstance.L() ####################################
-        fulldata = self.serialInstance.readValues()
-        print(fulldata)
-        self.serialInstance.stopRequestByte()
         self.step = self.step + 1
-        '''
-        
-        #self.serialInstance.L() ####################################
-        self.step = self.step + 1
-        #print(self.serialInstance.gcodeParsing(self.fulldata))
 
         if self.course == "Statics":
-            time_index, _ = self.dataParse(self.fulldata, 
+            time_index, _ = self.dataWindow(self.fulldata, 
                                               self.time_zeros, "T")
-            i, voltage = self.dataParse(self.fulldata, self.y1_zeros, "S")
+            i, voltage = self.dataWindow(self.fulldata, self.y1_zeros, "S")
 
             self.data.setData(self.time_zeros[time_index:time_index+self.size],
                               self.y1_zeros[i:i+self.size])
@@ -438,9 +437,9 @@ class Window(QMainWindow):
             self.voltage_value.setText(str(voltage))
 
         elif self.course == "Beam":
-            time_index, _ = self.dataParse(self.fulldata, 
+            time_index, _ = self.dataWindow(self.fulldata, 
                                               self.time_zeros, "T")
-            i, voltage = self.dataParse(self.fulldata, self.y1_zeros, "S")
+            i, voltage = self.dataWindow(self.fulldata, self.y1_zeros, "S")
 
             self.data.setData(self.time_zeros[time_index:time_index+self.size],
                               self.y1_zeros[i:i+self.size])
@@ -448,10 +447,10 @@ class Window(QMainWindow):
             self.accel_value.setText(str(voltage))
 
         elif self.course == "Sound":
-            time_index, _ = self.dataParse(self.fulldata, self.time_zeros, "T")
-            i, mic1 = self.dataParse(self.fulldata, self.y1_zeros, "S")
-            j, mic2 = self.dataParse(self.fulldata, self.y2_zeros, "A")
-            k, temp = self.dataParse(self.fulldata, self.y3_zeros, "Q")
+            time_index, _ = self.dataWindow(self.fulldata, self.time_zeros, "T")
+            i, mic1 = self.dataWindow(self.fulldata, self.y1_zeros, "S")
+            j, mic2 = self.dataWindow(self.fulldata, self.y2_zeros, "A")
+            k, temp = self.dataWindow(self.fulldata, self.y3_zeros, "Q")
 
             self.data1.setData(self.time_zeros[time_index:time_index+self.size],
                                self.y1_zeros[i:i+self.size])
@@ -469,7 +468,7 @@ class Window(QMainWindow):
             self.temperature_value.setText(str(temp))
         
 
-    def dataParse(self, datastream, data_zeros, char):
+    def dataWindow(self, datastream, data_zeros, char):
         '''
         datastream is the live stream of values from Arduino
         data_zeros is the list where the data is windowed in the live graphs

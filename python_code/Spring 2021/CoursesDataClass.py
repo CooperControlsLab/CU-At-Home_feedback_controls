@@ -50,18 +50,21 @@ class SerialComm:
         Ensures all data in buffer is sent, then clears buffer
         """
         self.ser.flushInput()
+    
+    def flush(self):
+        self.ser.flush()
+
+    def reset_input_buffer(self):
+        self.ser.reset_input_buffer()
+    
+    def reset_output_buffer(self):
+        self.ser.reset_output_buffer()
 
     def readValues(self):
         """
-        Current method to send byte (request) so Arduino can send back byte of data.
         Current format of received data is b"T23533228,S0.00,A0.00,Q0.00,\0\r\n"
-        Returns a list of datapoints
-        T is time 
-        S is Setpoint
-        A is Response (can be position or velocity)
-        Q is PWM Voltage
+        Returns a list of datapoints ["T23533228","S0.00","A0.00","Q0.00"]
         """
-        #self.ser.write(b"R0,\0") 
         arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
         return arduinoData
 
@@ -77,32 +80,21 @@ class SerialComm:
         """
         self.ser.write("R0%".encode())
 
-    '''
-    def requestByte(self):
-        """
-        Request byte to start and stop serial communication with arduino
-        """
-        self.ser.write(b"R0,\0") 
-
-    def L(self):
-        """
-        Request byte to start and stop serial communication with arduino
-        """
-        self.ser.write(b"L2,\0") 
-    '''
-
-    def sendInitialRequest(self):
-        """
-        This should be the first thing sent to Arduino. It is to send a byte of what
-        variables should only be sent back
-        """
-        if self._gcodeLetters is not None:
-            a = ','.join(self._gcodeLetters)
-            a = a + "\0" #adds null terminator to just the initial request, NOT the _gcodeLetters
-            a = a.encode()
-            #return binascii.hexlify(a)
-            self.ser.write(a)
-            return a
+    def labSelection(self,course):
+        '''
+        1 Procon
+        2 Statics
+        3 Speed of Sound
+        4 Beam
+        5 General DAQ
+        '''
+        all_courses = { "Procon" : 1,
+                        "Statics": 2,
+                        "Sound"  : 3,
+                        "Beam"   : 4,
+                        "General": 5}
+        #print(f"L{all_courses[course]}%")
+        self.ser.write(f"L{all_courses[course]}%".encode())
 
     def gcodeParsing(self,datastream,hex=False):
         '''
@@ -114,12 +106,6 @@ class SerialComm:
         #result = [_[1:] for _ in result]
         return(result)
 
-    def time(self,datastream):
-        """
-        "T"
-        """
-        pass 
-    
     @property
     def gcodeLetters(self):
         """
@@ -138,8 +124,26 @@ class SerialComm:
         else:
             raise TypeError("Should be set to a list")
 
+    def initialLabSelectionSend(self):
+        pass
+
+    def initialLabSelectionReceive(self):
+        pass
 
     '''
+    def sendInitialRequest(self):
+        """
+        This should be the first thing sent to Arduino. It is to send a byte of what
+        variables should only be sent back
+        """
+        if self._gcodeLetters is not None:
+            a = ','.join(self._gcodeLetters)
+            a = a + "\0" #adds null terminator to just the initial request, NOT the _gcodeLetters
+            a = a.encode()
+            #return binascii.hexlify(a)
+            self.ser.write(a)
+            return a
+
     def dataPlot(self):
         try:
             j = int(self.y2_zeros[self.buffersize])
@@ -152,28 +156,6 @@ class SerialComm:
             print("Couldn't parse index. Skipping point")
     '''
 
-    def initialLabSelectionSend(self):
-        pass
-
-    def initialLabSelectionReceive(self):
-        pass
-
-    def labSelection(self,course):
-        self.ser.write(f"L{course}\0".encode())
-        '''
-        case 1:
-            lab = new ProCon();
-            break;
-        case 2:
-            lab = new Statics();
-            break;
-        case 3:
-            lab = new SpeedofSound();
-            break;
-        case 4:
-            lab = new Beam();
-            break;
-        '''
 
 class StaticsLab(SerialComm):
     def __init__(self, port, baudrate, timeout):
@@ -187,7 +169,7 @@ class SoundLab(SerialComm):
     def __init__(self, port, baudrate, timeout):
         super().__init__(port, baudrate, timeout)
 
-class GeneralizedDAQ(SerialComm):
+class GeneralDAQ(SerialComm):
     def __init__(self, port, baudrate, timeout):
         super().__init__(port, baudrate, timeout)
 
