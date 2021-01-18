@@ -66,6 +66,10 @@ class SerialComm:
         Returns a list of datapoints ["T23533228","S0.00","A0.00","Q0.00"]
         """
         arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
+        '''
+        if arduinoData == ['']:
+            arduinoData = []]
+        '''
         return arduinoData
 
     def requestByte(self):

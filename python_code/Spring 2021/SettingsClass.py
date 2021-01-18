@@ -64,6 +64,8 @@ class SettingsClass(QDialog):
         self.timeout = QLineEdit(self)
         self.timeout.setFixedWidth(100)
         self.timeout.setText("0.1")
+        #self.timeout.setText("1")
+
         timeout_validator = QDoubleValidator(0.0000, 5.0000, 4, notation=QDoubleValidator.StandardNotation)
         self.timeout.setValidator(timeout_validator)
          

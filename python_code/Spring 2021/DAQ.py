@@ -200,46 +200,37 @@ class Window(QMainWindow):
 
         try:
             self.size = self.serial_values[3] #Value from settings. Windows data
-
+            
             if self.course == "Statics":
                 self.serialInstance = CoursesDataClass.StaticsLab(self.serial_values[0],
                                                                   self.serial_values[1],
                                                                   self.serial_values[2])
-                time.sleep(2)
                 self.serialInstance.flush()
                 self.serialInstance.reset_input_buffer()
                 self.serialInstance.reset_output_buffer()
-                #self.serialInstance.ser.write("L2%".encode())
-                self.serialInstance.labSelection(self.course)
-                print("Now in Statics Lab")
-
-            elif self.course == "Sound":
+                
+            if self.course == "Sound":
                 self.serialInstance = CoursesDataClass.SoundLab(self.serial_values[0],
                                                                 self.serial_values[1],
                                                                 self.serial_values[2])
                 self.serialInstance.gcodeLetters = ["T","S","A"]
-                #time.sleep(2)
                 self.serialInstance.flush()
                 self.serialInstance.reset_input_buffer()
                 self.serialInstance.reset_output_buffer()
-                self.serialInstance.labSelection(self.course)
-                print("Now in Speed of Sound Lab")
 
             elif self.course == "Beam":
                 self.serialInstance = CoursesDataClass.BeamLab(self.serial_values[0],
                                                                self.serial_values[1],
                                                                self.serial_values[2])
-                #time.sleep(2)
                 self.serialInstance.flush()
                 self.serialInstance.reset_input_buffer()
                 self.serialInstance.reset_output_buffer()
-                self.serialInstance.labSelection(self.course)
-                print("Now in Beam Lab")
+            print(f"Now in {self.course} Lab")
 
             if not self.serialInstance.is_open():
                 self.serialInstance.open() # COME BACK TO THIS. I THINK IT'S WRONG 
                 
-            #time.sleep(2)
+            time.sleep(2)
             print("Serial successfully open!")
 
             if self.serialInstance.is_open():
@@ -284,6 +275,13 @@ class Window(QMainWindow):
         print("Recording Data")
         self.timer.start()
         self.curve()
+        
+        #self.serialInstance.flush()
+        #self.serialInstance.reset_input_buffer()
+        #self.serialInstance.reset_output_buffer()
+        self.serialInstance.labSelection(self.course)
+
+
         self.serialInstance.requestByte()
         self.ui.startbutton.clicked.disconnect(self.startbuttonPushed)
         #self.ui.stopbutton.clicked.connect(self.stopbuttonPushed)
@@ -305,7 +303,7 @@ class Window(QMainWindow):
         while self.verbose:
             self.fulldata = self.serialInstance.readValues()
             print(self.fulldata)
-
+            
             if self.course == "Statics":
                 self.time.append(self.gcodeParsing("T", self.fulldata))
                 self.y1.append(self.gcodeParsing("S", self.fulldata))
@@ -319,8 +317,10 @@ class Window(QMainWindow):
                 self.y1.append(self.gcodeParsing("S", self.fulldata))
                 self.y2.append(self.gcodeParsing("A", self.fulldata))
                 self.y3.append(self.gcodeParsing("Q", self.fulldata))
-
+            
     def stopbuttonPushed(self):
+        self.verbose = False
+        self.threadRecordSave.join()
         try:
             self.timer.stop()
             self.serialInstance.stopRequestByte() #
@@ -329,8 +329,6 @@ class Window(QMainWindow):
         except:
             pass
 
-        self.verbose = False
-        self.threadRecordSave.join()
         print("Stopping Data Recording")
 
     def clearbuttonPushed(self):
@@ -488,7 +486,26 @@ class Window(QMainWindow):
             print("Couldn't parse index. Skipping point")
         except TypeError:
             print("Couldn't unpack due to a None Object. Skipping point")
-
+    '''
+    def dataWindow(self, datastream, data_zeros, char):
+        datastream is the live stream of values from Arduino
+        data_zeros is the list where the data is windowed in the live graphs
+        char is the character where it parses for the starting letter using Gcode
+        buffersize = self.buffersize
+        size = self.size
+        try:
+            temp = self.gcodeParsing(char, datastream)
+            i = int(data_zeros[buffersize])
+            data_zeros[i] = data_zeros[i+size] = float(temp)
+            data_zeros[buffersize] = i = (i+1)%size 
+            return i, temp
+        except ValueError:
+            print("Couldn't parse value. Skipping point")
+        except IndexError:
+            print("Couldn't parse index. Skipping point")
+        except TypeError:
+            print("Couldn't unpack due to a None Object. Skipping point")
+    '''
     def gcodeParsing(self, letter, input_list):
         """
         Unpacks data by using list comprehension. For example, if 
