@@ -32,8 +32,8 @@ class Window(QMainWindow):
         super(Window, self).__init__(*args, **kwargs)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.currentItemsSB = [] # Used to store variables to be displayed in bottom right
-        self.verbose = True # Initialization. Used to change between True and False for saving data
+        self.currentItemsSB = [] # Used to store variables to be displayed in status bar at the bottom right
+        self.verbose = True # Initialization. Used in the thread generated in application
 
         script_dir = os.path.dirname(__file__)
         rel_path = r"logo\CUAtHomeLogo-Horz.png"
@@ -47,7 +47,6 @@ class Window(QMainWindow):
         self.arduinoStatusLed()
         self.initialTimer()
         self.initialState()
-
 
     def arduinoStatusLed(self):
         self._led = QLed(self, onColour=QLed.Red, shape=QLed.Circle)
@@ -63,6 +62,10 @@ class Window(QMainWindow):
         self.statusBar().addWidget(self._led)
 
     def currentValueSB(self,labtype):
+        '''
+        Used to add/remove values in the status bar in 
+        the bottom of the application
+        '''
         try:
             for item in self.currentItemsSB:
                 self.statusBar().removeWidget(item)
@@ -277,8 +280,8 @@ class Window(QMainWindow):
         
         self.verbose = True
         self.threadRecordSave = threading.Thread(target=self.readStoreValues)
+        self.threadRecordSave.daemon = True #exits program when non-daemon (main) thread exits. Required if serial is open and application is suddenly closed
         self.threadRecordSave.start()
-        #self.newclass = self.serialInstance.copy()
 
     def readStoreValues(self):
         '''
@@ -290,10 +293,8 @@ class Window(QMainWindow):
         amount of datapoints that are missed.
         '''
         while self.verbose:
-            #self.serialInstance.requestByte() 
             self.fulldata = self.serialInstance.readValues()
             print(self.fulldata)
-            #self.serialInstance.stopRequestByte()
 
             if self.course == "Statics":
                 self.time.append(self.gcodeParsing("T", self.fulldata))
@@ -313,7 +314,6 @@ class Window(QMainWindow):
         try:
             self.timer.stop()
             self.serialInstance.stopRequestByte() #
-            print("Stopping Data Recording")
             #self.ui.startbutton.clicked.connect(self.startbuttonPushed)
             #self.ui.stopbutton.clicked.disconnect(self.stopbuttonPushed)
         except:
@@ -321,6 +321,7 @@ class Window(QMainWindow):
 
         self.verbose = False
         self.threadRecordSave.join()
+        print("Stopping Data Recording")
 
     def clearbuttonPushed(self):
         self.ui.graphWidgetOutput.clear()
@@ -427,7 +428,7 @@ class Window(QMainWindow):
         #print(self.serialInstance.gcodeParsing(self.fulldata))
 
         if self.course == "Statics":
-            time_index, blah = self.dataParse(self.fulldata, 
+            time_index, _ = self.dataParse(self.fulldata, 
                                               self.time_zeros, "T")
             i, voltage = self.dataParse(self.fulldata, self.y1_zeros, "S")
 
@@ -437,7 +438,7 @@ class Window(QMainWindow):
             self.voltage_value.setText(str(voltage))
 
         elif self.course == "Beam":
-            time_index, blah = self.dataParse(self.fulldata, 
+            time_index, _ = self.dataParse(self.fulldata, 
                                               self.time_zeros, "T")
             i, voltage = self.dataParse(self.fulldata, self.y1_zeros, "S")
 
@@ -447,7 +448,7 @@ class Window(QMainWindow):
             self.accel_value.setText(str(voltage))
 
         elif self.course == "Sound":
-            time_index, blah = self.dataParse(self.fulldata, self.time_zeros, "T")
+            time_index, _ = self.dataParse(self.fulldata, self.time_zeros, "T")
             i, mic1 = self.dataParse(self.fulldata, self.y1_zeros, "S")
             j, mic2 = self.dataParse(self.fulldata, self.y2_zeros, "A")
             k, temp = self.dataParse(self.fulldata, self.y3_zeros, "Q")
@@ -483,20 +484,38 @@ class Window(QMainWindow):
             data_zeros[buffersize] = i = (i+1)%size 
             return i, temp
         except ValueError:
-            print("Couldn't parse")
+            print("Couldn't parse value. Skipping point")
         except IndexError:
             print("Couldn't parse index. Skipping point")
         except TypeError:
-            print("Couldn't unpack due to a None Object")
+            print("Couldn't unpack due to a None Object. Skipping point")
 
     def gcodeParsing(self, letter, input_list):
+        """
+        Unpacks data by using list comprehension. For example, if 
+        input_list is ["A1","B2","C3"] and letter is "A", this method returns 1. 
+        """
         result = [_ for _ in input_list if _.startswith(letter)][0][1:]
         return result
+
+    def cleanUp(self):
+        '''
+        Method that should only be called in the application instance.
+        Used to close all running threads besides MainThread.
+        Main instance where this occurs is when serial is open and is
+        returning values, but application is suddenly closed. Not needed
+        right now as self.threadRecordSave is a daemon thread. 
+        In main(), app.aboutToQuit.connect(main.cleanUp) should be called after
+        main.show() 
+        '''
+        for thread in threading.enumerate(): 
+            thread.join()
 
 def main():
     app = QApplication(sys.argv)
     main = Window()
     main.show()
+    #app.aboutToQuit.connect(main.cleanUp) #See Window.cleanUp()
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
