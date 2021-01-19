@@ -64,8 +64,20 @@ class SerialComm:
         """
         Current format of received data is b"T23533228,S0.00,A0.00,Q0.00,\0\r\n"
         Returns a list of datapoints ["T23533228","S0.00","A0.00","Q0.00"]
+        Incorporates error handling into the read data such that the datastream 
+        will not contain an empty string, will always starts with "T" in the 0th element,
+        and isn't of NoneType. If the datastream does not pass these checks, this method
+        will return None. This None will then be processed by methods in the GUI to just
+        skip saving/plotting this point in time.
         """
-        arduinoData = self.ser.readline().decode().replace('\r\n','').split(",")
+        data = self.ser.readline().decode().replace('\r\n','').split(",")
+        
+        if any(ele == '' for ele in data) == False and data[0].startswith("T") == True: 
+            if data is not None:
+                arduinoData = data
+        else: 
+            arduinoData = None 
+
         return arduinoData
 
     def requestByte(self):
