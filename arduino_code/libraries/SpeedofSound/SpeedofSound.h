@@ -20,6 +20,7 @@ class SpeedofSound : public CUatHomeLab {
 private:
 	int mic1;
 	int mic2;
+	float t = 0;
 public:
 	SpeedofSound();
 	void process_cmd();

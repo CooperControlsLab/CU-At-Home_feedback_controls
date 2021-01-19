@@ -103,6 +103,7 @@ class SettingsClass(QDialog):
         ]
         if not arduino_ports:
             raise IOError("No Arduino found. Replug in USB cable and try again.")
+        arduino_ports.sort(key=lambda s: (s[:-2], int(s[-2:])) if s[-2] in '0123456789' else (s[:-1], int(s[-1:])))
         self.port.addItems(arduino_ports)
 
     def getDialogValues(self):

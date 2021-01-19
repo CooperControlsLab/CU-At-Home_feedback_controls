@@ -41,16 +41,30 @@ void SpeedofSound::run_lab() {
 	current_micros = micros();
 	delta = current_micros - prev_micros;
 	if (write_data && delta >= dt * 1000000) {
-		// placed into variables to get their values at the proper time
-		mic1 = analogRead(A0);
-		mic2 = analogRead(A1);
+		t += 0.1;
+		float sine = 10*sin(t);
+		float cosine = 10*cos(t);
 
 		Serial.print('T'); Serial.print(current_micros - start_micros);
 		Serial.print(',');
-		Serial.print("mic1: "); Serial.print(mic1);
+		Serial.print('S'); Serial.print(3);
 		Serial.print(',');
-		Serial.print("mic2: "); Serial.println(mic2);
-
+		Serial.print('A'); Serial.print(sine);
+		Serial.print(',');
+		Serial.print('Q'); Serial.println(cosine);
 		prev_micros = current_micros;
+		
+		
+		/*
+		Serial.print('T'); Serial.print(current_micros - start_micros);
+		Serial.print(',');
+		Serial.print('S'); Serial.print(100);
+		Serial.print(',');
+		Serial.print('A'); Serial.print(analogRead(A0));
+		Serial.print(',');
+		Serial.print('Q'); Serial.println(analogRead(A0));
+		prev_micros = current_micros;
+		*/
+		
 	}
 }

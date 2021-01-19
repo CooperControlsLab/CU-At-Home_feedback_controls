@@ -143,7 +143,7 @@ class Window(QMainWindow):
         self.legendOutput = self.ui.graphWidgetOutput.addLegend()
         self.legendInput = self.ui.graphWidgetInput.addLegend()
 
-    def initialTimer(self,default=50):
+    def initialTimer(self,default=10):
         self.timer = QTimer()
         self.timer.setInterval(default) #Changes the plot speed. Defaulted to 50 ms. Can be placed in startbuttonPushed() method
         time.sleep(2)
@@ -208,7 +208,7 @@ class Window(QMainWindow):
                 self.serialInstance.flush()
                 self.serialInstance.reset_input_buffer()
                 self.serialInstance.reset_output_buffer()
-                
+
             if self.course == "Sound":
                 self.serialInstance = CoursesDataClass.SoundLab(self.serial_values[0],
                                                                 self.serial_values[1],
@@ -275,12 +275,7 @@ class Window(QMainWindow):
         print("Recording Data")
         self.timer.start()
         self.curve()
-        
-        #self.serialInstance.flush()
-        #self.serialInstance.reset_input_buffer()
-        #self.serialInstance.reset_output_buffer()
         self.serialInstance.labSelection(self.course)
-
 
         self.serialInstance.requestByte()
         self.ui.startbutton.clicked.disconnect(self.startbuttonPushed)
@@ -301,23 +296,27 @@ class Window(QMainWindow):
         amount of datapoints that are missed.
         '''
         while self.verbose:
-            self.fulldata = self.serialInstance.readValues()
-            print(self.fulldata)
+            data = self.serialInstance.readValues()
+            print(data)
             
-            if self.course == "Statics":
-                self.time.append(self.gcodeParsing("T", self.fulldata))
-                self.y1.append(self.gcodeParsing("S", self.fulldata))
+            if data != None:
+                self.fulldata = data
+                if self.course == "Statics":
+                    self.time.append(self.gcodeParsing("T", self.fulldata))
+                    self.y1.append(self.gcodeParsing("S", self.fulldata))
 
-            elif self.course == "Beam":
-                self.time.append(self.gcodeParsing("T", self.fulldata))
-                self.y1.append(self.gcodeParsing("S", self.fulldata))
+                elif self.course == "Beam":
+                    self.time.append(self.gcodeParsing("T", self.fulldata))
+                    self.y1.append(self.gcodeParsing("S", self.fulldata))
 
-            elif self.course == "Sound":
-                self.time.append(self.gcodeParsing("T", self.fulldata))
-                self.y1.append(self.gcodeParsing("S", self.fulldata))
-                self.y2.append(self.gcodeParsing("A", self.fulldata))
-                self.y3.append(self.gcodeParsing("Q", self.fulldata))
-            
+                elif self.course == "Sound":
+                    self.time.append(self.gcodeParsing("T", self.fulldata))
+                    self.y1.append(self.gcodeParsing("S", self.fulldata))
+                    self.y2.append(self.gcodeParsing("A", self.fulldata))
+                    self.y3.append(self.gcodeParsing("Q", self.fulldata))
+            else: 
+                pass
+
     def stopbuttonPushed(self):
         self.verbose = False
         self.threadRecordSave.join()
@@ -336,9 +335,8 @@ class Window(QMainWindow):
         self.ui.graphWidgetInput.clear()
         self.legendOutput.clear()
         self.legendInput.clear()
-        # Come back to this
-        self.ui.graphWidgetOutput.addLegend()
-        self.ui.graphWidgetInput.addLegend()
+        self.ui.graphWidgetOutput.addLegend()# Come back to this
+        self.ui.graphWidgetInput.addLegend()# Come back to this
         #self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,100], padding=None, update=True, disableAutoRange=True)
         #self.graphWidgetInput.setRange(rect=None, xRange=None, yRange=[-13,13], padding=None, update=True, disableAutoRange=True)
         self.ui.startbutton.clicked.connect(self.startbuttonPushed)
