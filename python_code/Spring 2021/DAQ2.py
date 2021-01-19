@@ -205,12 +205,9 @@ class Window(QMainWindow):
                 self.serialInstance = CoursesDataClass.StaticsLab(self.serial_values[0],
                                                                   self.serial_values[1],
                                                                   self.serial_values[2])
-                time.sleep(2)
                 self.serialInstance.flush()
                 self.serialInstance.reset_input_buffer()
                 self.serialInstance.reset_output_buffer()
-                #self.serialInstance.ser.write("L2%".encode())
-                self.serialInstance.labSelection(self.course)
                 print("Now in Statics Lab")
 
             elif self.course == "Sound":
@@ -218,28 +215,24 @@ class Window(QMainWindow):
                                                                 self.serial_values[1],
                                                                 self.serial_values[2])
                 self.serialInstance.gcodeLetters = ["T","S","A"]
-                #time.sleep(2)
                 self.serialInstance.flush()
                 self.serialInstance.reset_input_buffer()
                 self.serialInstance.reset_output_buffer()
-                self.serialInstance.labSelection(self.course)
                 print("Now in Speed of Sound Lab")
 
             elif self.course == "Beam":
                 self.serialInstance = CoursesDataClass.BeamLab(self.serial_values[0],
                                                                self.serial_values[1],
                                                                self.serial_values[2])
-                #time.sleep(2)
                 self.serialInstance.flush()
                 self.serialInstance.reset_input_buffer()
                 self.serialInstance.reset_output_buffer()
-                self.serialInstance.labSelection(self.course)
                 print("Now in Beam Lab")
 
             if not self.serialInstance.is_open():
                 self.serialInstance.open() # COME BACK TO THIS. I THINK IT'S WRONG 
                 
-            #time.sleep(2)
+            time.sleep(2)
             print("Serial successfully open!")
 
             if self.serialInstance.is_open():
@@ -284,6 +277,7 @@ class Window(QMainWindow):
         print("Recording Data")
         self.timer.start()
         self.curve()
+        self.serialInstance.labSelection(self.course)
         self.serialInstance.requestByte()
         self.ui.startbutton.clicked.disconnect(self.startbuttonPushed)
         #self.ui.stopbutton.clicked.connect(self.stopbuttonPushed)
@@ -303,24 +297,30 @@ class Window(QMainWindow):
         amount of datapoints that are missed.
         '''
         while self.verbose:
-            self.fulldata = self.serialInstance.readValues()
-            print(self.fulldata)
+            data = self.serialInstance.readValues()
+            print(data)
+            
+            if data != None:
+                self.fulldata = data
+                if self.course == "Statics":
+                    self.time.append(self.gcodeParsing("T", self.fulldata))
+                    self.y1.append(self.gcodeParsing("S", self.fulldata))
 
-            if self.course == "Statics":
-                self.time.append(self.gcodeParsing("T", self.fulldata))
-                self.y1.append(self.gcodeParsing("S", self.fulldata))
+                elif self.course == "Beam":
+                    self.time.append(self.gcodeParsing("T", self.fulldata))
+                    self.y1.append(self.gcodeParsing("S", self.fulldata))
 
-            elif self.course == "Beam":
-                self.time.append(self.gcodeParsing("T", self.fulldata))
-                self.y1.append(self.gcodeParsing("S", self.fulldata))
-
-            elif self.course == "Sound":
-                self.time.append(self.gcodeParsing("T", self.fulldata))
-                self.y1.append(self.gcodeParsing("S", self.fulldata))
-                self.y2.append(self.gcodeParsing("A", self.fulldata))
-                self.y3.append(self.gcodeParsing("Q", self.fulldata))
+                elif self.course == "Sound":
+                    self.time.append(self.gcodeParsing("T", self.fulldata))
+                    self.y1.append(self.gcodeParsing("S", self.fulldata))
+                    self.y2.append(self.gcodeParsing("A", self.fulldata))
+                    self.y3.append(self.gcodeParsing("Q", self.fulldata))
+            else: 
+                pass
 
     def stopbuttonPushed(self):
+        self.verbose = False
+        self.threadRecordSave.join()
         try:
             self.timer.stop()
             self.serialInstance.stopRequestByte() #
@@ -447,15 +447,15 @@ class Window(QMainWindow):
             self.y3_zeros = np.append(self.y3_zeros, self.y3[self.index])
             
             if len(self.time_zeros) < self.size:
-                self.data.setData(self.time_zeros, self.y1_zeros)
-                self.data.setData(self.time_zeros, self.y2_zeros)
-                self.data.setData(self.time_zeros, self.y3_zeros)
+                self.data1.setData(self.time_zeros, self.y1_zeros)
+                self.data2.setData(self.time_zeros, self.y2_zeros)
+                self.data3.setData(self.time_zeros, self.y3_zeros)
             else:
-                self.data.setData(self.time_zeros[-self.size:], 
+                self.data1.setData(self.time_zeros[-self.size:], 
                                   self.y1_zeros[-self.size:])
-                self.data.setData(self.time_zeros[-self.size:], 
+                self.data2.setData(self.time_zeros[-self.size:], 
                                   self.y2_zeros[-self.size:])
-                self.data.setData(self.time_zeros[-self.size:], 
+                self.data3.setData(self.time_zeros[-self.size:], 
                                   self.y3_zeros[-self.size:])
             
             self.data1.setPos(self.step, 0)
