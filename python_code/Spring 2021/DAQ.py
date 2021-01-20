@@ -18,6 +18,7 @@ import csv
 from itertools import zip_longest
 import threading
 import queue
+import colorama
 
 if hasattr(Qt, 'AA_EnableHighDpiScaling'):
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
@@ -28,6 +29,7 @@ if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
     QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 
 class Window(QMainWindow):
+    #colorama.init()
     def __init__(self, *args, **kwargs):
         super(Window, self).__init__(*args, **kwargs)
         self.ui = Ui_MainWindow()
@@ -233,6 +235,7 @@ class Window(QMainWindow):
                 self.serialInstance.open() # COME BACK TO THIS. I THINK IT'S WRONG 
                 
             time.sleep(2)
+            #print(colorama.Fore.RED + "Serial successfully open!")
             print("Serial successfully open!")
 
             if self.serialInstance.is_open():
@@ -427,53 +430,62 @@ class Window(QMainWindow):
                                         fillvalue="")
 
     def updatePlot(self):
-        self.step = self.step + 1
+        self.step += 1
         self.index += 1
         #self.time_zeros = np.append(self.time_zeros, self.time[self.index])
         self.time_zeros = np.array(self.time)
+
+        try:
+            if self.course in ("Statics", "Beam"):
+                #self.y1_zeros = np.append(self.y1_zeros, self.y1[self.index])
+                self.y1_zeros = np.array(self.y1)
+            
+                if len(self.time_zeros) < self.size:
+                    self.data.setData(self.time_zeros, self.y1_zeros)
+                else:
+                    self.data.setData(self.time_zeros[-self.size:], 
+                                    self.y1_zeros[-self.size:])
+                
+                self.data.setPos(self.step, 0)
+                self.voltage_value.setText(str(self.y1_zeros[-1]))
+
+            elif self.course == "Sound":
+                #self.y1_zeros = np.append(self.y1_zeros, self.y1[self.index])
+                #self.y2_zeros = np.append(self.y2_zeros, self.y2[self.index])
+                #self.y3_zeros = np.append(self.y3_zeros, self.y3[self.index])
+
+                self.y1_zeros = np.array(self.y1)
+                self.y2_zeros = np.array(self.y2)
+                self.y3_zeros = np.array(self.y3)
+                
+                if len(self.time_zeros) < self.size:
+                    self.data1.setData(self.time_zeros, self.y1_zeros)
+                    self.data2.setData(self.time_zeros, self.y2_zeros)
+                    self.data3.setData(self.time_zeros, self.y3_zeros)
+                else:
+                    self.data1.setData(self.time_zeros[-self.size:], 
+                                    self.y1_zeros[-self.size:])
+                    self.data2.setData(self.time_zeros[-self.size:], 
+                                    self.y2_zeros[-self.size:])
+                    self.data3.setData(self.time_zeros[-self.size:], 
+                                    self.y3_zeros[-self.size:])
+                
+                self.data1.setPos(self.step, 0)
+                self.data2.setPos(self.step, 0)
+                self.data3.setPos(self.step, 0)
+                
+                self.mic1_value.setText(str(self.y1_zeros[-1]))
+                self.mic2_value.setText(str(self.y2_zeros[-1]))
+                self.temperature_value.setText(str(self.y3_zeros[-1]))
+        except ValueError:
+            print("Couldn't parse value. Skipping point")
+        except IndexError:
+            print("Couldn't parse index. Skipping point")
+        except TypeError:
+            print("Couldn't unpack due to a None Object. Skipping point")
+        except Exception:
+            pass
         
-        if self.course in ("Statics", "Beam"):
-            #self.y1_zeros = np.append(self.y1_zeros, self.y1[self.index])
-            self.y1_zeros = np.array(self.y1)
-        
-            if len(self.time_zeros) < self.size:
-                self.data.setData(self.time_zeros, self.y1_zeros)
-            else:
-                self.data.setData(self.time_zeros[-self.size:], 
-                                  self.y1_zeros[-self.size:])
-            
-            self.data.setPos(self.step, 0)
-            self.voltage_value.setText(str(self.y1_zeros[-1]))
-
-        elif self.course == "Sound":
-            #self.y1_zeros = np.append(self.y1_zeros, self.y1[self.index])
-            #self.y2_zeros = np.append(self.y2_zeros, self.y2[self.index])
-            #self.y3_zeros = np.append(self.y3_zeros, self.y3[self.index])
-
-            self.y1_zeros = np.array(self.y1)
-            self.y2_zeros = np.array(self.y2)
-            self.y3_zeros = np.array(self.y3)
-            
-            if len(self.time_zeros) < self.size:
-                self.data1.setData(self.time_zeros, self.y1_zeros)
-                self.data2.setData(self.time_zeros, self.y2_zeros)
-                self.data3.setData(self.time_zeros, self.y3_zeros)
-            else:
-                self.data1.setData(self.time_zeros[-self.size:], 
-                                  self.y1_zeros[-self.size:])
-                self.data2.setData(self.time_zeros[-self.size:], 
-                                  self.y2_zeros[-self.size:])
-                self.data3.setData(self.time_zeros[-self.size:], 
-                                  self.y3_zeros[-self.size:])
-            
-            self.data1.setPos(self.step, 0)
-            self.data2.setPos(self.step, 0)
-            self.data3.setPos(self.step, 0)
-            
-            self.mic1_value.setText(str(self.y1_zeros[-1]))
-            self.mic2_value.setText(str(self.y2_zeros[-1]))
-            self.temperature_value.setText(str(self.y3_zeros[-1]))
-
     def gcodeParsing(self, letter, input_list):
         """
         Unpacks data by using list comprehension. For example, if 
