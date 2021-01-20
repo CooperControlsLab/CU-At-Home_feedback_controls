@@ -200,7 +200,7 @@ class Window(QMainWindow):
 
         try:
             self.size = self.serial_values[3] #Value from settings. Windows data
-            
+
             if self.course == "Statics":
                 self.serialInstance = CoursesDataClass.StaticsLab(self.serial_values[0],
                                                                   self.serial_values[1],
@@ -208,8 +208,9 @@ class Window(QMainWindow):
                 self.serialInstance.flush()
                 self.serialInstance.reset_input_buffer()
                 self.serialInstance.reset_output_buffer()
+                print("Now in Statics Lab")
 
-            if self.course == "Sound":
+            elif self.course == "Sound":
                 self.serialInstance = CoursesDataClass.SoundLab(self.serial_values[0],
                                                                 self.serial_values[1],
                                                                 self.serial_values[2])
@@ -217,6 +218,7 @@ class Window(QMainWindow):
                 self.serialInstance.flush()
                 self.serialInstance.reset_input_buffer()
                 self.serialInstance.reset_output_buffer()
+                print("Now in Speed of Sound Lab")
 
             elif self.course == "Beam":
                 self.serialInstance = CoursesDataClass.BeamLab(self.serial_values[0],
@@ -225,7 +227,7 @@ class Window(QMainWindow):
                 self.serialInstance.flush()
                 self.serialInstance.reset_input_buffer()
                 self.serialInstance.reset_output_buffer()
-            print(f"Now in {self.course} Lab")
+                print("Now in Beam Lab")
 
             if not self.serialInstance.is_open():
                 self.serialInstance.open() # COME BACK TO THIS. I THINK IT'S WRONG 
@@ -273,10 +275,12 @@ class Window(QMainWindow):
         
     def startbuttonPushed(self):
         print("Recording Data")
+        self.legendOutput.clear() #Clears Legend upon replotting without closing GUI
+        self.legendInput.clear() #Clears Legend upon replotting without closing GUI
         self.timer.start()
         self.curve()
         self.serialInstance.labSelection(self.course)
-
+        
         self.serialInstance.requestByte()
         self.ui.startbutton.clicked.disconnect(self.startbuttonPushed)
         #self.ui.stopbutton.clicked.connect(self.stopbuttonPushed)
@@ -328,6 +332,8 @@ class Window(QMainWindow):
         except:
             pass
 
+        self.verbose = False
+        self.threadRecordSave.join()
         print("Stopping Data Recording")
 
     def clearbuttonPushed(self):
@@ -335,8 +341,8 @@ class Window(QMainWindow):
         self.ui.graphWidgetInput.clear()
         self.legendOutput.clear()
         self.legendInput.clear()
-        self.ui.graphWidgetOutput.addLegend()# Come back to this
-        self.ui.graphWidgetInput.addLegend()# Come back to this
+        self.ui.graphWidgetOutput.addLegend()
+        self.ui.graphWidgetInput.addLegend()
         #self.graphWidgetOutput.setRange(rect=None, xRange=None, yRange=[-1,100], padding=None, update=True, disableAutoRange=True)
         #self.graphWidgetInput.setRange(rect=None, xRange=None, yRange=[-13,13], padding=None, update=True, disableAutoRange=True)
         self.ui.startbutton.clicked.connect(self.startbuttonPushed)
@@ -369,11 +375,12 @@ class Window(QMainWindow):
         '''
         All of these X_zeros arrays are for the plotting in the pyqtgraphs
         '''
-        self.time_zeros = np.zeros(self.buffersize+1, float)
-        self.y1_zeros = np.zeros(self.buffersize+1, float)
-        self.y2_zeros = np.zeros(self.buffersize+1, float)
-        self.y3_zeros = np.zeros(self.buffersize+1, float)        
-
+        self.time_zeros = np.array([], float)
+        self.y1_zeros = np.array([], float)
+        self.y2_zeros = np.array([], float)
+        self.y3_zeros = np.array([], float)
+        
+        self.index = -1
         ''' 
         These other arrays are the raw data that are saved to the CSV
         '''
@@ -387,9 +394,9 @@ class Window(QMainWindow):
         Initializes drawing tool for graphs, and creates objects that
         are used to be plotted on graphs
         '''
-        pen1 = pg.mkPen(color = (255, 0, 0), width=1)
-        pen2 = pg.mkPen(color = (0, 255, 0), width=1)
-        pen3 = pg.mkPen(color = (0, 255, 255), width=1)
+        pen1 = pg.mkPen(color=(255, 0, 0), width=1)
+        pen2 = pg.mkPen(color=(0, 255, 0), width=1)
+        pen3 = pg.mkPen(color=(0, 255, 255), width=1)
 
         if self.course == "Statics":
             self.data = self.ui.graphWidgetOutput.plot(pen = pen1, name="Voltage???") 
@@ -421,95 +428,58 @@ class Window(QMainWindow):
 
     def updatePlot(self):
         self.step = self.step + 1
-
-        if self.course == "Statics":
-            time_index, _ = self.dataWindow(self.fulldata, 
-                                              self.time_zeros, "T")
-            i, voltage = self.dataWindow(self.fulldata, self.y1_zeros, "S")
-
-            self.data.setData(self.time_zeros[time_index:time_index+self.size],
-                              self.y1_zeros[i:i+self.size])
-            self.data.setPos(self.step,0)
-            self.voltage_value.setText(str(voltage))
-
-        elif self.course == "Beam":
-            time_index, _ = self.dataWindow(self.fulldata, 
-                                              self.time_zeros, "T")
-            i, voltage = self.dataWindow(self.fulldata, self.y1_zeros, "S")
-
-            self.data.setData(self.time_zeros[time_index:time_index+self.size],
-                              self.y1_zeros[i:i+self.size])
+        self.index += 1
+        #self.time_zeros = np.append(self.time_zeros, self.time[self.index])
+        self.time_zeros = np.array(self.time)
+        
+        if self.course in ("Statics", "Beam"):
+            #self.y1_zeros = np.append(self.y1_zeros, self.y1[self.index])
+            self.y1_zeros = np.array(self.y1)
+        
+            if len(self.time_zeros) < self.size:
+                self.data.setData(self.time_zeros, self.y1_zeros)
+            else:
+                self.data.setData(self.time_zeros[-self.size:], 
+                                  self.y1_zeros[-self.size:])
+            
             self.data.setPos(self.step, 0)
-            self.accel_value.setText(str(voltage))
+            self.voltage_value.setText(str(self.y1_zeros[-1]))
 
         elif self.course == "Sound":
-            time_index, _ = self.dataWindow(self.fulldata, self.time_zeros, "T")
-            i, mic1 = self.dataWindow(self.fulldata, self.y1_zeros, "S")
-            j, mic2 = self.dataWindow(self.fulldata, self.y2_zeros, "A")
-            k, temp = self.dataWindow(self.fulldata, self.y3_zeros, "Q")
+            #self.y1_zeros = np.append(self.y1_zeros, self.y1[self.index])
+            #self.y2_zeros = np.append(self.y2_zeros, self.y2[self.index])
+            #self.y3_zeros = np.append(self.y3_zeros, self.y3[self.index])
 
-            self.data1.setData(self.time_zeros[time_index:time_index+self.size],
-                               self.y1_zeros[i:i+self.size])
+            self.y1_zeros = np.array(self.y1)
+            self.y2_zeros = np.array(self.y2)
+            self.y3_zeros = np.array(self.y3)
+            
+            if len(self.time_zeros) < self.size:
+                self.data1.setData(self.time_zeros, self.y1_zeros)
+                self.data2.setData(self.time_zeros, self.y2_zeros)
+                self.data3.setData(self.time_zeros, self.y3_zeros)
+            else:
+                self.data1.setData(self.time_zeros[-self.size:], 
+                                  self.y1_zeros[-self.size:])
+                self.data2.setData(self.time_zeros[-self.size:], 
+                                  self.y2_zeros[-self.size:])
+                self.data3.setData(self.time_zeros[-self.size:], 
+                                  self.y3_zeros[-self.size:])
+            
             self.data1.setPos(self.step, 0)
-            self.mic1_value.setText(str(mic1))
-
-            self.data2.setData(self.time_zeros[time_index:time_index+self.size],
-                               self.y2_zeros[j:j+self.size])
             self.data2.setPos(self.step, 0)
-            self.mic2_value.setText(str(mic2))
-
-            self.data3.setData(self.time_zeros[time_index:time_index+self.size],
-                               self.y3_zeros[k:k+self.size])
             self.data3.setPos(self.step, 0)
-            self.temperature_value.setText(str(temp))
-        
+            
+            self.mic1_value.setText(str(self.y1_zeros[-1]))
+            self.mic2_value.setText(str(self.y2_zeros[-1]))
+            self.temperature_value.setText(str(self.y3_zeros[-1]))
 
-    def dataWindow(self, datastream, data_zeros, char):
-        '''
-        datastream is the live stream of values from Arduino
-        data_zeros is the list where the data is windowed in the live graphs
-        char is the character where it parses for the starting letter using Gcode
-        '''
-        buffersize = self.buffersize
-        size = self.size
-        try:
-            temp = self.gcodeParsing(char, datastream)
-            i = int(data_zeros[buffersize])
-            data_zeros[i] = data_zeros[i+size] = float(temp)
-            data_zeros[buffersize] = i = (i+1)%size 
-            return i, temp
-        except ValueError:
-            print("Couldn't parse value. Skipping point")
-        except IndexError:
-            print("Couldn't parse index. Skipping point")
-        except TypeError:
-            print("Couldn't unpack due to a None Object. Skipping point")
-    '''
-    def dataWindow(self, datastream, data_zeros, char):
-        datastream is the live stream of values from Arduino
-        data_zeros is the list where the data is windowed in the live graphs
-        char is the character where it parses for the starting letter using Gcode
-        buffersize = self.buffersize
-        size = self.size
-        try:
-            temp = self.gcodeParsing(char, datastream)
-            i = int(data_zeros[buffersize])
-            data_zeros[i] = data_zeros[i+size] = float(temp)
-            data_zeros[buffersize] = i = (i+1)%size 
-            return i, temp
-        except ValueError:
-            print("Couldn't parse value. Skipping point")
-        except IndexError:
-            print("Couldn't parse index. Skipping point")
-        except TypeError:
-            print("Couldn't unpack due to a None Object. Skipping point")
-    '''
     def gcodeParsing(self, letter, input_list):
         """
         Unpacks data by using list comprehension. For example, if 
-        input_list is ["A1","B2","C3"] and letter is "A", this method returns 1. 
+        input_list is ["A1","B2","C3"] and letter is "A", this method returns [1]. 
         """
-        result = [_ for _ in input_list if _.startswith(letter)][0][1:]
+        result = float([elem[1:] for elem in input_list if elem.startswith(letter)][0])
         return result
 
     def cleanUp(self):

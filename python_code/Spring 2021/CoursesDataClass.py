@@ -60,6 +60,9 @@ class SerialComm:
     def reset_output_buffer(self):
         self.ser.reset_output_buffer()
 
+    def set_buffer_size(self, rx_size = 12800, tx_size = 12800):
+        self.ser.set_buffer_size(rx_size, tx_size)
+
     def readValues(self):
         """
         Current format of received data is b"T23533228,S0.00,A0.00,Q0.00,\0\r\n"
