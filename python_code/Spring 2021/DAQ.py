@@ -382,8 +382,6 @@ class Window(QMainWindow):
         self.y1_zeros = np.array([], float)
         self.y2_zeros = np.array([], float)
         self.y3_zeros = np.array([], float)
-        
-        self.index = -1
         ''' 
         These other arrays are the raw data that are saved to the CSV
         '''
@@ -431,29 +429,23 @@ class Window(QMainWindow):
 
     def updatePlot(self):
         self.step += 1
-        self.index += 1
-        #self.time_zeros = np.append(self.time_zeros, self.time[self.index])
+        
         self.time_zeros = np.array(self.time)
 
         try:
             if self.course in ("Statics", "Beam"):
-                #self.y1_zeros = np.append(self.y1_zeros, self.y1[self.index])
                 self.y1_zeros = np.array(self.y1)
             
                 if len(self.time_zeros) < self.size:
                     self.data.setData(self.time_zeros, self.y1_zeros)
                 else:
                     self.data.setData(self.time_zeros[-self.size:], 
-                                    self.y1_zeros[-self.size:])
+                                      self.y1_zeros[-self.size:])
                 
                 self.data.setPos(self.step, 0)
                 self.voltage_value.setText(str(self.y1_zeros[-1]))
 
             elif self.course == "Sound":
-                #self.y1_zeros = np.append(self.y1_zeros, self.y1[self.index])
-                #self.y2_zeros = np.append(self.y2_zeros, self.y2[self.index])
-                #self.y3_zeros = np.append(self.y3_zeros, self.y3[self.index])
-
                 self.y1_zeros = np.array(self.y1)
                 self.y2_zeros = np.array(self.y2)
                 self.y3_zeros = np.array(self.y3)
@@ -464,11 +456,11 @@ class Window(QMainWindow):
                     self.data3.setData(self.time_zeros, self.y3_zeros)
                 else:
                     self.data1.setData(self.time_zeros[-self.size:], 
-                                    self.y1_zeros[-self.size:])
+                                       self.y1_zeros[-self.size:])
                     self.data2.setData(self.time_zeros[-self.size:], 
-                                    self.y2_zeros[-self.size:])
+                                       self.y2_zeros[-self.size:])
                     self.data3.setData(self.time_zeros[-self.size:], 
-                                    self.y3_zeros[-self.size:])
+                                       self.y3_zeros[-self.size:])
                 
                 self.data1.setPos(self.step, 0)
                 self.data2.setPos(self.step, 0)
