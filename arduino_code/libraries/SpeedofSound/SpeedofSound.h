@@ -18,9 +18,6 @@ running the Speed of Sound lab using the CUatHome kit.
 
 class SpeedofSound : public CUatHomeLab {
 private:
-	//int mic1;
-	//int mic2;
-
 	// time between data points will be approximately constant so this variable
 	// will just be incremented each print
 	unsigned long time; 
