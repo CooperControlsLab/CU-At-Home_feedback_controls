@@ -23,6 +23,7 @@ public:
 	// lab code. This object will be dynamically allocated as there is no way to 
 	// know which lab will be run before it is specified by the Python "L" 
 	// command.
+	// ARDUINO_CODE: TEENSY = 0, UNO = 1
 	CUatHomeFactory(int ARDUINO_BOARD_CODE);
 
 	CUatHomeFactory(int lab_code, int ARDUINO_BOARD_CODE);

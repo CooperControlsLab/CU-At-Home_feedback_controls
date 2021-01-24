@@ -1,5 +1,6 @@
 // If you're using an Arduino Teensy, uncomment the first line and comment the second.
 // If you're using an Arduino Uno, comment the first line and uncomment the second.
+// TEENSY = 0, UNO = 1
 int ARDUINO_BOARD_CODE{ 0 };
 //int ARDUINO_BOARD_CODE{ 1 };
 

@@ -20,6 +20,8 @@ class CUatHomeLabManager {
 private:
 	CUatHomeFactory* factory;
 	CUatHomeLab* lab;
+
+	// ARDUINO_CODE: TEENSY = 0, UNO = 1
 	int ARDUINO_CODE;
 public:
 	CUatHomeLabManager(int ARDUINO_BOARD_CODE);
