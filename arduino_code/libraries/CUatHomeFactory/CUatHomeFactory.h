@@ -23,9 +23,9 @@ public:
 	// lab code. This object will be dynamically allocated as there is no way to 
 	// know which lab will be run before it is specified by the Python "L" 
 	// command.
-	CUatHomeFactory();
+	CUatHomeFactory(int ARDUINO_BOARD_CODE);
 
-	CUatHomeFactory(int lab_code);
+	CUatHomeFactory(int lab_code, int ARDUINO_BOARD_CODE);
 
 	// Destructor called when changing the lab type (or the code finishes and 
 	// the object goes out of scope)

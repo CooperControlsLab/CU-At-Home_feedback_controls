@@ -11,8 +11,9 @@ creation and the destruction of the lab instances.
 #include <Arduino.h>
 #include "CUatHomeLabManager.h"
 
-CUatHomeLabManager::CUatHomeLabManager() {
-	factory = new CUatHomeFactory();
+CUatHomeLabManager::CUatHomeLabManager(int ARDUINO_BOARD_CODE) {
+	ARDUINO_CODE = ARDUINO_BOARD_CODE;
+	factory = new CUatHomeFactory(ARDUINO_CODE);
 	lab = factory->get_lab();
 }
 void CUatHomeLabManager::run(){
@@ -24,7 +25,7 @@ void CUatHomeLabManager::run(){
         int temp_lab_code{ lab->new_lab_code };
         factory->~CUatHomeFactory();
         lab->~CUatHomeLab();
-        factory = new CUatHomeFactory(temp_lab_code);
+        factory = new CUatHomeFactory(temp_lab_code, ARDUINO_CODE);
         lab = factory->get_lab();
         lab->lab_code = temp_lab_code;
     }

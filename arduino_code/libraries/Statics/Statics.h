@@ -18,7 +18,7 @@ running the Statics lab using the CUatHome kit.
 
 class Statics : public CUatHomeLab {
 public:
-	Statics();
+	Statics(int ARDUINO_BOARD_CODE);
 	void process_cmd();
 	void run_lab();
 };

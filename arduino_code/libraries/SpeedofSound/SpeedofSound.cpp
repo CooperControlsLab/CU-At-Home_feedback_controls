@@ -14,23 +14,43 @@ running the Speed of Sound lab using the CUatHome kit.
 #include "CUatHomeLab.h"
 #include <Arduino.h>
 
+SpeedofSound::SpeedofSound(int ARDUINO_BOARD_CODE) {
+	ARDUINO_CODE = ARDUINO_BOARD_CODE;
 
-SpeedofSound::SpeedofSound() {}
+	if (ARDUINO_CODE == 0) data_array_length = 500;
+	else if (ARDUINO_CODE == 1) data_array_length = 250;
+
+	mic1 = new int[data_array_length];
+	mic2 = new int[data_array_length];
+}
+
+SpeedofSound::~SpeedofSound() {
+	delete[] mic1;
+	delete[] mic2;
+}
 
 void SpeedofSound::process_cmd() {
 	int cmd;
 
 	cmd = get_cmd_code('R', -1);
 	switch (cmd) {
-	case 0: // toggle data writing off
-		write_data = false;
+	case 0: // end experiment
+		log_data = false;
+		started_experiment = false;
 		break;
-	case 1: // toggle data writing on
-		if (!write_data) {
-			write_data = true;
+	case 1: // start experiment if not already; toggle write_data to print data
+		if (!started_experiment) {
+			started_experiment = true;
+			log_data = true;
+			wrap = false;
+
+			time = 0;
+			print_index = 0;
+			write_index = 0;
 			start_micros = micros();
 			prev_micros = start_micros;
 		}
+		write_data = true;
 		break;
 	default:
 		break;
@@ -40,31 +60,43 @@ void SpeedofSound::process_cmd() {
 void SpeedofSound::run_lab() {
 	current_micros = micros();
 	delta = current_micros - prev_micros;
-	if (write_data && delta >= dt * 1000000) {
-		t += 0.1;
-		float sine = 10*sin(t);
-		float cosine = 10*cos(t);
 
-		Serial.print('T'); Serial.print(current_micros - start_micros);
-		Serial.print(',');
-		Serial.print('S'); Serial.print(3);
-		Serial.print(',');
-		Serial.print('A'); Serial.print(sine);
-		Serial.print(',');
-		Serial.print('Q'); Serial.println(cosine);
-		prev_micros = current_micros;
-		
-		
-		/*
-		Serial.print('T'); Serial.print(current_micros - start_micros);
+	// print data if ALL:
+	// 1. write_data = true, i.e. data has been requested
+	// 2. dt has passed
+	// 3. won't be printing data it has already printed after it stopped logging
+	//    (this will happen when the indices are equal and write has wrapped)
+	if (write_data && delta >= dt * 1000000 && (!wrap || (wrap && print_index != write_index))) {
+		Serial.print('T'); Serial.print(time);
+		time += dt * 1000000;
 		Serial.print(',');
 		Serial.print('S'); Serial.print(100);
 		Serial.print(',');
-		Serial.print('A'); Serial.print(analogRead(A0));
+		Serial.print('A'); Serial.print(mic1[print_index]);
 		Serial.print(',');
-		Serial.print('Q'); Serial.println(analogRead(A0));
-		prev_micros = current_micros;
-		*/
-		
+		Serial.print('Q'); Serial.println(mic2[print_index]);
+
+		print_index++;
+		print_index %= data_array_length;
+
+		write_data = false;
+
+		Serial.print("Print Index: "); Serial.println(print_index);
+	}
+	// if true, it will be overwriting data that hasn't been sent
+	if (log_data && wrap && write_index == print_index) {
+		log_data = false;
+		Serial.println("Stopped logging.");
+	}
+	else if (log_data && delta >= dt * 1000000) {
+		mic1[write_index] = analogRead(A0);
+		mic2[write_index] = analogRead(A1);
+
+		write_index++;
+		write_index %= data_array_length;
+		if (write_index == 0 && !wrap) wrap = true;
+
+		Serial.print("Write Index: "); Serial.println(write_index);
+		Serial.print("Wrap: "); Serial.println(wrap);	
 	}
 }

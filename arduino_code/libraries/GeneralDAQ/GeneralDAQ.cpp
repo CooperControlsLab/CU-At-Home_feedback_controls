@@ -15,7 +15,9 @@ running the GeneralDAQ lab using the CUatHome kit.
 #include <Arduino.h>
 
 
-GeneralDAQ::GeneralDAQ() {}
+GeneralDAQ::GeneralDAQ(int ARDUINO_BOARD_CODE) {
+	ARDUINO_CODE = ARDUINO_BOARD_CODE;
+}
 
 void GeneralDAQ::process_cmd() {
 	int cmd;

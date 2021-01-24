@@ -15,7 +15,10 @@ CUatHomeLab constructor is called.
 #include <Arduino.h>
 
 
-DefaultLab::DefaultLab() { lab_code = 0; }
+DefaultLab::DefaultLab(int ARDUINO_BOARD_CODE) { 
+	ARDUINO_CODE = ARDUINO_BOARD_CODE;
+	lab_code = 0; 
+}
 
 void DefaultLab::process_cmd() {}
 

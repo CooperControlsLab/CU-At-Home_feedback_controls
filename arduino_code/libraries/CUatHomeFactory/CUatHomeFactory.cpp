@@ -23,21 +23,23 @@ constructor switch statement and the header file must be included.
 // Constructor instantiates a CUatHomeLab object according to the specified lab
 // code. This object will be dynamically allocated as there is no way to know
 // which lab will be run before it is specified by the Python "L" command.
-CUatHomeFactory::CUatHomeFactory() { lab = new DefaultLab(); }
+CUatHomeFactory::CUatHomeFactory(int ARDUINO_BOARD_CODE) { 
+	lab = new DefaultLab(ARDUINO_BOARD_CODE); 
+}
 
-CUatHomeFactory::CUatHomeFactory(int lab_code) {
+CUatHomeFactory::CUatHomeFactory(int lab_code, int ARDUINO_BOARD_CODE) {
 	switch (lab_code) {
 	case 1:
-		lab = new GeneralDAQ();
+		lab = new GeneralDAQ(ARDUINO_BOARD_CODE);
 		break;
 	case 2:
-		lab = new Statics();
+		lab = new Statics(ARDUINO_BOARD_CODE);
 		break;
 	case 3:
-		lab = new SpeedofSound();
+		lab = new SpeedofSound(ARDUINO_BOARD_CODE);
 		break;
 	case 4:
-		lab = new Beam();
+		lab = new Beam(ARDUINO_BOARD_CODE);
 		break;
 	default:
 		lab = nullptr;

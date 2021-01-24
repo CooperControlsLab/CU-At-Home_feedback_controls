@@ -24,7 +24,7 @@ private:
 	int analog3;
 	int analog4;
 public:
-	GeneralDAQ();
+	GeneralDAQ(int ARDUINO_BOARD_CODE);
 	void process_cmd();
 	void run_lab();
 };

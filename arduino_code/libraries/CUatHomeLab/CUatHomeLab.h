@@ -22,6 +22,7 @@ public:
 	int lab_code; // Current lab code
 	int new_lab_code;
 	bool lab_changed{ false };  // Will become true when new lab command
+	int ARDUINO_CODE;  // 0:TEENSY, 1:UNO
 
 	/* 2)	For sampling */
 	unsigned long current_micros{ 0 };

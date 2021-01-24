@@ -18,11 +18,27 @@ running the Speed of Sound lab using the CUatHome kit.
 
 class SpeedofSound : public CUatHomeLab {
 private:
-	int mic1;
-	int mic2;
-	float t = 0;
+	//int mic1;
+	//int mic2;
+
+	// time between data points will be approximately constant so this variable
+	// will just be incremented each print
+	unsigned long time; 
+	bool started_experiment{ false };  // true when first R1 is recieved
+	bool log_data{ false };
+	int data_array_length{ 0 };  // board-type dependent
+	int print_index;
+	int write_index;
+	bool wrap{ false };  // true when the write_index loops back to 0
+	float t{ 0 };
+
+	// Dynamically allocated arrays for data holding.
+	// Need to be dynamic because the array size depends on the Arduino.
+	int* mic1;
+	int* mic2;
 public:
-	SpeedofSound();
+	SpeedofSound(int ARDUINO_BOARD_CODE);
+	~SpeedofSound();
 	void process_cmd();
 	void run_lab();
 };

@@ -20,8 +20,9 @@ class CUatHomeLabManager {
 private:
 	CUatHomeFactory* factory;
 	CUatHomeLab* lab;
+	int ARDUINO_CODE;
 public:
-	CUatHomeLabManager();
+	CUatHomeLabManager(int ARDUINO_BOARD_CODE);
 	void run();
 };
 

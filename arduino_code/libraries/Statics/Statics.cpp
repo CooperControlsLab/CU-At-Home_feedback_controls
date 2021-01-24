@@ -15,7 +15,10 @@ running the Statics lab using the CUatHome kit.
 #include <Arduino.h>
 
 
-Statics::Statics() { pinMode(2, INPUT_PULLUP); }
+Statics::Statics(int ARDUINO_BOARD_CODE) { 
+	ARDUINO_CODE = ARDUINO_BOARD_CODE;
+	pinMode(2, INPUT_PULLUP); 
+}
 
 
 void Statics::process_cmd() {
