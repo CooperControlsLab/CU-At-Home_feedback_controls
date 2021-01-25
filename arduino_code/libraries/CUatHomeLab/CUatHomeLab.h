@@ -28,7 +28,7 @@ public:
 	unsigned long current_micros{ 0 };
 	unsigned long prev_micros{ 0 };
 	unsigned long start_micros{ 0 };
-	double dt{ 0.01 };
+	double dt{ 0.01 }; // [ms]
 	unsigned long delta;
 
 	bool write_data{ false };

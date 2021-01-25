@@ -27,24 +27,15 @@ void CUatHomeLab::retrieve_cmd() {
 		if (incoming_char == '\0' || incoming_char == '%') {
 			new_lab_code = get_cmd_code('L', -1);
 			// If lab changed
-			if (new_lab_code != -1 && new_lab_code != lab_code) {
-				lab_changed = true;
-
-				/*Serial.print("Previous lab: "); Serial.println(lab_code);
-				Serial.print("New lab: "); Serial.println(new_lab_code);*/
-
-			}
+			if (new_lab_code != -1 && new_lab_code != lab_code) { lab_changed = true; }
 			// If lab not changed
-			else {
-				process_cmd();
-			}
+			else { process_cmd(); }
+			//Reset the values used for retrieving the command
 			cmd_index = 0;
 			memset(cmd_string, '\0', sizeof(cmd_string)); // resets to all \0
 		}
 		// If not end of the command, proceed to the next char
-		else {
-			++cmd_index;
-		}
+		else { ++cmd_index; }
 	}
 }
 

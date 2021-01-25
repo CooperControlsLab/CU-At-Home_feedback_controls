@@ -23,9 +23,7 @@ constructor switch statement and the header file must be included.
 // Constructor instantiates a CUatHomeLab object according to the specified lab
 // code. This object will be dynamically allocated as there is no way to know
 // which lab will be run before it is specified by the Python "L" command.
-CUatHomeFactory::CUatHomeFactory(int ARDUINO_BOARD_CODE) { 
-	lab = new DefaultLab(ARDUINO_BOARD_CODE); 
-}
+CUatHomeFactory::CUatHomeFactory(int ARDUINO_BOARD_CODE) { lab = new DefaultLab(ARDUINO_BOARD_CODE); }
 
 CUatHomeFactory::CUatHomeFactory(int lab_code, int ARDUINO_BOARD_CODE) {
 	switch (lab_code) {
@@ -56,6 +54,4 @@ CUatHomeFactory::~CUatHomeFactory() {
 
 // lab is a pointer to the CUatHomeLab object, which will correspond to 
 // instantiated lab type.
-CUatHomeLab* CUatHomeFactory::get_lab() {
-	return lab;
-}
+CUatHomeLab* CUatHomeFactory::get_lab() { return lab; }
