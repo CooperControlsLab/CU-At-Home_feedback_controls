@@ -73,6 +73,7 @@ class SerialComm:
         will return None. This None will then be processed by methods in the GUI to just
         skip saving/plotting this point in time.
         """
+        #self.ser.write("R1%".encode())
         data = self.ser.readline().decode().replace('\r\n','').split(",")
         
         if any(ele == '' for ele in data) == False and data[0].startswith("T") == True: 
@@ -85,13 +86,13 @@ class SerialComm:
 
     def requestByte(self):
         """
-        Start serial communication with arduino
+        Sends R1 command to start serial communication with arduino. 
         """
         self.ser.write("R1%".encode())
 
     def stopRequestByte(self):
         """
-        Stop serial communication with arduino
+        Sends R0 command to stop serial communication with arduino. 
         """
         self.ser.write("R0%".encode())
 
@@ -114,6 +115,7 @@ class SerialComm:
 
     def sampleTimeSamplingRate(self,srate,stime):
         '''
+        Sends S1,A{srate},B{stime} where
         srate is sampling time 
         stime is the sample time (total elapsed time for Arduino to run)
         '''

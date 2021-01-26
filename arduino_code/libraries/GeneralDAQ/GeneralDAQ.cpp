@@ -74,7 +74,7 @@ void GeneralDAQ::run_lab() {
 			prev_micros = current_micros;
 		}
 		else if (write_data){
-			Serial.println("Tell python I'm done with my time!");
+			//Serial.println("Tell python I'm done with my time!");
 			write_data = false;
 		}
 	}

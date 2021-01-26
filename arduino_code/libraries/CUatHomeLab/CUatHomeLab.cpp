@@ -15,9 +15,8 @@ run_lab. These are virtual functions which will be defined by each lab.
 
 CUatHomeLab::CUatHomeLab() {};
 
-// Each lab will interpret the commands differently. This function will
-// be implemented by each lab, looking for specific command codes and
-// then calling the proper functions.
+// First check if any parameter changed before running the lab
+// Then reflect the changes and call process_cmd()
 void CUatHomeLab::retrieve_cmd() {
 	if (Serial.available()) {
 		// Store a single command into the cmd_string array
@@ -35,7 +34,7 @@ void CUatHomeLab::retrieve_cmd() {
 				new_dt = get_cmd_code('A', -1);
 				new_sample_time = get_cmd_code('B', -1);
 			}
-			// Reflect the changed parameters
+			// Reflect the changes
 			if (new_lab_code != -1 && new_lab_code != lab_code) { lab_changed = true; }
 			if (new_dt != -1 && new_dt != dt) { dt = new_dt; }
 			if (new_sample_time != -1 && new_sample_time != sample_time) { sample_time = new_sample_time; }

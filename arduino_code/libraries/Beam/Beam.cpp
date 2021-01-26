@@ -58,17 +58,17 @@ void Beam::run_lab() {
 			// Serial Communication
 			Serial.print('T'); Serial.print(time);
 			Serial.print(',');
-			Serial.print("Angular acceleration: "); Serial.print(mpu6050->getAccAngleX());
+			Serial.print("S"); Serial.print(mpu6050->getAccAngleX());
 			Serial.print(',');
-			Serial.print("Translational acceleration: "); Serial.print(mpu6050->getAccX());
+			Serial.print("A"); Serial.print(mpu6050->getAccX());
 			Serial.print(',');
-			Serial.print("Anglular displacement: "); Serial.println(mpu6050->getAngleX());
+			Serial.print("Q"); Serial.println(mpu6050->getAngleX());
 
 			time += dt * 1000000;
 			prev_micros = current_micros;
 		}
 		else if (write_data){
-			Serial.println("Tell python I'm done with my time!");
+			//Serial.println("Tell python I'm done with my time!");
 			write_data = false;
 		}
 	}

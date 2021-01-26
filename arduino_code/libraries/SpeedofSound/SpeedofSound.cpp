@@ -116,7 +116,7 @@ void SpeedofSound::run_lab() {
 			//write_data = false;
 		}
 		else if (write_data){
-			Serial.println("Tell python I'm done with my time!");
+			//Serial.println("Tell python I'm done with my time!");
 			write_data = false;
 			started_experiment = false;
 		}
