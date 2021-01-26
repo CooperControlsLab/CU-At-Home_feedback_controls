@@ -1,7 +1,7 @@
 /*
 SpeedofSound.h
 
-Jared Jacobowitz
+Jared Jacobowitz and YoungWoong Cho
 Winter 2020
 
 Function declerations for the SpeedofSound class. This class is a subclass of
@@ -22,11 +22,11 @@ private:
 	// will just be incremented each print
 	unsigned long time; 
 	bool started_experiment{ false };  // true when first R1 is recieved
-	bool log_data{ false };
+	bool log_data{ false }; // true when logging data
 	int data_array_length{ 0 };  // board-type dependent
-	int print_index;
-	int write_index;
-	bool wrap{ false };  // true when the write_index loops back to 0
+	int print_index; // index that will be sent to the serial
+	int log_index; // index that will be logged to the array
+	bool wrap{ false };  // true when the log_index loops back to 0
 	float t{ 0 };
 
 	// Dynamically allocated arrays for data holding.

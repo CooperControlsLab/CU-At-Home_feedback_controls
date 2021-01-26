@@ -1,7 +1,7 @@
 /*
 SpeedofSound.cpp
 
-Jared Jacobowitz
+Jared Jacobowitz and YoungWoong Cho
 Winter 2020
 
 Function definitions for the SpeedofSound class. This class is a subclass of
@@ -31,12 +31,12 @@ SpeedofSound::~SpeedofSound() {
 
 void SpeedofSound::process_cmd() {
 	int cmd;
-
 	cmd = get_cmd_code('R', -1);
 	switch (cmd) {
 	case 0: // end experiment
 		log_data = false;
 		started_experiment = false;
+		write_data = false;
 		break;
 	case 1: // start experiment if not already; toggle write_data to print data
 		if (!started_experiment) {
@@ -46,7 +46,7 @@ void SpeedofSound::process_cmd() {
 
 			time = 0;
 			print_index = 0;
-			write_index = 0;
+			log_index = 0;
 			start_micros = micros();
 			prev_micros = start_micros;
 		}
@@ -57,18 +57,47 @@ void SpeedofSound::process_cmd() {
 	}
 }
 
+// run_lab method must take control of the follows:
+// With the assumption: log_index increases faster than print_index does
+// 1. keep logging data to the array as fast as possible
+// 2. keep sending data to the serial as fast as possible
+// 3. reset the indices log_index and print_index to 0 the end of the array is reached
+// 4. if log_index catches up print_index, stop logging while keep printing
+// 5. if print_index catches up log_index, begin logging while keep printing
 void SpeedofSound::run_lab() {
 	current_micros = micros();
 	delta = current_micros - prev_micros;
 
-	// print data if ALL:
-	// 1. write_data = true, i.e. data has been requested
-	// 2. dt has passed
-	// 3. won't be printing data it has already printed after it stopped logging
-	//    (this will happen when the indices are equal and write has wrapped)
-	if (write_data && delta >= dt * 1000000 && (!wrap || (wrap && print_index != write_index))) {
+	// 1. Checks if DAQ is ready
+	// if ALL:
+	// 	a) write_data is true; i.e. when the data is requested
+	//	b) dt has passed
+	if (write_data && delta >= dt * 1000000){
+
+		// 2. Checks if log_data is true; if so, log data
+		if (log_data){
+			mic1[log_index] = analogRead(A0);
+			mic2[log_index] = analogRead(A1);
+
+			// If end of the array is reached, reset log_index to 0 and set wrap = true
+			log_index++;
+			log_index %= data_array_length;
+			if (log_index == 0 && !wrap) wrap = true;
+		}
+
+
+		// 3. Checks if log_index = print_index
+		// If this is the case, log_index has catched up print_index
+		if (log_index == print_index){
+			// 3-1. Checks if log_index has catched up print_index; if so, stop logging while keep printing
+				if (wrap){ log_data = false; wrap = false;}
+			// // 3-2. Checks if print_index has catched up log_index; if so, begin logging while keep printing
+			// 	else { log_data = true;}
+		}
+
+		// 4. Whether or not log_data is true, keep sending data to the serial
+		//Serial.print("Print Index: "); Serial.println(print_index);
 		Serial.print('T'); Serial.print(time);
-		time += dt * 1000000;
 		Serial.print(',');
 		Serial.print('S'); Serial.print(100);
 		Serial.print(',');
@@ -76,27 +105,12 @@ void SpeedofSound::run_lab() {
 		Serial.print(',');
 		Serial.print('Q'); Serial.println(mic2[print_index]);
 
+		// If end of the array is reached, reset print_index to 0
 		print_index++;
 		print_index %= data_array_length;
+		
+		time += dt * 1000000;
 
 		write_data = false;
-
-		Serial.print("Print Index: "); Serial.println(print_index);
-	}
-	// if true, it will be overwriting data that hasn't been sent
-	if (log_data && wrap && write_index == print_index) {
-		log_data = false;
-		Serial.println("Stopped logging.");
-	}
-	else if (log_data && delta >= dt * 1000000) {
-		mic1[write_index] = analogRead(A0);
-		mic2[write_index] = analogRead(A1);
-
-		write_index++;
-		write_index %= data_array_length;
-		if (write_index == 0 && !wrap) wrap = true;
-
-		Serial.print("Write Index: "); Serial.println(write_index);
-		Serial.print("Wrap: "); Serial.println(wrap);	
 	}
 }
