@@ -18,9 +18,6 @@ running the Speed of Sound lab using the CUatHome kit.
 
 class SpeedofSound : public CUatHomeLab {
 private:
-	// time between data points will be approximately constant so this variable
-	// will just be incremented each print
-	unsigned long time; 
 	bool started_experiment{ false };  // true when first R1 is recieved
 	bool log_data{ false }; // true when logging data
 	int data_array_length{ 0 };  // board-type dependent

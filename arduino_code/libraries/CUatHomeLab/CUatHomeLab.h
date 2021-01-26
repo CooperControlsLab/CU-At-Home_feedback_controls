@@ -28,8 +28,12 @@ public:
 	unsigned long current_micros{ 0 };
 	unsigned long prev_micros{ 0 };
 	unsigned long start_micros{ 0 };
-	double dt{ 0.01 }; // [ms]
-	unsigned long delta;
+	double time{ 0 }; // Sampling time [s]; Time between data points will be approximately constant so this variable will just be incremented each print
+	double dt; // Sampling time interval [s]
+	double new_dt; // New sampling time interval
+	double sample_time; // Total sample time [s]
+	double new_sample_time; // New sample time [s]
+	unsigned long delta; // Time passed since last prev_micros is logged [s]
 
 	bool write_data{ false };
 	

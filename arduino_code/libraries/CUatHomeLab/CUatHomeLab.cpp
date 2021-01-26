@@ -25,9 +25,20 @@ void CUatHomeLab::retrieve_cmd() {
 		cmd_string[cmd_index] = incoming_char;
 		// If end of the command, process the command
 		if (incoming_char == '\0' || incoming_char == '%') {
+
+			// First check if any parameter changed before running the lab
+			// 1. Check if lab changed
+			// 2. Check if sampling rate changed
+			// 3. Check if sampling time changed
 			new_lab_code = get_cmd_code('L', -1);
-			// If lab changed
+			if (get_cmd_code('S', -1) == 1){
+				new_dt = get_cmd_code('A', -1);
+				new_sample_time = get_cmd_code('B', -1);
+			}
+			// Reflect the changed parameters
 			if (new_lab_code != -1 && new_lab_code != lab_code) { lab_changed = true; }
+			if (new_dt != -1 && new_dt != dt) { dt = new_dt; }
+			if (new_sample_time != -1 && new_sample_time != sample_time) { sample_time = new_sample_time; }
 			// If lab not changed
 			else { process_cmd(); }
 			//Reset the values used for retrieving the command

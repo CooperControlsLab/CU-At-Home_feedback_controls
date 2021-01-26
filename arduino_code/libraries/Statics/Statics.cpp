@@ -23,7 +23,6 @@ Statics::Statics(int ARDUINO_BOARD_CODE) {
 
 void Statics::process_cmd() {
 	int cmd;
-
 	cmd = get_cmd_code('R', -1);
 	switch (cmd) {
 	case 0: // toggle data writing off
@@ -34,6 +33,7 @@ void Statics::process_cmd() {
 			write_data = true;
 			start_micros = micros();
 			prev_micros = start_micros;
+			time = 0;
 		}
 		break;
 	default:
@@ -42,15 +42,28 @@ void Statics::process_cmd() {
 }
 
 void Statics::run_lab() {
+	// Updates time variable
 	current_micros = micros();
 	delta = current_micros - prev_micros;
-	if (write_data && delta >= dt * 1000000) {
-		Serial.print('T'); Serial.print(current_micros - start_micros);
-		Serial.print(',');
-		Serial.print('S'); Serial.print(100);
-		Serial.print(',');
-		Serial.print('A'); Serial.println(analogRead(A0));
 
-		prev_micros = current_micros;
-	}
+	// Sends data if ALL:
+	// 1. write_data is true
+	// 2. dt has passed
+	// 3. sample_time has not passed
+	if (write_data && delta >= dt * 1000000){
+		if (time <= sample_time * 1000000){
+			Serial.print('T'); Serial.print(time);
+			Serial.print(',');
+			Serial.print('S'); Serial.print(100);
+			Serial.print(',');
+			Serial.print('A'); Serial.println(analogRead(A0));
+
+			time += dt * 1000000;
+			prev_micros = current_micros;
+		}
+		else if (write_data){
+			Serial.println("Tell python I'm done with my time!");
+			write_data = false;
+		}
+	}	
 }

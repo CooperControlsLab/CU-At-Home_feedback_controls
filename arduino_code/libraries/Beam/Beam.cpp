@@ -33,6 +33,7 @@ void Beam::process_cmd() {
 			write_data = true;
 			start_micros = micros();
 			prev_micros = start_micros;
+			time = 0;
 		}
 		break;
 	default:
@@ -41,21 +42,34 @@ void Beam::process_cmd() {
 }
 
 void Beam::run_lab() {
+	// Updates time variable
 	current_micros = micros();
 	delta = current_micros - prev_micros;
+
+	// Sends data if ALL:
+	// 1. write_data is true
+	// 2. dt has passed
+	// 3. sample_time has not passed
 	if (write_data && delta >= dt * 1000000) {
-		//MPU6050
-		mpu6050->update();
+		if (time <= sample_time * 1000000){
+			//MPU6050
+			mpu6050->update();
 
-		// Serial Communication
-		Serial.print('T'); Serial.print(current_micros - start_micros);
-		Serial.print(',');
-		Serial.print("Angular acceleration: "); Serial.print(mpu6050->getAccAngleX());
-		Serial.print(',');
-		Serial.print("Translational acceleration: "); Serial.print(mpu6050->getAccX());
-		Serial.print(',');
-		Serial.print("Anglular displacement: "); Serial.println(mpu6050->getAngleX());
+			// Serial Communication
+			Serial.print('T'); Serial.print(time);
+			Serial.print(',');
+			Serial.print("Angular acceleration: "); Serial.print(mpu6050->getAccAngleX());
+			Serial.print(',');
+			Serial.print("Translational acceleration: "); Serial.print(mpu6050->getAccX());
+			Serial.print(',');
+			Serial.print("Anglular displacement: "); Serial.println(mpu6050->getAngleX());
 
-		prev_micros = current_micros;
+			time += dt * 1000000;
+			prev_micros = current_micros;
+		}
+		else if (write_data){
+			Serial.println("Tell python I'm done with my time!");
+			write_data = false;
+		}
 	}
 }

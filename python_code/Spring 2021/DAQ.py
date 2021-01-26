@@ -285,9 +285,9 @@ class Window(QMainWindow):
         self.legendInput.clear() #Clears Legend upon replotting without closing GUI
         self.timer.start()
         self.curve()
-        self.serialInstance.labSelection(self.course)
+        self.serialInstance.labSelection(self.course) # ex) L1
         self.serialInstance.sampleTimeSamplingRate(self.serial_values["Sampling Rate"],
-                                                   self.serial_values["Sample Time"])
+                                                   self.serial_values["Sample Time"]) # ex) S1,A0.01,B100
         self.serialInstance.requestByte()
         self.ui.startbutton.clicked.disconnect(self.startbuttonPushed)
         #self.ui.stopbutton.clicked.connect(self.stopbuttonPushed)

@@ -65,6 +65,7 @@ void SpeedofSound::process_cmd() {
 // 4. if log_index catches up print_index, stop logging while keep printing
 // 5. if print_index catches up log_index, begin logging while keep printing
 void SpeedofSound::run_lab() {
+	// Updates time variable
 	current_micros = micros();
 	delta = current_micros - prev_micros;
 
@@ -72,45 +73,52 @@ void SpeedofSound::run_lab() {
 	// if ALL:
 	// 	a) write_data is true; i.e. when the data is requested
 	//	b) dt has passed
+	//	c) sample_time has not passed
 	if (write_data && delta >= dt * 1000000){
+		if (time <= sample_time * 1000000){
+			// 2. Checks if log_data is true; if so, log data
+			// if (log_data){
+			// 	mic1[log_index] = analogRead(A0);
+			// 	mic2[log_index] = analogRead(A1);
 
-		// 2. Checks if log_data is true; if so, log data
-		if (log_data){
-			mic1[log_index] = analogRead(A0);
-			mic2[log_index] = analogRead(A1);
+			// 	// If end of the array is reached, reset log_index to 0 and set wrap = true
+			// 	log_index++;
+			// 	log_index %= data_array_length;
+			// 	if (log_index == 0 && !wrap) wrap = true;
+			// }
 
-			// If end of the array is reached, reset log_index to 0 and set wrap = true
-			log_index++;
-			log_index %= data_array_length;
-			if (log_index == 0 && !wrap) wrap = true;
+
+			// // 3. Checks if log_index = print_index
+			// // If this is the case, log_index has catched up print_index
+			// if (log_index == print_index){
+			// 	// 3-1. Checks if log_index has catched up print_index; if so, stop logging while keep printing
+			// 		if (wrap){ log_data = false; wrap = false;}
+			// 	// // 3-2. Checks if print_index has catched up log_index; if so, begin logging while keep printing
+			// 	// 	else { log_data = true;}
+			// }
+
+			// 4. Whether or not log_data is true, keep sending data to the serial
+			//Serial.print("Print Index: "); Serial.println(print_index);
+			Serial.print('T'); Serial.print(time);
+			Serial.print(',');
+			Serial.print('S'); Serial.print(100);
+			Serial.print(',');
+			Serial.print('A'); Serial.print(mic1[print_index]);
+			Serial.print(',');
+			Serial.print('Q'); Serial.println(mic2[print_index]);
+
+			// If end of the array is reached, reset print_index to 0
+			print_index++;
+			print_index %= data_array_length;
+			
+			time += dt * 1000000;
+			prev_micros = current_micros;
+			//write_data = false;
 		}
-
-
-		// 3. Checks if log_index = print_index
-		// If this is the case, log_index has catched up print_index
-		if (log_index == print_index){
-			// 3-1. Checks if log_index has catched up print_index; if so, stop logging while keep printing
-				if (wrap){ log_data = false; wrap = false;}
-			// // 3-2. Checks if print_index has catched up log_index; if so, begin logging while keep printing
-			// 	else { log_data = true;}
+		else if (write_data){
+			Serial.println("Tell python I'm done with my time!");
+			write_data = false;
+			started_experiment = false;
 		}
-
-		// 4. Whether or not log_data is true, keep sending data to the serial
-		//Serial.print("Print Index: "); Serial.println(print_index);
-		Serial.print('T'); Serial.print(time);
-		Serial.print(',');
-		Serial.print('S'); Serial.print(100);
-		Serial.print(',');
-		Serial.print('A'); Serial.print(mic1[print_index]);
-		Serial.print(',');
-		Serial.print('Q'); Serial.println(mic2[print_index]);
-
-		// If end of the array is reached, reset print_index to 0
-		print_index++;
-		print_index %= data_array_length;
-		
-		time += dt * 1000000;
-
-		write_data = false;
 	}
 }

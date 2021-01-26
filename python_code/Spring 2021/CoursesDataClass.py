@@ -97,6 +97,7 @@ class SerialComm:
 
     def labSelection(self,course):
         '''
+        Sends L# command
         1 Procon
         2 Statics
         3 Speed of Sound
