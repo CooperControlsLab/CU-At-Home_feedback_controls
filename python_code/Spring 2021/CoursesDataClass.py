@@ -111,11 +111,12 @@ class SerialComm:
         #print(f"L{all_courses[course]}%")
         self.ser.write(f"L{all_courses[course]}%".encode())
 
-    def sampleTime(self,val):
-        self.ser.write(f"SOMETHING")
-    
-    def sampleSize(self,val):
-        self.ser.write(f"SOMETHING")
+    def sampleTimeSamplingRate(self,srate,stime):
+        '''
+        srate is sampling time 
+        stime is the sample time (total elapsed time for Arduino to run)
+        '''
+        self.ser.write(f"S1,A{srate},B{stime}%".encode())
 
     def gcodeParsing(self,datastream,hex=False):
         '''

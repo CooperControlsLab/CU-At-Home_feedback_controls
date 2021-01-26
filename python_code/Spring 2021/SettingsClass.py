@@ -72,16 +72,16 @@ class SettingsClass(QDialog):
             self.baudrate_value = str(self.ui.baudrate.currentText())
             self.timeout_value = float(self.ui.timeout.text())
             self.datawindowsize_value = int(self.ui.datawindowsize.text())
-            self.samplingtime_value = float(self.ui.samplingtime.text())
-            self.samplesize_value = int(self.ui.samplesize.text())
+            self.samplingrate_value = float(self.ui.samplingrate.text())
+            self.sampletime_value = int(self.ui.sampletime.text())
 
             print("Settings Menu Saved!")
             val = {"COM": self.com_value,
                    "Baud Rate": self.baudrate_value,
                    "Timeout": self.timeout_value,
                    "Data Window": self.datawindowsize_value,
-                   "Sample Time": self.samplingtime_value,
-                   "Sample Size": self.samplesize_value
+                   "Sampling Rate": self.samplingrate_value,
+                   "Sample Time": self.sampletime_value
                    }
             return(val)
             

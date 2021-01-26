@@ -286,7 +286,8 @@ class Window(QMainWindow):
         self.timer.start()
         self.curve()
         self.serialInstance.labSelection(self.course)
-        
+        self.serialInstance.sampleTimeSamplingRate(self.serial_values["Sampling Rate"],
+                                                   self.serial_values["Sample Time"])
         self.serialInstance.requestByte()
         self.ui.startbutton.clicked.disconnect(self.startbuttonPushed)
         #self.ui.stopbutton.clicked.connect(self.stopbuttonPushed)
