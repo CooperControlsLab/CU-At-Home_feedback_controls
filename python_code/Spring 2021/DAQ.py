@@ -2,10 +2,11 @@ import sys
 import os
 import time
 from pyqtgraph import PlotWidget
+import pyqtgraph as pg
 import qdarkstyle #has some issues on Apple devices and high dpi monitors
 import CoursesDataClass
 from SettingsClass import *
-from ui_file import Ui_MainWindow
+from main_ui import Ui_MainWindow
 from QLed import QLed
 from PyQt5.QtGui import QDoubleValidator, QKeySequence, QPixmap, QRegExpValidator, QIcon, QFont, QFontDatabase
 from PyQt5.QtWidgets import (QApplication, QPushButton, QWidget, QComboBox, 
@@ -37,20 +38,22 @@ class Window(QMainWindow):
         self.currentItemsSB = [] # Used to store variables to be displayed in status bar at the bottom right
         self.verbose = True # Initialization. Used in the thread generated in application
 
-        script_dir = os.path.dirname(__file__)
-        logo_rel_path = r"logo\CUAtHomeLogo-Horz.png"
-        logo_abs_file_path = os.path.join(script_dir, logo_rel_path)
-        self.ui.imageLabel.setPixmap(QPixmap(logo_abs_file_path).scaled(200, 130, 
-                                                                   Qt.KeepAspectRatio, 
-                                                                   Qt.FastTransformation))
-        
         self.setStyleSheet(qdarkstyle.load_stylesheet())
+        self.getLogo()
         self.getFonts()
         self.initalConnections()
         self.initialGraphSettings()
         self.arduinoStatusLed()
         self.initialTimer()
         self.initialState()
+
+    def getLogo(self):
+        script_dir = os.path.dirname(__file__)
+        logo_rel_path = r"logo\CUAtHomeLogo-Horz.png"
+        logo_abs_file_path = os.path.join(script_dir, logo_rel_path)
+        self.ui.imageLabel.setPixmap(QPixmap(logo_abs_file_path).scaled(200, 130, 
+                                                                   Qt.KeepAspectRatio, 
+                                                                   Qt.FastTransformation))
 
     def getFonts(self):
         script_dir = os.path.dirname(__file__)
@@ -201,21 +204,21 @@ class Window(QMainWindow):
         #Try/except/else/finally statement is to check whether settings menu was opened/changed
 
         try:
-            self.size = self.serial_values[3] #Value from settings. Windows data
+            self.size = self.serial_values["Data Window"] #Value from settings. Windows data
 
             if self.course == "Statics":
-                self.serialInstance = CoursesDataClass.StaticsLab(self.serial_values[0],
-                                                                  self.serial_values[1],
-                                                                  self.serial_values[2])
+                self.serialInstance = CoursesDataClass.StaticsLab(self.serial_values["COM"],
+                                                                  self.serial_values["Baud Rate"],
+                                                                  self.serial_values["Timeout"])
                 self.serialInstance.flush()
                 self.serialInstance.reset_input_buffer()
                 self.serialInstance.reset_output_buffer()
                 print("Now in Statics Lab")
 
             elif self.course == "Sound":
-                self.serialInstance = CoursesDataClass.SoundLab(self.serial_values[0],
-                                                                self.serial_values[1],
-                                                                self.serial_values[2])
+                self.serialInstance = CoursesDataClass.SoundLab(self.serial_values["COM"],
+                                                                self.serial_values["Baud Rate"],
+                                                                self.serial_values["Timeout"])
                 self.serialInstance.gcodeLetters = ["T","S","A"]
                 self.serialInstance.flush()
                 self.serialInstance.reset_input_buffer()
@@ -223,9 +226,9 @@ class Window(QMainWindow):
                 print("Now in Speed of Sound Lab")
 
             elif self.course == "Beam":
-                self.serialInstance = CoursesDataClass.BeamLab(self.serial_values[0],
-                                                               self.serial_values[1],
-                                                               self.serial_values[2])
+                self.serialInstance = CoursesDataClass.BeamLab(self.serial_values["COM"],
+                                                               self.serial_values["Baud Rate"],
+                                                               self.serial_values["Timeout"])
                 self.serialInstance.flush()
                 self.serialInstance.reset_input_buffer()
                 self.serialInstance.reset_output_buffer()
@@ -364,6 +367,7 @@ class Window(QMainWindow):
         print("Saved All Data")
 
     def settingsMenu(self):
+        #self.settingsPopUp = SettingsClass()
         self.settingsPopUp = SettingsClass()
         self.settingsPopUp.show()
         #self.settingsPopUp.exec()

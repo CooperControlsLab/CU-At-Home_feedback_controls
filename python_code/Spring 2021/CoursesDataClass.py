@@ -111,6 +111,12 @@ class SerialComm:
         #print(f"L{all_courses[course]}%")
         self.ser.write(f"L{all_courses[course]}%".encode())
 
+    def sampleTime(self,val):
+        self.ser.write(f"SOMETHING")
+    
+    def sampleSize(self,val):
+        self.ser.write(f"SOMETHING")
+
     def gcodeParsing(self,datastream,hex=False):
         '''
         Returns full list of data from Arduino given the specified gcode letters
