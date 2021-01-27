@@ -17,6 +17,8 @@ running the Speed of Sound lab using the CUatHome kit.
 SpeedofSound::SpeedofSound(int ARDUINO_BOARD_CODE) {
 	ARDUINO_CODE = ARDUINO_BOARD_CODE;
 
+	// Test different array sizes with arduinos. >250 doesn't work on Uno
+	// ARDUINO_CODE: TEENSY = 0, UNO = 1
 	if (ARDUINO_CODE == 0) data_array_length = 500;
 	else if (ARDUINO_CODE == 1) data_array_length = 250;
 
@@ -43,7 +45,7 @@ void SpeedofSound::process_cmd() {
 			started_experiment = true;
 			log_data = true;
 			wrap = false;
-
+			
 			time = 0;
 			print_index = 0;
 			write_index = 0;
@@ -65,8 +67,10 @@ void SpeedofSound::run_lab() {
 	// 1. write_data = true, i.e. data has been requested
 	// 2. dt has passed
 	// 3. won't be printing data it has already printed after it stopped logging
-	//    (this will happen when the indices are equal and write has wrapped)
-	if (write_data && delta >= dt * 1000000 && (!wrap || (wrap && print_index != write_index))) {
+	//    (it will reprint if wrap is false (meaning print_index is on the same
+	//	  loop around as write_index) AND print_index does not lag by 1 index)
+	if (write_data && delta >= dt * 1000000 
+		&& (log_data || wrap || print_index < write_index - 1)) {
 		Serial.print('T'); Serial.print(time);
 		time += dt * 1000000;
 		Serial.print(',');
@@ -76,27 +80,30 @@ void SpeedofSound::run_lab() {
 		Serial.print(',');
 		Serial.print('Q'); Serial.println(mic2[print_index]);
 
-		print_index++;
+		++print_index;
 		print_index %= data_array_length;
+		if (print_index == 0) wrap = false;
 
 		write_data = false;
 
-		Serial.print("Print Index: "); Serial.println(print_index);
+		//Serial.print("Print Index: "); Serial.println(print_index);
 	}
-	// if true, it will be overwriting data that hasn't been sent
-	if (log_data && wrap && write_index == print_index) {
-		log_data = false;
-		Serial.println("Stopped logging.");
-	}
-	else if (log_data && delta >= dt * 1000000) {
-		mic1[write_index] = analogRead(A0);
-		mic2[write_index] = analogRead(A1);
+	if (log_data && delta >= dt * 1000000) {
+		// if true, it will be overwriting data that hasn't been sent
+		if (wrap && write_index == print_index) {
+			log_data = false;
+			//Serial.println("Stopped logging.");
+		}
+		else {
+			mic1[write_index] = analogRead(A0);
+			mic2[write_index] = analogRead(A1);
 
-		write_index++;
-		write_index %= data_array_length;
-		if (write_index == 0 && !wrap) wrap = true;
+			++write_index;
+			write_index %= data_array_length;
+			if (write_index == 0) wrap = true ;
 
-		Serial.print("Write Index: "); Serial.println(write_index);
-		Serial.print("Wrap: "); Serial.println(wrap);	
+			//Serial.print("Write Index: "); Serial.println(write_index);
+			//Serial.print("Wrap: "); Serial.println(wrap);
+		}
 	}
 }

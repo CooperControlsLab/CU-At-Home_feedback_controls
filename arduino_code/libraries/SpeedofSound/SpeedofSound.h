@@ -26,7 +26,7 @@ private:
 	int data_array_length{ 0 };  // board-type dependent
 	int print_index;
 	int write_index;
-	bool wrap{ false };  // true when the write_index loops back to 0
+	bool wrap;  // true if write_index has looped back and print_index has not
 	float t{ 0 };
 
 	// Dynamically allocated arrays for data holding.

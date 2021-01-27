@@ -8,6 +8,8 @@ Function definitions for the abstract CUatHomeLab class. All labs will inherit
 this class (and by extension the inherited super-class SerialComms). This class
 outlines that each lab will have at least two functions: process_cmd and
 run_lab. These are virtual functions which will be defined by each lab.
+
+ARDUINO_CODE: TEENSY = 0, UNO = 1
 */
 
 #include "CUatHomeLab.h"

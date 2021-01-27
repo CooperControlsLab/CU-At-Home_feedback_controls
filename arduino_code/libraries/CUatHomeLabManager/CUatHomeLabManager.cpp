@@ -6,6 +6,8 @@ Winter 2020
 
 Function definitions for the CUatHomeLabManager class. This class manages the 
 creation and the destruction of the lab instances.
+
+ARDUINO_CODE: TEENSY = 0, UNO = 1
 */
 
 #include <Arduino.h>

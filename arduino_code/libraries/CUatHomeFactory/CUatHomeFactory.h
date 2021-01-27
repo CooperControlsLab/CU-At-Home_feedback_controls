@@ -10,6 +10,8 @@ called.
 
 When adding a new lab to the CU@Home kit, the new lab must be added to the
 constructor switch statement and the header file must be included.
+
+ARDUINO_CODE: TEENSY = 0, UNO = 1
 */
 
 #ifndef CU_AT_HOME_FACTORY_H

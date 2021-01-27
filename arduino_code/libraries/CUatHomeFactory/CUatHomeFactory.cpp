@@ -9,6 +9,8 @@ to create the proper lab when instantiated and then return that lab when called.
 
 When adding a new lab to the CU@Home kit, the new lab must be added to the 
 constructor switch statement and the header file must be included.
+
+ ARDUINO_CODE: TEENSY = 0, UNO = 1
 */
 
 #include "CUatHomeFactory.h"
@@ -23,7 +25,9 @@ constructor switch statement and the header file must be included.
 // Constructor instantiates a CUatHomeLab object according to the specified lab
 // code. This object will be dynamically allocated as there is no way to know
 // which lab will be run before it is specified by the Python "L" command.
-CUatHomeFactory::CUatHomeFactory(int ARDUINO_BOARD_CODE) { lab = new DefaultLab(ARDUINO_BOARD_CODE); }
+CUatHomeFactory::CUatHomeFactory(int ARDUINO_BOARD_CODE) { 
+	lab = new DefaultLab(ARDUINO_BOARD_CODE);
+}
 
 CUatHomeFactory::CUatHomeFactory(int lab_code, int ARDUINO_BOARD_CODE) {
 	switch (lab_code) {
