@@ -73,7 +73,7 @@ class SerialComm:
         will return None. This None will then be processed by methods in the GUI to just
         skip saving/plotting this point in time.
         """
-        #self.ser.write("R1%".encode())
+        self.ser.write("R1%".encode())
         data = self.ser.readline().decode().replace('\r\n','').split(",")
         
         if any(ele == '' for ele in data) == False and data[0].startswith("T") == True: 

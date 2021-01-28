@@ -17,10 +17,15 @@ running the Statics lab using the CUatHome kit.
 #include <Arduino.h>
 
 class Statics : public CUatHomeLab {
+private:
+	// Dynamically allocated arrays for data holding.
+	// Need to be dynamic because the array size depends on the Arduino.
+	float* analog0;
 public:
 	Statics(int ARDUINO_BOARD_CODE);
-	void process_cmd();
-	void run_lab();
+	~Statics();
+	void DAQ();
+	void TSAQ();
 };
 
 #endif // !STATICS_H

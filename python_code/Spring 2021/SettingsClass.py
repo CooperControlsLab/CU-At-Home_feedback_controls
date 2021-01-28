@@ -25,7 +25,7 @@ class SettingsClass(QDialog):
         self.setStyleSheet(qdarkstyle.load_stylesheet())
         self.setWindowTitle("Settings")
         self.setModal(True) #Makes you close out of settings no matter what
-        self.ui.baudrate.setCurrentIndex(1)
+        self.ui.baudrate.setCurrentIndex(2) #1000000
 
         self.list_port()
         self.initialConnections()

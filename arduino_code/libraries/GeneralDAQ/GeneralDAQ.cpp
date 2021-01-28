@@ -16,66 +16,47 @@ running the GeneralDAQ lab using the CUatHome kit.
 
 
 GeneralDAQ::GeneralDAQ(int ARDUINO_BOARD_CODE) {
+	lab_code = 1;
 	ARDUINO_CODE = ARDUINO_BOARD_CODE;
+
+	if (ARDUINO_CODE == 0) data_array_length = 500;
+	else if (ARDUINO_CODE == 1) data_array_length = 250;
+
+	analog0 = new double[data_array_length];
+	analog1 = new double[data_array_length];
+	analog2 = new double[data_array_length];
+	analog3 = new double[data_array_length];
+	analog4 = new double[data_array_length];
 }
 
-void GeneralDAQ::process_cmd() {
-	int cmd;
-
-	cmd = get_cmd_code('R', -1);
-	switch (cmd) {
-	case 0: // toggle data writing off
-		write_data = false;
-		break;
-	case 1: // toggle data writing on
-		if (!write_data) {
-			write_data = true;
-			start_micros = micros();
-			prev_micros = start_micros;
-			time = 0;
-		}
-		break;
-	default:
-		break;
-	}
+GeneralDAQ::~GeneralDAQ(){
+	delete[] analog0;
+	delete[] analog1;
+	delete[] analog2;
+	delete[] analog3;
+	delete[] analog4;
 }
 
-void GeneralDAQ::run_lab() {
-	// Updates time variable
-	current_micros = micros();
-	delta = current_micros - prev_micros;
+void GeneralDAQ::DAQ() {
+	analog0[log_index] = analogRead(A0);
+	analog1[log_index] = analogRead(A1);
+	analog2[log_index] = analogRead(A2);
+	analog3[log_index] = analogRead(A3);
+	analog4[log_index] = analogRead(A4);
+}
 
-	// Sends data if ALL:
-	// 1. write_data is true
-	// 2. dt has passed
-	// 3. sample_time has not passed
-	if (write_data && delta >= dt * 1000000){
-		if (time <= sample_time * 1000000) {
-			analog0 = analogRead(A0);
-			analog1 = analogRead(A1);
-			analog2 = analogRead(A2);
-			analog3 = analogRead(A3);
-			analog4 = analogRead(A4);
-
-			Serial.print('T'); Serial.print(time);
-			Serial.print(',');
-			Serial.print("A0: "); Serial.print(analog0);
-			Serial.print(',');
-			Serial.print("A1: "); Serial.print(analog1);
-			Serial.print(',');
-			Serial.print("A2: "); Serial.print(analog2);
-			Serial.print(',');
-			Serial.print("A3: "); Serial.print(analog3);
-			Serial.print(',');
-			Serial.print("A4: "); Serial.print(analog4);
-			Serial.print('\n');
-
-			time += dt * 1000000;
-			prev_micros = current_micros;
-		}
-		else if (write_data){
-			//Serial.println("Tell python I'm done with my time!");
-			write_data = false;
-		}
-	}
+void GeneralDAQ::TSAQ() {
+	Serial.println(time);
+	Serial.print('T'); Serial.print(time);
+	Serial.print(',');
+	Serial.print("S"); Serial.print(analog0[send_index]);
+	Serial.print(',');
+	Serial.print("A"); Serial.print(analog1[send_index]);
+	Serial.print(',');
+	Serial.print("Q"); Serial.print(analog2[send_index]);
+	// Serial.print(',');
+	// Serial.print("A3: "); Serial.print(analog3[send_index]);
+	// Serial.print(',');
+	// Serial.print("A4: "); Serial.print(analog4[send_index]);
+	Serial.print('\n');
 }

@@ -20,6 +20,6 @@ DefaultLab::DefaultLab(int ARDUINO_BOARD_CODE) {
 	lab_code = 0; 
 }
 
-void DefaultLab::process_cmd() {}
+void DefaultLab::DAQ() {return;}
 
-void DefaultLab::run_lab() {}
+void DefaultLab::TSAQ() {return;}

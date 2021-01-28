@@ -14,62 +14,29 @@ running the Beam lab using the CUatHome kit.
 #include "CUatHomeLab.h"
 #include <Arduino.h>
 
-
 Beam::Beam(int ARDUINO_BOARD_CODE) {
+	lab_code = 4;
 	ARDUINO_CODE = ARDUINO_BOARD_CODE;
+
+	if (ARDUINO_CODE == 0) data_array_length = 500;
+	else if (ARDUINO_CODE == 1) data_array_length = 250;
+
 	Wire.begin();
 	mpu6050->begin();
+	angAccX = new float[data_array_length];
 }
 
-void Beam::process_cmd() {
-	int cmd;
-	cmd = get_cmd_code('R', -1);
-	switch (cmd) {
-	case 0: // toggle data writing off
-		write_data = false;
-		break;
-	case 1: // toggle data writing on
-		if (!write_data) {
-			write_data = true;
-			start_micros = micros();
-			prev_micros = start_micros;
-			time = 0;
-		}
-		break;
-	default:
-		break;
-	}
+Beam::~Beam() {
+	delete[] angAccX;
 }
 
-void Beam::run_lab() {
-	// Updates time variable
-	current_micros = micros();
-	delta = current_micros - prev_micros;
+void Beam::DAQ(){
+	mpu6050->update();
+	angAccX[log_index] = mpu6050->getAccAngleX();
+}
 
-	// Sends data if ALL:
-	// 1. write_data is true
-	// 2. dt has passed
-	// 3. sample_time has not passed
-	if (write_data && delta >= dt * 1000000) {
-		if (time <= sample_time * 1000000){
-			//MPU6050
-			mpu6050->update();
-
-			// Serial Communication
-			Serial.print('T'); Serial.print(time);
-			Serial.print(',');
-			Serial.print("S"); Serial.print(mpu6050->getAccAngleX());
-			Serial.print(',');
-			Serial.print("A"); Serial.print(mpu6050->getAccX());
-			Serial.print(',');
-			Serial.print("Q"); Serial.println(mpu6050->getAngleX());
-
-			time += dt * 1000000;
-			prev_micros = current_micros;
-		}
-		else if (write_data){
-			//Serial.println("Tell python I'm done with my time!");
-			write_data = false;
-		}
-	}
+void Beam::TSAQ() {
+	Serial.print('T'); Serial.print(time);
+	Serial.print(',');
+	Serial.print('S'); Serial.println(angAccX[send_index]);
 }

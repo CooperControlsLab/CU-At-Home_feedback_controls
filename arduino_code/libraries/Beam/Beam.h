@@ -22,10 +22,12 @@ running the Beam lab using the CUatHome kit.
 class Beam : public CUatHomeLab {
 private:
 	MPU6050* mpu6050 = new MPU6050(Wire);
+	float* angAccX;
 public:
 	Beam(int ARDUINO_CODE);
-	void process_cmd();
-	void run_lab();
+	~Beam();
+	void DAQ();
+	void TSAQ();
 };
 
 #endif // !BEAM_H

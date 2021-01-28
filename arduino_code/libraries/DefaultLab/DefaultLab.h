@@ -19,8 +19,8 @@ CUatHomeLab constructor is called.
 class DefaultLab : public CUatHomeLab {
 public:
 	DefaultLab(int ARDUINO_BOARD_CODE);
-	void process_cmd();
-	void run_lab();
+	void DAQ();
+	void TSAQ();
 };
 
 #endif // !DEFAULTLAB_H

@@ -100,13 +100,7 @@ class Window(QMainWindow):
         elif labtype == "Beam":
             self.angAccel_label = QLabel("Angular Acceleration")
             self.angAccel_value = QLabel("")
-            self.accel_label = QLabel("Acceleration")
-            self.accel_value = QLabel("")
-            self.disp_label = QLabel("Displacement")
-            self.disp_value = QLabel("")
-            self.currentItemsSB = [self.angAccel_label, self.angAccel_value,
-                                   self.accel_label, self.accel_value,
-                                   self.disp_label, self.disp_value]
+            self.currentItemsSB = [self.angAccel_label, self.angAccel_value]
             for item in self.currentItemsSB:
                 self.statusBar().addPermanentWidget(item)
                 item.setFont(QFont("Roboto", 12)) 
@@ -295,7 +289,7 @@ class Window(QMainWindow):
         self.serialInstance.labSelection(self.course) # ex) L1
         self.serialInstance.sampleTimeSamplingRate(self.serial_values["Sampling Rate"],
                                                    self.serial_values["Sample Time"]) # ex) S1,A0.01,B100
-        self.serialInstance.requestByte()
+        #self.serialInstance.requestByte()
         self.ui.startbutton.clicked.disconnect(self.startbuttonPushed)
         #self.ui.stopbutton.clicked.connect(self.stopbuttonPushed)
         
@@ -314,6 +308,7 @@ class Window(QMainWindow):
         amount of datapoints that are missed.
         '''
         while self.verbose:
+            #print(self.serialInstance.ser.readline().decode())
             data = self.serialInstance.readValues()
             # Maybe exception handling?
             if data != None:
@@ -326,8 +321,6 @@ class Window(QMainWindow):
                 elif self.course == "Beam":
                     self.time.append(self.gcodeParsing("T", self.fulldata))
                     self.y1.append(self.gcodeParsing("S", self.fulldata))
-                    self.y2.append(self.gcodeParsing("A", self.fulldata))
-                    self.y3.append(self.gcodeParsing("Q", self.fulldata))
 
                 elif self.course == "Sound":
                     self.time.append(self.gcodeParsing("T", self.fulldata))
@@ -342,7 +335,10 @@ class Window(QMainWindow):
         self.threadRecordSave.join()
         try:
             self.timer.stop()
-            self.serialInstance.stopRequestByte() #
+            self.serialInstance.stopRequestByte()
+            self.serialInstance.flush()
+            self.serialInstance.reset_input_buffer()
+            self.serialInstance.reset_output_buffer()
             #self.ui.startbutton.clicked.connect(self.startbuttonPushed)
             #self.ui.stopbutton.clicked.disconnect(self.stopbuttonPushed)
         except:
@@ -417,9 +413,7 @@ class Window(QMainWindow):
             self.data = self.ui.graphWidgetOutput.plot(pen = pen1, name="Voltage???") 
 
         elif self.course == "Beam":
-            self.data1 = self.ui.graphWidgetOutput.plot(pen = pen1, name="Angular Acceleration") 
-            self.data2 = self.ui.graphWidgetOutput.plot(pen = pen2, name="Acceleration") 
-            self.data3 = self.ui.graphWidgetOutput.plot(pen = pen3, name="Displacement") 
+            self.data = self.ui.graphWidgetOutput.plot(pen = pen1, name="Angular Acceleration") 
 
         elif self.course == "Sound":
             self.data1 = self.ui.graphWidgetOutput.plot(pen=pen1, name="Mic 1") 
@@ -436,8 +430,7 @@ class Window(QMainWindow):
 
         elif labtype == "Beam":
             self.header = ["Time (ms???)", "Acceleration???"]
-            self.data_set = zip_longest(*[self.time,self.y1, self.y2, self.y3],
-                                        fillvalue="")
+            self.data_set = zip_longest(*[self.time,self.y1], fillvalue="")
 
         elif labtype == "Sound":
             self.header = ["Time (ms???)", "Mic 1", "Mic 2", "Temperature (°C)"]
@@ -489,28 +482,16 @@ class Window(QMainWindow):
 
             elif self.course == "Beam":
                 self.y1_zeros = np.array(self.y1)
-                self.y2_zeros = np.array(self.y2)
-                self.y3_zeros = np.array(self.y3)
                 
                 if len(self.time_zeros) < self.size:
-                    self.data1.setData(self.time_zeros, self.y1_zeros)
-                    self.data2.setData(self.time_zeros, self.y2_zeros)
-                    self.data3.setData(self.time_zeros, self.y3_zeros)
+                    self.data.setData(self.time_zeros, self.y1_zeros)
                 else:
-                    self.data1.setData(self.time_zeros[-self.size:], 
+                    self.data.setData(self.time_zeros[-self.size:], 
                                        self.y1_zeros[-self.size:])
-                    self.data2.setData(self.time_zeros[-self.size:], 
-                                       self.y2_zeros[-self.size:])
-                    self.data3.setData(self.time_zeros[-self.size:], 
-                                       self.y3_zeros[-self.size:])
                 
-                self.data1.setPos(self.step, 0)
-                self.data2.setPos(self.step, 0)
-                self.data3.setPos(self.step, 0)
+                self.data.setPos(self.step, 0)
                 
                 self.angAccel_value.setText(str(self.y1_zeros[-1]))
-                self.accel_value.setText(str(self.y2_zeros[-1]))
-                self.disp_value.setText(str(self.y3_zeros[-1]))
         except ValueError:
             print("Couldn't parse value. Skipping point")
         except IndexError:

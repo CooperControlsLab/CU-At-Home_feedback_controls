@@ -15,7 +15,7 @@ run_lab. These are virtual functions which will be defined by each lab.
 
 CUatHomeLab::CUatHomeLab() {};
 
-// First check if any parameter changed before running the lab
+// First check if there are any change in: 1) lab type 2) sampling rate 3) sampling time
 // Then reflect the changes and call process_cmd()
 void CUatHomeLab::retrieve_cmd() {
 	if (Serial.available()) {
@@ -36,8 +36,8 @@ void CUatHomeLab::retrieve_cmd() {
 			}
 			// Reflect the changes
 			if (new_lab_code != -1 && new_lab_code != lab_code) { lab_changed = true; }
-			if (new_dt != -1 && new_dt != dt) { dt = new_dt; }
-			if (new_sample_time != -1 && new_sample_time != sample_time) { sample_time = new_sample_time; }
+			if (new_dt != -1 && new_dt != dt) { dt_changed = true; }
+			if (new_sample_time != -1 && new_sample_time != sample_time) { sample_time_changed = true; }
 			// If lab not changed
 			else { process_cmd(); }
 			//Reset the values used for retrieving the command
@@ -77,4 +77,121 @@ double CUatHomeLab::get_cmd_code(char key, int def) {
 	cmd[cmd_end - cmd_start] = '\0'; // dangerous if code is too long
 	//Serial.print("cmd array: "); Serial.println(cmd);
 	return atof(cmd); // return the substring in float format
+}
+
+void CUatHomeLab::process_cmd() {
+	int cmd;
+	cmd = get_cmd_code('R', -1);
+	switch (cmd) {
+	// When R0 command is sent
+	case 0:
+		// Turn is_logging_data false so that ardino will stop logging data
+		is_logging_data = false;
+		Serial.flush();
+		break;
+	
+	
+	// When R1 command is sent
+	case 1:
+		// First check if the data is being logged already. If not, initialize the lab once
+		if (is_logging_data == false) {
+			is_logging_data = true;
+			is_sending_data = true;
+			logging_has_begun = false;
+			wrap = false;
+			log_index = 0;
+			send_index = 0;
+
+			time = 0;
+			start_micros = micros();
+			prev_micros = start_micros;
+		}
+
+		// If is_sending_without_log_data, 
+		if (is_sending_without_log_data) { send_without_log_data(); }
+		// If is_sending_data
+		else if ( is_sending_data) { send_data(); }
+
+		break;
+	default:
+		break;
+	}
+}
+
+// log_data method must take control of the follows:
+// With the assumption: log_index increases faster than send_index does
+// 1. keep logging data to the array as fast as possible
+// 2. reset log_index to 0 the end of the array is reached
+// 3. if log_index catches up send_index, stop logging while keep printing
+void CUatHomeLab::log_data() {
+	// Updates time variable
+	current_micros = micros();
+	delta = current_micros - prev_micros;
+	// 1. Checks if logging is ready
+	// if ALL:
+	// 	a) dt has passed
+	//	b) sample_time has not passed
+	//	c) is_logging_data
+	if (delta >= dt * 1000000 && time <= sample_time * 1000000 && is_logging_data){
+		logging_has_begun = true;
+
+		DAQ();
+
+		// If end of the array is reached, reset log_index to 0 and set wrap = true
+		log_index++;
+		log_index %= data_array_length;
+		if (log_index == 0 && !wrap) { wrap = true; }
+
+		time += dt * 1000000;
+		prev_micros = current_micros;
+	}
+}
+
+// send_data method must take control of the follows:
+// With the assumption: log_index increases faster than send_index does
+// 1. keep sending data to the serial as fast as possible
+// 2. reset send_index to 0 the end of the array is reached
+void CUatHomeLab::send_data() {
+	//Serial.println("send_data");
+	if (logging_has_begun && is_sending_data){
+		// Whether or not is_logging_data is true, keep sending data to the serial
+		TSAQ();
+		// If end of the array is reached, reset print_index to 0
+		send_index++;
+		send_index %= data_array_length;
+	}
+}
+
+// send_without_log_data directly sends the serial to python as soon as stored
+// This method is called when send_index increases faster than log_index does
+void CUatHomeLab::send_without_log_data(){
+	// Updates time variable
+	current_micros = micros();
+	delta = current_micros - prev_micros;
+	if (delta >= dt * 1000000 && time <= sample_time * 1000000 && is_logging_data && is_sending_data){
+		DAQ();
+		TSAQ();
+		// If end of the array is reached, reset the indices log_index and send_index to 0
+		log_index++;
+		log_index %= data_array_length;
+		send_index++;
+		send_index %= data_array_length;
+
+		time += dt * 1000000;
+		prev_micros = current_micros;
+	}
+}
+
+// log_send_coord checks if log_index = send_index
+// and if so, either halts logging or sending data accordingly
+void CUatHomeLab::log_send_coord() {
+		// If this is the case, log_index has catched up send_index
+		if ((is_logging_data || is_sending_data) && log_index == send_index){
+			// 3-1. Checks if log_index has catched up send_index; if so, stop logging while keep printing
+			if (wrap){ is_logging_data = false; wrap = false; }
+			// 3-2. Checks if send_index has catched up log_index, but the data is still being logged(this implies that send_index is increasing faster than log_index does); if so, directly send what's being logged
+			else if (is_logging_data == true) { is_sending_without_log_data = true; }//Serial.println("Changing to Sending w/o Log"); }
+			// 3-3. Checks if send_index has catched up log_index, and data logging is already finished; if so, stop sending data since all is sent
+			else if (is_logging_data == false) { is_sending_data = false; }
+		}
 }

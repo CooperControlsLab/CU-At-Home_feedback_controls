@@ -18,15 +18,16 @@ running the GeneralDAQ lab using the CUatHome kit.
 
 class GeneralDAQ : public CUatHomeLab {
 private:
-	int analog0;
-	int analog1;
-	int analog2;
-	int analog3;
-	int analog4;
+	double* analog0;
+	double* analog1;
+	double* analog2;
+	double* analog3;
+	double* analog4;
 public:
 	GeneralDAQ(int ARDUINO_BOARD_CODE);
-	void process_cmd();
-	void run_lab();
+	~GeneralDAQ();
+	void DAQ();
+	void TSAQ();
 };
 
 #endif // !GENERALDAQ_H
