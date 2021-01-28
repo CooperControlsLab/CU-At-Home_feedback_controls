@@ -33,8 +33,8 @@ void CUatHomeLabManager::run(){
 
         //Serial.print("Lab changed to "); Serial.println(lab->lab_code);
     }
-    if (lab->dt_changed) { lab->dt = lab->new_dt; lab->dt_changed = false; }//Serial.print("dt changed to "); Serial.println(lab->dt); }
-    if (lab->sample_time_changed) { lab->sample_time = lab->new_sample_time; lab->sample_time_changed = false; }//Serial.print("sample time changed to "); Serial.println(lab->sample_time); }
+    if (lab->dt_changed) { lab->dt = lab->new_dt; lab->dt_changed = false; }
+    if (lab->sample_time_changed) { lab->sample_time = lab->new_sample_time; lab->sample_time_changed = false; }
 
     // If lab is sending without logging data, directly send without logging data
     if (lab->is_sending_without_log_data) { lab->send_without_log_data(); }

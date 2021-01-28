@@ -19,7 +19,7 @@ Beam::Beam(int ARDUINO_BOARD_CODE) {
 	ARDUINO_CODE = ARDUINO_BOARD_CODE;
 
 	if (ARDUINO_CODE == 0) data_array_length = 500;
-	else if (ARDUINO_CODE == 1) data_array_length = 250;
+	else if (ARDUINO_CODE == 1) data_array_length = 100;
 
 	Wire.begin();
 	mpu6050->begin();
@@ -38,5 +38,7 @@ void Beam::DAQ(){
 void Beam::TSAQ() {
 	Serial.print('T'); Serial.print(time);
 	Serial.print(',');
-	Serial.print('S'); Serial.println(angAccX[send_index]);
+	Serial.print('S'); Serial.print(angAccX[send_index]);
+	Serial.print(',');
+	Serial.print('A'); Serial.println(is_sending_without_log_data);
 }

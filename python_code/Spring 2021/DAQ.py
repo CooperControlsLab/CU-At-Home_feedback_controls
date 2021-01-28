@@ -100,7 +100,10 @@ class Window(QMainWindow):
         elif labtype == "Beam":
             self.angAccel_label = QLabel("Angular Acceleration")
             self.angAccel_value = QLabel("")
-            self.currentItemsSB = [self.angAccel_label, self.angAccel_value]
+            self.ang_label = QLabel("Angle")
+            self.ang_value = QLabel("")
+            self.currentItemsSB = [self.angAccel_label, self.angAccel_value,
+                                   self.ang_label, self.ang_value]
             for item in self.currentItemsSB:
                 self.statusBar().addPermanentWidget(item)
                 item.setFont(QFont("Roboto", 12)) 
@@ -181,9 +184,9 @@ class Window(QMainWindow):
         self.ui.graphWidgetOutput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
         self.ui.graphWidgetOutput.setTitle("Acceleration", color="w", size="12pt")
 
-        self.ui.graphWidgetInput.setLabel('left',"")
-        self.ui.graphWidgetInput.setLabel('bottom',"")
-        self.ui.graphWidgetInput.setTitle("")
+        self.ui.graphWidgetInput.setLabel('left',"<span style=\"color:white;font-size:16px\">Angle (degree)</span>")
+        self.ui.graphWidgetInput.setLabel('bottom',"<span style=\"color:white;font-size:16px\">Time (s)</span>")
+        self.ui.graphWidgetInput.setTitle("Degree", color="w", size="12pt")
         self.currentValueSB(self.course)
 
     def soundPushed(self):
@@ -321,6 +324,7 @@ class Window(QMainWindow):
                 elif self.course == "Beam":
                     self.time.append(self.gcodeParsing("T", self.fulldata))
                     self.y1.append(self.gcodeParsing("S", self.fulldata))
+                    self.y2.append(self.gcodeParsing("A", self.fulldata))
 
                 elif self.course == "Sound":
                     self.time.append(self.gcodeParsing("T", self.fulldata))
@@ -413,7 +417,8 @@ class Window(QMainWindow):
             self.data = self.ui.graphWidgetOutput.plot(pen = pen1, name="Voltage???") 
 
         elif self.course == "Beam":
-            self.data = self.ui.graphWidgetOutput.plot(pen = pen1, name="Angular Acceleration") 
+            self.data1 = self.ui.graphWidgetOutput.plot(pen = pen1, name="Angular Acceleration") 
+            self.data2 = self.ui.graphWidgetInput.plot(pen = pen2, name="Angle") 
 
         elif self.course == "Sound":
             self.data1 = self.ui.graphWidgetOutput.plot(pen=pen1, name="Mic 1") 
@@ -426,11 +431,11 @@ class Window(QMainWindow):
         '''
         if labtype == "Statics":
             self.header = ["Time (ms???)", "Voltage???"]
-            self.data_set = zip_longest(*[self.time,self.y1], fillvalue="")
+            self.data_set = zip_longest(*[self.time, self.y1], fillvalue="")
 
         elif labtype == "Beam":
-            self.header = ["Time (ms???)", "Acceleration???"]
-            self.data_set = zip_longest(*[self.time,self.y1], fillvalue="")
+            self.header = ["Time (ms???)", "Acceleration???", "Angle"]
+            self.data_set = zip_longest(*[self.time, self.y1, self.y2], fillvalue="")
 
         elif labtype == "Sound":
             self.header = ["Time (ms???)", "Mic 1", "Mic 2", "Temperature (°C)"]
@@ -482,16 +487,22 @@ class Window(QMainWindow):
 
             elif self.course == "Beam":
                 self.y1_zeros = np.array(self.y1)
+                self.y2_zeros = np.array(self.y2)
                 
                 if len(self.time_zeros) < self.size:
-                    self.data.setData(self.time_zeros, self.y1_zeros)
+                    self.data1.setData(self.time_zeros, self.y1_zeros)
+                    self.data2.setData(self.time_zeros, self.y1_zeros)
                 else:
-                    self.data.setData(self.time_zeros[-self.size:], 
+                    self.data1.setData(self.time_zeros[-self.size:], 
                                        self.y1_zeros[-self.size:])
+                    self.data2.setData(self.time_zeros[-self.size:], 
+                                       self.y2_zeros[-self.size:])
                 
-                self.data.setPos(self.step, 0)
+                self.data1.setPos(self.step, 0)
+                self.data2.setPos(self.step, 0)
                 
                 self.angAccel_value.setText(str(self.y1_zeros[-1]))
+                self.ang_value.setText(str(self.y2_zeros[-1]))
         except ValueError:
             print("Couldn't parse value. Skipping point")
         except IndexError:
