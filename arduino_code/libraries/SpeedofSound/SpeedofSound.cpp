@@ -38,9 +38,9 @@ void SpeedofSound::DAQ(){
 void SpeedofSound::TSAQ() {
 	Serial.print('T'); Serial.print(time);
 	Serial.print(',');
-	Serial.print('S'); Serial.print(100);
+	Serial.print('S'); Serial.print(log_index);
 	Serial.print(',');
-	Serial.print('A'); Serial.print(mic1[send_index]);
+	Serial.print('A'); Serial.print(send_index);
 	Serial.print(',');
-	Serial.print('Q'); Serial.println(mic2[send_index]);
+	Serial.print('Q'); Serial.println(is_sending_without_log_data);
 }

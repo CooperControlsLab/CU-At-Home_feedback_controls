@@ -292,7 +292,7 @@ class Window(QMainWindow):
         self.serialInstance.labSelection(self.course) # ex) L1
         self.serialInstance.sampleTimeSamplingRate(self.serial_values["Sampling Rate"],
                                                    self.serial_values["Sample Time"]) # ex) S1,A0.01,B100
-        #self.serialInstance.requestByte()
+        self.serialInstance.requestByte()
         self.ui.startbutton.clicked.disconnect(self.startbuttonPushed)
         #self.ui.stopbutton.clicked.connect(self.stopbuttonPushed)
         
@@ -311,7 +311,8 @@ class Window(QMainWindow):
         amount of datapoints that are missed.
         '''
         while self.verbose:
-            #print(self.serialInstance.ser.readline().decode())
+            if self.serialInstance.ser.read(self.serialInstance.ser.in_waiting) != 0:
+                self.serialInstance.ser.write("R2%".encode())
             data = self.serialInstance.readValues()
             # Maybe exception handling?
             if data != None:

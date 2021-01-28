@@ -72,6 +72,7 @@ public:
 	virtual void TSAQ() = 0; // In this function is defined what is to be sent according to the TSAQ format, which is lab-dependent
 	bool is_sending_data{ false }; // true when sending data. Will become false when logging is done and send_index catches up log_index
 	int send_index; // index that will be sent to the serial
+	bool GUIreceived{ false };
 
 	/* 7) For sending data without logging */
 	void send_without_log_data();

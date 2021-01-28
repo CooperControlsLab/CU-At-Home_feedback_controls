@@ -93,26 +93,21 @@ void CUatHomeLab::process_cmd() {
 	
 	// When R1 command is sent
 	case 1:
-		// First check if the data is being logged already. If not, initialize the lab once
-		if (is_logging_data == false) {
-			is_logging_data = true;
-			is_sending_data = true;
-			logging_has_begun = false;
-			wrap = false;
-			log_index = 0;
-			send_index = 0;
+		// Turn is_logging_data and is_sending_data on so that arduino will begin sending data
+		is_logging_data = true;
+		is_sending_data = true;
+		is_sending_without_log_data = false;
+		logging_has_begun = false;
+		wrap = false;
+		log_index = 0;
+		send_index = 0;
 
-			time = 0;
-			start_micros = micros();
-			prev_micros = start_micros;
-		}
-
-		// If is_sending_without_log_data, 
-		if (is_sending_without_log_data) { send_without_log_data(); }
-		// If is_sending_data
-		else if ( is_sending_data) { send_data(); }
-
+		time = 0;
+		start_micros = micros();
+		prev_micros = start_micros;
 		break;
+	case 2:
+		if ( is_sending_data) { send_index++; GUIreceived = true; }
 	default:
 		break;
 	}
@@ -152,13 +147,12 @@ void CUatHomeLab::log_data() {
 // 1. keep sending data to the serial as fast as possible
 // 2. reset send_index to 0 the end of the array is reached
 void CUatHomeLab::send_data() {
-	//Serial.println("send_data");
-	if (logging_has_begun && is_sending_data){
+	if (logging_has_begun && is_sending_data && GUIreceived){
 		// Whether or not is_logging_data is true, keep sending data to the serial
 		TSAQ();
 		// If end of the array is reached, reset print_index to 0
-		send_index++;
 		send_index %= data_array_length;
+		GUIreceived = false;
 	}
 }
 
@@ -174,7 +168,6 @@ void CUatHomeLab::send_without_log_data(){
 		// If end of the array is reached, reset the indices log_index and send_index to 0
 		log_index++;
 		log_index %= data_array_length;
-		send_index++;
 		send_index %= data_array_length;
 
 		time += dt * 1000000;
@@ -186,7 +179,7 @@ void CUatHomeLab::send_without_log_data(){
 // and if so, either halts logging or sending data accordingly
 void CUatHomeLab::log_send_coord() {
 		// If this is the case, log_index has catched up send_index
-		if ((is_logging_data || is_sending_data) && log_index == send_index){
+		if ((is_logging_data || is_sending_data) && log_index == send_index && logging_has_begun){
 			// 3-1. Checks if log_index has catched up send_index; if so, stop logging while keep printing
 			if (wrap){ is_logging_data = false; wrap = false; }
 			// 3-2. Checks if send_index has catched up log_index, but the data is still being logged(this implies that send_index is increasing faster than log_index does); if so, directly send what's being logged

@@ -20,7 +20,7 @@ GeneralDAQ::GeneralDAQ(int ARDUINO_BOARD_CODE) {
 	ARDUINO_CODE = ARDUINO_BOARD_CODE;
 
 	if (ARDUINO_CODE == 0) data_array_length = 500;
-	else if (ARDUINO_CODE == 1) data_array_length = 250;
+	else if (ARDUINO_CODE == 1) data_array_length = 50;
 
 	analog0 = new double[data_array_length];
 	analog1 = new double[data_array_length];
@@ -46,14 +46,13 @@ void GeneralDAQ::DAQ() {
 }
 
 void GeneralDAQ::TSAQ() {
-	Serial.println(time);
 	Serial.print('T'); Serial.print(time);
 	Serial.print(',');
-	Serial.print("S"); Serial.print(analog0[send_index]);
+	Serial.print("S"); Serial.print(log_index);
 	Serial.print(',');
-	Serial.print("A"); Serial.print(analog1[send_index]);
+	Serial.print("A"); Serial.print(send_index);
 	Serial.print(',');
-	Serial.print("Q"); Serial.print(analog2[send_index]);
+	Serial.print("Q"); Serial.print(is_sending_without_log_data	);
 	// Serial.print(',');
 	// Serial.print("A3: "); Serial.print(analog3[send_index]);
 	// Serial.print(',');
