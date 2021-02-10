@@ -19,43 +19,21 @@ Beam::Beam(int ARDUINO_BOARD_CODE) {
 	ARDUINO_CODE = ARDUINO_BOARD_CODE;
 	Wire.begin();
 	mpu6050->begin();
+	continuous_send = true;
 }
 
-void Beam::process_cmd() {
-	int cmd;
-	cmd = get_cmd_code('R', -1);
-	switch (cmd) {
-	case 0: // toggle data writing off
-		write_data = false;
-		break;
-	case 1: // toggle data writing on
-		if (!write_data) {
-			write_data = true;
-			start_micros = micros();
-			prev_micros = start_micros;
-		}
-		break;
-	default:
-		break;
-	}
-}
+void Beam::DAQ() {}
 
-void Beam::run_lab() {
-	current_micros = micros();
-	delta = current_micros - prev_micros;
-	if (write_data && delta >= dt * 1000000) {
-		//MPU6050
-		mpu6050->update();
+void Beam::TSAQ() {
+	//MPU6050
+	mpu6050->update();
 
-		// Serial Communication
-		Serial.print('T'); Serial.print(current_micros - start_micros);
-		Serial.print(',');
-		Serial.print("Angular acceleration: "); Serial.print(mpu6050->getAccAngleX());
-		Serial.print(',');
-		Serial.print("Translational acceleration: "); Serial.print(mpu6050->getAccX());
-		Serial.print(',');
-		Serial.print("Anglular displacement: "); Serial.println(mpu6050->getAngleX());
-
-		prev_micros = current_micros;
-	}
+	// Serial Communication
+	Serial.print('T'); Serial.print(current_micros);
+	Serial.print(',');
+	Serial.print("Angular acceleration: "); Serial.print(mpu6050->getAccAngleX());
+	Serial.print(',');
+	Serial.print("Translational acceleration: "); Serial.print(mpu6050->getAccX());
+	Serial.print(',');
+	Serial.print("Anglular displacement: "); Serial.println(mpu6050->getAngleX());
 }

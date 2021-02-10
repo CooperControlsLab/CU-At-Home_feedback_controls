@@ -25,15 +25,22 @@ public:
 	int new_lab_code;
 	bool lab_changed{ false };  // Will become true when new lab command
 	int ARDUINO_CODE;  // 0:TEENSY, 1:UNO
+	int data_array_length{ 0 };  // board-type dependent
 
 	/* 2)	For sampling */
-	unsigned long current_micros{ 0 };
-	unsigned long prev_micros{ 0 };
-	unsigned long start_micros{ 0 };
-	double dt{ 0.01 }; // [ms]
-	unsigned long delta;
-
-	bool write_data{ false };
+	unsigned long current_micros{ 0 }; // current time in the experiment
+	unsigned long prev_micros{ 0 };  // track elapsed time from last data send
+	unsigned long start_micros{ 0 };  // offset time for experiment
+	unsigned long time{ 0 }; // [s]; for discontinuous send; elapsed time 
+							 // approximately constant so just increment by dt
+	
+	double dt{ 0.01 }; // Sample time interval [s]
+	double new_dt{ 0.01 }; // New sampling time interval
+	
+	double sample_time{ 100 }; // Total sample time [s]
+	double new_sample_time{ 100 }; // New sample time [s]
+	
+	unsigned long delta; // Time passed since last prev_micros was logged [s]
 	
 	/*** Serial communication ***/
 	/* 1)	For command retrieval */
@@ -55,10 +62,23 @@ public:
 	/* 4)	Each lab will interpret the commands differently. This function will
 			be implemented by each lab, looking for specific command codes and
 			then calling the proper functions. */
-	virtual void process_cmd() = 0;
+	void process_cmd();
 
 	/* 5)	This function is called each loop in the arduino code. */
-	virtual void run_lab() = 0;
+	void run_lab();
+
+	/* 6)	For data logging */
+	virtual void DAQ() = 0;
+	bool log_data{ false }; // true when experiment starts. false when 1) log_index catches up send_index 2) STOP button pressed
+	int log_index; // index that will be logged to the array
+	bool wrap{ false };  // true when the log_index loops back to 0
+	bool started_experiment{ false };  // true when first R1 is recieved
+
+	/* 7)	For data sending */
+	virtual void TSAQ() = 0;
+	bool send_data{ false };
+	int send_index; // index that will be sent to serial
+	bool continuous_send{ false };
 
 	CUatHomeLab();
 };

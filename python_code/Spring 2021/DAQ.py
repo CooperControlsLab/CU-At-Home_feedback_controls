@@ -312,6 +312,7 @@ class Window(QMainWindow):
             
             if data != None:
                 self.fulldata = data
+                print(self.fulldata)
                 if self.course == "Statics":
                     self.time.append(self.gcodeParsing("T", self.fulldata))
                     self.y1.append(self.gcodeParsing("S", self.fulldata))

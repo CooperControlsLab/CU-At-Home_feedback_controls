@@ -27,11 +27,29 @@ void CUatHomeLab::retrieve_cmd() {
 		cmd_string[cmd_index] = incoming_char;
 		// If end of the command, process the command
 		if (incoming_char == '\0' || incoming_char == '%') {
+			// First check if any parameter changed before running the lab
+			// 1. Check if lab changed
+			// 2. Check if sampling rate changed
+			// 3. Check if sampling time changed
 			new_lab_code = get_cmd_code('L', -1);
-			// If lab changed
-			if (new_lab_code != -1 && new_lab_code != lab_code) { lab_changed = true; }
-			// If lab not changed
-			else { process_cmd(); }
+			if (get_cmd_code('S', -1) == 1) {
+				new_dt = get_cmd_code('A', -1);
+				if (new_dt != -1 && new_dt != dt) { 
+					dt = new_dt; 
+				}
+				new_sample_time = get_cmd_code('B', -1);
+				if (new_sample_time != -1 && new_sample_time != sample_time) { 
+					sample_time = new_sample_time; 
+				}
+			}
+			// Reflect the changes
+			else if (new_lab_code != -1 && new_lab_code != lab_code) { 
+				lab_changed = true; 
+			}
+			// If lab or timings not changed
+			else { 
+				process_cmd(); 
+			}
 			//Reset the values used for retrieving the command
 			cmd_index = 0;
 			memset(cmd_string, '\0', sizeof(cmd_string)); // resets to all \0
@@ -69,4 +87,99 @@ double CUatHomeLab::get_cmd_code(char key, int def) {
 	cmd[cmd_end - cmd_start] = '\0'; // dangerous if code is too long
 	//Serial.print("cmd array: "); Serial.println(cmd);
 	return atof(cmd); // return the substring in float format
+}
+
+void CUatHomeLab::process_cmd() {
+	int cmd;
+
+	cmd = get_cmd_code('R', -1);
+	switch (cmd) {
+	case 0: // stop sending data and end experiment
+		log_data = false;
+		send_data = false;
+		started_experiment = false;
+		break;
+	case 1: { // send data
+		if (continuous_send) {
+			if (!send_data) {
+				send_data = true;
+				prev_micros = 0;
+				start_micros = micros();
+			}
+		}
+		else {
+			// start experiment if not already; toggle log_data
+			if (!started_experiment) {
+				started_experiment = true;
+				log_data = true;
+				wrap = false;
+
+				time = 0;
+				send_index = 0;
+				log_index = 0;
+				prev_micros = 0;
+				start_micros = micros();
+			}
+		}
+		send_data = true;
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+void CUatHomeLab::run_lab() {
+	current_micros = micros() - start_micros;
+	delta = current_micros - prev_micros;
+	if (continuous_send && delta >= dt * 1000000) {
+		if (send_data && current_micros/1000000 < sample_time) {
+			TSAQ();
+			prev_micros = current_micros;
+		}
+	}
+	// print data if ALL:
+	// 1. log_data = true, i.e. data has been requested
+	// 2. dt has passed
+	// 3. won't be printing data it has already printed after it stopped logging
+	//    (it will reprint if wrap is false (meaning send_index is on the same
+	//	  loop around as log_index) AND send_index does not lag by 1 index)
+	else if (delta >= dt * 1000000) {
+		if (send_data && (log_data || wrap || send_index < log_index - 1)) {
+
+			TSAQ();
+			time += dt * 1000000;
+
+			++send_index;
+			send_index %= data_array_length;
+			if (send_index == 0) wrap = false;
+
+			send_data = false;
+
+			//Serial.print("Print Index: "); Serial.println(send_index);
+		}
+		if (log_data) {
+			// if true, it will be overwriting data that hasn't been sent
+			if ((wrap && log_index == send_index) || current_micros/1000000 > sample_time) {
+				log_data = false;
+				//Serial.println("Stopped logging.");
+			}
+			else {
+				DAQ();
+
+				++log_index;
+				log_index %= data_array_length;
+				if (log_index == 0) wrap = true;
+
+				prev_micros = current_micros;
+
+				//Serial.print("dt: "); Serial.println(dt);
+				//Serial.print("Sample Time: "); Serial.println(sample_time);
+				//Serial.print("Current Time: "); Serial.println(current_micros/1000000);
+				//Serial.print("Time: "); Serial.println(time);
+				//Serial.print("Log Index: "); Serial.println(log_index);
+				//Serial.print("Wrap: "); Serial.println(wrap);
+			}
+		}
+	}
 }

@@ -24,8 +24,8 @@ private:
 	MPU6050* mpu6050 = new MPU6050(Wire);
 public:
 	Beam(int ARDUINO_CODE);
-	void process_cmd();
-	void run_lab();
+	void TSAQ();
+	void DAQ();
 };
 
 #endif // !BEAM_H

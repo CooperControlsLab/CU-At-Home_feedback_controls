@@ -1,7 +1,7 @@
 /*
 SpeedofSound.h
 
-Jared Jacobowitz
+Jared Jacobowitz and YoungWoong
 Winter 2020
 
 Function declerations for the SpeedofSound class. This class is a subclass of
@@ -20,13 +20,8 @@ class SpeedofSound : public CUatHomeLab {
 private:
 	// time between data points will be approximately constant so this variable
 	// will just be incremented each print
-	unsigned long time; 
-	bool started_experiment{ false };  // true when first R1 is recieved
-	bool log_data{ false };
-	int data_array_length{ 0 };  // board-type dependent
-	int print_index;
-	int write_index;
-	bool wrap;  // true if write_index has looped back and print_index has not
+	//unsigned long time;
+
 	float t{ 0 };
 
 	// Dynamically allocated arrays for data holding.
@@ -36,8 +31,9 @@ private:
 public:
 	SpeedofSound(int ARDUINO_BOARD_CODE);
 	~SpeedofSound();
+	void DAQ();
+	void TSAQ();
 	void process_cmd();
-	void run_lab();
 };
 
 #endif // !SPEED_OF_SOUND_H
