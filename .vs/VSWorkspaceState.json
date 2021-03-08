@@ -2,7 +2,12 @@
   "ExpandedNodes": [
     "",
     "\\arduino_code",
-    "\\arduino_code\\libraries"
+    "\\arduino_code\\libraries",
+    "\\arduino_code\\libraries\\DefaultLab",
+    "\\arduino_code\\libraries\\GeneralDAQ",
+    "\\arduino_code\\libraries\\SpeedofSound",
+    "\\arduino_code\\libraries\\Statics"
   ],
+  "SelectedNode": "\\arduino_code\\libraries\\GeneralDAQ\\GeneralDAQ.cpp",
   "PreviewInSolutionExplorer": false
 }
